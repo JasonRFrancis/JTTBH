@@ -1,0 +1,857 @@
+/* ==========================================================================
+   JTTBH Habit Tracker Styles
+   Mobile-first, semantic, accessible
+   ========================================================================== */
+
+
+/* --------------------------------------------------------------------------
+   CSS Custom Properties
+   -------------------------------------------------------------------------- */
+
+:root {
+  --habit-accent:          #2563eb;
+  --habit-completed:       #16a34a;
+  --habit-completed-light: #dcfce7;
+  --habit-inactive:        #d1d5db;
+  --habit-inactive-border: #9ca3af;
+  --habit-empty-bg:        transparent;
+  --habit-cell-size:       clamp(2rem, 8vw, 2.75rem);
+  --habit-cell-radius:     6px;
+  --habit-today-border:    #2563eb;
+  --habit-card-bg:         #ffffff;
+  --habit-card-border:     #e5e7eb;
+  --habit-card-shadow:     0 1px 3px rgba(0,0,0,0.08);
+
+  /* Heat map colours (GitHub-inspired greens) */
+  --heat-0: #ebedf0;
+  --heat-1: #9be9a8;
+  --heat-2: #40c463;
+  --heat-3: #30a14e;
+  --heat-4: #216e39;
+}
+
+
+/* --------------------------------------------------------------------------
+   Shared header / nav
+   -------------------------------------------------------------------------- */
+
+.habit-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.habit-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.habit-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.habit-nav a {
+  font-size: 0.875rem;
+  color: var(--habit-accent);
+  text-decoration: none;
+}
+
+.habit-nav a:hover,
+.habit-nav a:focus {
+  text-decoration: underline;
+}
+
+
+/* --------------------------------------------------------------------------
+   Today's progress bar
+   -------------------------------------------------------------------------- */
+
+.habit-today {
+  margin-bottom: 1.5rem;
+}
+
+.habit-today h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.4rem;
+}
+
+.habit-today-count {
+  font-weight: 700;
+  color: var(--habit-accent);
+}
+
+.habit-progress {
+  display: block;
+  width: 100%;
+  max-width: 28rem;
+  height: 0.625rem;
+  border-radius: 999px;
+  appearance: none;
+  background: var(--habit-inactive);
+  overflow: hidden;
+}
+
+.habit-progress::-webkit-progress-bar {
+  background: var(--habit-inactive);
+  border-radius: 999px;
+}
+
+.habit-progress::-webkit-progress-value {
+  background: var(--habit-completed);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.habit-progress::-moz-progress-bar {
+  background: var(--habit-completed);
+  border-radius: 999px;
+}
+
+.habit-no-habits {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+
+/* --------------------------------------------------------------------------
+   Calendar grid: responsive day cards
+   -------------------------------------------------------------------------- */
+
+.habit-calendar {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.625rem;
+}
+
+@media (min-width: 480px) {
+  .habit-calendar {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 720px) {
+  .habit-calendar {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .habit-calendar {
+    grid-template-columns: repeat(7, 1fr);
+  }
+}
+
+/* Day card */
+.habit-day {
+  background: var(--habit-card-bg);
+  border: 1px solid var(--habit-card-border);
+  border-radius: 8px;
+  padding: 0.5rem;
+  box-shadow: var(--habit-card-shadow);
+}
+
+.habit-day.today {
+  border-color: var(--habit-today-border);
+  border-width: 2px;
+  background: #eff6ff;
+}
+
+.habit-day-header {
+  margin-bottom: 0.375rem;
+}
+
+.habit-day-header time {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.habit-day.today .habit-day-header time {
+  color: var(--habit-accent);
+}
+
+
+/* --------------------------------------------------------------------------
+   5×5 Habit grid (custom element)
+   -------------------------------------------------------------------------- */
+
+habit-grid,
+.habit-grid {
+  display: grid;
+  grid-template-columns: repeat(5, var(--habit-cell-size));
+  grid-template-rows:    repeat(5, var(--habit-cell-size));
+  gap: 2px;
+  width: fit-content;
+}
+
+
+/* --------------------------------------------------------------------------
+   Habit cells
+   -------------------------------------------------------------------------- */
+
+.habit-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--habit-cell-size);
+  height: var(--habit-cell-size);
+  border-radius: var(--habit-cell-radius);
+  font-size: clamp(0.55rem, 2.5vw, 0.7rem);
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  background: var(--habit-inactive);
+  color: #4b5563;
+  transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Use per-habit CSS variable for accent colour */
+.habit-cell:not(.inactive):not(.empty) {
+  background-color: color-mix(in srgb, var(--habit-color, var(--habit-accent)) 20%, white);
+  border: 1px solid color-mix(in srgb, var(--habit-color, var(--habit-accent)) 40%, white);
+}
+
+.habit-cell.completed {
+  background-color: var(--habit-color, var(--habit-completed));
+  color: #ffffff;
+  border-color: var(--habit-color, var(--habit-completed));
+}
+
+.habit-cell.inactive {
+  background: repeating-linear-gradient(
+    45deg,
+    #f3f4f6 0px,
+    #f3f4f6 3px,
+    #e5e7eb 3px,
+    #e5e7eb 6px
+  );
+  color: #9ca3af;
+  cursor: default;
+  opacity: 0.6;
+}
+
+.habit-cell.empty {
+  background: var(--habit-empty-bg);
+  cursor: default;
+  pointer-events: none;
+  border: 1px dashed #e5e7eb;
+  opacity: 0.3;
+}
+
+.habit-cell:not(.inactive):not(.empty):hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 1;
+}
+
+.habit-cell:not(.inactive):not(.empty):active {
+  transform: scale(0.95);
+}
+
+.habit-cell:focus-visible {
+  outline: 2px solid var(--habit-accent);
+  outline-offset: 2px;
+}
+
+/* SVG icons inside cells */
+.habit-cell svg {
+  width: 60%;
+  height: 60%;
+  pointer-events: none;
+}
+
+.habit-cell .habit-initial {
+  pointer-events: none;
+  font-size: clamp(0.6rem, 2vw, 0.75rem);
+}
+
+
+/* --------------------------------------------------------------------------
+   Flash messages
+   -------------------------------------------------------------------------- */
+
+.flash-messages {
+  margin-bottom: 1rem;
+}
+
+.flash {
+  padding: 0.625rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.flash-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.flash-error   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.flash-message { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+
+
+/* --------------------------------------------------------------------------
+   Heat map
+   -------------------------------------------------------------------------- */
+
+.heatmap {
+  margin-bottom: 2rem;
+  overflow-x: auto;
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.legend-label {
+  margin: 0 4px;
+}
+
+.heatmap-dow-labels {
+  display: grid;
+  grid-template-rows: repeat(7, 12px);
+  gap: 2px;
+  font-size: 0.6rem;
+  color: #9ca3af;
+  margin-bottom: 4px;
+  float: left;
+  margin-right: 4px;
+}
+
+.heatmap-grid {
+  display: flex;
+  gap: 2px;
+  align-items: flex-start;
+}
+
+.heatmap-week {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.heatmap-day {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  text-decoration: none;
+}
+
+a.heatmap-day:hover {
+  outline: 1px solid rgba(0,0,0,0.3);
+}
+
+.heatmap-day.heat-empty { background: transparent; }
+.heatmap-day.heat-0     { background: var(--heat-0); }
+.heatmap-day.heat-1     { background: var(--heat-1); }
+.heatmap-day.heat-2     { background: var(--heat-2); }
+.heatmap-day.heat-3     { background: var(--heat-3); }
+.heatmap-day.heat-4     { background: var(--heat-4); }
+
+
+/* --------------------------------------------------------------------------
+   Streaks section
+   -------------------------------------------------------------------------- */
+
+.streaks {
+  margin-bottom: 1.5rem;
+}
+
+.streaks h2,
+.heatmap-stats h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+}
+
+.streaks-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.streak-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.streak-name {
+  font-weight: 600;
+  color: #166534;
+}
+
+.streak-count {
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.streaks-empty {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Heatmap stats
+   -------------------------------------------------------------------------- */
+
+.stats-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0;
+}
+
+.stat {
+  background: var(--habit-card-bg);
+  border: 1px solid var(--habit-card-border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  min-width: 8rem;
+}
+
+.stat dt {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.stat dd {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+
+/* --------------------------------------------------------------------------
+   Settings: forms
+   -------------------------------------------------------------------------- */
+
+.habit-settings main,
+main.habit-settings {
+  max-width: 52rem;
+}
+
+.habit-add,
+.habit-list,
+.grid-helper {
+  margin-bottom: 2.5rem;
+}
+
+.habit-add h2,
+.habit-list h2,
+.grid-helper h2 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--habit-card-border);
+}
+
+.habit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.form-row label,
+.form-fieldset legend {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form-row input[type="text"],
+.form-row input[type="url"],
+.form-row input[type="number"],
+.form-row textarea,
+.form-row select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fff;
+  color: #111827;
+  transition: border-color 0.15s;
+  width: 100%;
+  max-width: 28rem;
+  box-sizing: border-box;
+}
+
+.form-row input:focus,
+.form-row textarea:focus,
+.form-row select:focus {
+  outline: none;
+  border-color: var(--habit-accent);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+}
+
+.form-row input[type="color"] {
+  width: 3rem;
+  height: 2.25rem;
+  padding: 0.15rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.form-row small {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.form-row-inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.form-fieldset {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.625rem 0.875rem;
+  margin: 0;
+}
+
+.form-fieldset legend {
+  padding: 0 0.25rem;
+}
+
+.dayweek-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.dayweek-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: normal;
+  cursor: pointer;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.dayweek-label:has(input:checked) {
+  background: #eff6ff;
+  border-color: var(--habit-accent);
+  color: var(--habit-accent);
+}
+
+.dayweek-label input {
+  accent-color: var(--habit-accent);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  accent-color: var(--habit-accent);
+  width: 1rem;
+  height: 1rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-top: 0.25rem;
+}
+
+
+/* --------------------------------------------------------------------------
+   Buttons
+   -------------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 1.1rem;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--habit-accent);
+  color: #ffffff;
+}
+
+.btn-primary:hover { background: #1d4ed8; }
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover { background: #e5e7eb; }
+
+.btn-danger {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.btn-danger:hover { background: #b91c1c; }
+
+
+/* --------------------------------------------------------------------------
+   Icon picker / preview
+   -------------------------------------------------------------------------- */
+
+.icon-select {
+  max-width: 16rem;
+}
+
+.icon-preview {
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.icon-preview svg {
+  width: 2rem;
+  height: 2rem;
+  color: var(--habit-accent);
+}
+
+
+/* --------------------------------------------------------------------------
+   Habit list items
+   -------------------------------------------------------------------------- */
+
+.habit-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.habit-item {
+  border: 1px solid var(--habit-card-border);
+  border-radius: 8px;
+  background: var(--habit-card-bg);
+  overflow: hidden;
+}
+
+.habit-item-active {
+  border-color: var(--habit-accent);
+}
+
+.habit-item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  flex-wrap: wrap;
+}
+
+.habit-item-swatch {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.habit-item-name {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  flex: 1;
+}
+
+.habit-item-meta {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.badge-inactive {
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.habit-item details > summary {
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  background: #f9fafb;
+  border-top: 1px solid #f3f4f6;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
+  list-style: none;
+  user-select: none;
+}
+
+.habit-item details > summary::-webkit-details-marker { display: none; }
+
+.habit-item details > summary::before {
+  content: '▸ ';
+  font-size: 0.75rem;
+}
+
+.habit-item details[open] > summary::before {
+  content: '▾ ';
+}
+
+.habit-item details[open] .habit-form {
+  padding: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.habit-delete-zone {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #fee2e2;
+  background: #fff5f5;
+}
+
+.habit-list-empty {
+  color: #6b7280;
+  font-size: 0.875rem;
+  padding: 1rem;
+  border: 1px dashed var(--habit-card-border);
+  border-radius: 8px;
+  text-align: center;
+}
+
+
+/* --------------------------------------------------------------------------
+   Grid position preview (drag-to-reorder)
+   -------------------------------------------------------------------------- */
+
+.grid-helper-hint {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+
+.habit-grid-preview {
+  display: grid;
+  grid-template-columns: repeat(5, 4rem);
+  grid-template-rows:    repeat(5, 4rem);
+  gap: 4px;
+  margin-bottom: 0.75rem;
+  width: fit-content;
+}
+
+.grid-preview-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  text-align: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid #e5e7eb;
+  user-select: none;
+}
+
+.grid-preview-cell.occupied {
+  background: #eff6ff;
+  border-color: var(--habit-accent);
+  cursor: grab;
+  color: #1e3a8a;
+}
+
+.grid-preview-cell.occupied:active {
+  cursor: grabbing;
+  opacity: 0.7;
+}
+
+.grid-preview-cell.empty {
+  background: #f9fafb;
+  color: #d1d5db;
+}
+
+.grid-preview-cell.drag-over {
+  background: #dbeafe;
+  border-color: var(--habit-accent);
+  border-style: dashed;
+}
+
+.grid-pos-num {
+  font-size: 0.6rem;
+  color: #9ca3af;
+}
+
+.grid-habit-name {
+  font-size: 0.65rem;
+  font-weight: 600;
+  word-break: break-all;
+  line-height: 1.2;
+}
+
+
+/* --------------------------------------------------------------------------
+   Responsive tweaks
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 400px) {
+  :root {
+    --habit-cell-size: 1.75rem;
+  }
+
+  .habit-grid-preview {
+    grid-template-columns: repeat(5, 3rem);
+    grid-template-rows:    repeat(5, 3rem);
+  }
+}

@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Chores - jttbh{% endblock %}
+
+{% set area = 'chore' %}
+
+{% block content %}
+<main class="chore">
+  <header class="chore-header">
+    <h1>Chores</h1>
+    <time datetime="{{ today.isoformat() }}">{{ day_name }}, {{ today.strftime('%B %-d') }}</time>
+  </header>
+
+  {% if not household %}
+  <section class="chore-no-household">
+    <p class="empty-state">You are not a member of any household. Household management coming soon.</p>
+  </section>
+  {% else %}
+
+  <section class="chore-household">
+    <p class="household-name">Household: <strong>{{ household.name }}</strong></p>
+  </section>
+
+  <section class="chore-today">
+    <h2>Today's Chores <span class="count">({{ todays_chores | length }})</span></h2>
+    {% if todays_chores %}
+    <ul class="chore-list">
+      {% for chore in todays_chores %}
+      <li class="chore-item">
+        <strong class="chore-name">{{ chore.name }}</strong>
+        {% if chore.description %}
+        <span class="chore-description"> &mdash; {{ chore.description }}</span>
+        {% endif %}
+        <span class="chore-list-name">{{ chore.list_name }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty-state">No chores scheduled for today.</p>
+    {% endif %}
+  </section>
+
+  {% if all_chores %}
+  <section class="chore-all">
+    <details>
+      <summary>All Household Chores</summary>
+      <ul class="chore-list">
+        {% for chore in all_chores %}
+        <li class="chore-item">
+          <strong class="chore-name">{{ chore.name }}</strong>
+          {% if chore.description %}
+          <span class="chore-description"> &mdash; {{ chore.description }}</span>
+          {% endif %}
+          <span class="chore-list-name">{{ chore.list_name }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+  </section>
+  {% endif %}
+
+  {% endif %}
+</main>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}Todo – jttbh{% endblock %}
+
+{% set area = 'todo' %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/todo.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h1>Todo</h1>
+
+  <nav class="date-nav" aria-label="Date navigation">
+    <a class="date-nav__prev"
+       href="{{ url_for('todo.index_date', username=username, date_str=(current_date - timedelta(days=1)).isoformat()) }}"
+       aria-label="Previous day">&#8592;</a>
+
+    {#
+      The date input is wired in todo.js to navigate directly to the
+      dated URL (/<username>/todo/index/<date>). The form/action below
+      serves as a no-JS fallback: submitting navigates to the jump route
+      which reads ?date_str= and redirects to the canonical URL.
+    #}
+    <form class="date-nav__picker" method="get"
+          action="{{ url_for('todo.index_jump', username=username) }}"
+          id="date-picker-form">
+      <label for="date-picker" class="sr-only">Jump to date</label>
+      <input type="date" id="date-picker" name="date_str"
+             value="{{ current_date.isoformat() }}"
+             aria-label="Select date">
+      <noscript><button type="submit" class="sr-only">Go</button></noscript>
+    </form>
+
+    <a class="date-nav__next"
+       href="{{ url_for('todo.index_date', username=username, date_str=(current_date + timedelta(days=1)).isoformat()) }}"
+       aria-label="Next day">&#8594;</a>
+  </nav>
+
+  <a class="todo-search-link" href="{{ url_for('todo.search', username=username) }}">Search</a>
+</header>
+
+{# =====================================================================
+   Weekly view — 5 day columns
+   ===================================================================== #}
+<section class="todo-weekly" aria-label="Weekly view">
+  {% for day in daily_lists %}
+  <article class="todo-day{% if day.is_current %} todo-day--current{% endif %}{% if day.is_today %} todo-day--today{% endif %}"
+           data-date="{{ day.date_str }}">
+    <header class="todo-day__header">
+      <h2 class="todo-day__heading">
+        <a href="{{ url_for('todo.index_date', username=username, date_str=day.date_str) }}">
+          <time datetime="{{ day.date_str }}">
+            {{- day.date.strftime('%a') -}}<br>
+            <span class="todo-day__date-num">{{ day.date.strftime('%-d') }}</span>
+          </time>
+        </a>
+      </h2>
+    </header>
+
+    <todo-list data-date="{{ day.date_str }}" data-type="daily" role="list">
+      {% for item in day.todos %}
+      {% include '_todo_item.html' %}
+      {% endfor %}
+
+      {# Blank input slots — minimum DAILY_BLANK_SLOTS, grow as needed #}
+      {% for i in range(day.blank_slots) %}
+      <todo-item class="todo-item--blank" role="listitem">
+        <form class="todo-new" method="post"
+              action="{{ url_for('todo.create', username=username) }}">
+          <input type="hidden" name="list_type" value="daily">
+          <input type="hidden" name="due" value="{{ day.date_str }}">
+          <input type="text" name="title" placeholder="Add item…"
+                 autocomplete="off" aria-label="New todo for {{ day.date_str }}">
+        </form>
+      </todo-item>
+      {% endfor %}
+    </todo-list>
+  </article>
+  {% endfor %}
+</section>
+
+{# =====================================================================
+   Custom / Planning lists — bottom section
+   ===================================================================== #}
+<section class="todo-custom" aria-label="Custom and planning lists">
+
+  {# Planning group #}
+  <section class="todo-list-group" aria-labelledby="planning-heading">
+    <h2 id="planning-heading" class="todo-list-group__heading">Planning</h2>
+    <div class="todo-list-group__lists">
+      {% for plist in planning_lists %}
+      <article class="todo-list-card" aria-labelledby="planning-{{ plist.name }}-heading">
+        <header class="todo-list-card__header">
+          <h3 id="planning-{{ plist.name }}-heading">{{ plist.display_name }}</h3>
+        </header>
+
+        <todo-list data-type="planning" data-name="{{ plist.name }}" role="list">
+          {% for item in plist.todos %}
+          {% set list_type = 'planning' %}
+          {% set list_name = plist.name %}
+          {% include '_todo_item.html' %}
+          {% endfor %}
+
+          {% for i in range(plist.blank_slots) %}
+          <todo-item class="todo-item--blank" role="listitem">
+            <form class="todo-new" method="post"
+                  action="{{ url_for('todo.create', username=username) }}">
+              <input type="hidden" name="list_type" value="planning">
+              <input type="hidden" name="list_name" value="{{ plist.name }}">
+              <input type="text" name="title" placeholder="Add item…"
+                     autocomplete="off" aria-label="New {{ plist.display_name }} item">
+            </form>
+          </todo-item>
+          {% endfor %}
+        </todo-list>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# My Lists group (only shown when custom lists are configured) #}
+  {% if custom_lists %}
+  <section class="todo-list-group" aria-labelledby="mylists-heading">
+    <h2 id="mylists-heading" class="todo-list-group__heading">My Lists</h2>
+    <div class="todo-list-group__lists">
+      {% for clist in custom_lists %}
+      <article class="todo-list-card" aria-labelledby="custom-{{ loop.index }}-heading">
+        <header class="todo-list-card__header">
+          <h3 id="custom-{{ loop.index }}-heading">{{ clist.name }}</h3>
+        </header>
+
+        <todo-list data-type="custom" data-name="{{ clist.name | urlencode }}" role="list">
+          {% for item in clist.todos %}
+          {% set list_type = 'custom' %}
+          {% set list_name = clist.name %}
+          {% include '_todo_item.html' %}
+          {% endfor %}
+
+          {% for i in range(clist.blank_slots) %}
+          <todo-item class="todo-item--blank" role="listitem">
+            <form class="todo-new" method="post"
+                  action="{{ url_for('todo.create', username=username) }}">
+              <input type="hidden" name="list_type" value="custom">
+              <input type="hidden" name="list_name" value="{{ clist.name }}">
+              <input type="text" name="title" placeholder="Add item…"
+                     autocomplete="off" aria-label="New {{ clist.name }} item">
+            </form>
+          </todo-item>
+          {% endfor %}
+        </todo-list>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+</section>
+{% endblock %}
+
+{% block js %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+<script src="{{ url_for('static', filename='js/todo.js') }}" defer></script>
+{% endblock %}

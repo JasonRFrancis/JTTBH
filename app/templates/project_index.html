@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Projects - jttbh{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/project.css') }}">
+{% endblock %}
+
+{% set area = 'project' %}
+
+{% block content %}
+<main class="project">
+  <header>
+    <h1>Projects</h1>
+  </header>
+
+  <section class="project-list">
+    {% if projects %}
+      {% for project in projects %}
+      <article class="project-item">
+        <header>
+          <h2><a href="{{ url_for('project.view', username=username, project_id=project.projectID) }}">{{ project.name }}</a></h2>
+          {% if project.next_step %}
+          <p class="next-step"><strong>Next:</strong> {{ project.next_step }}</p>
+          {% endif %}
+        </header>
+        {% if project.description %}
+        <p class="project-description">{{ project.description }}</p>
+        {% endif %}
+        <footer class="project-actions">
+          <form method="post" action="{{ url_for('project.delete', username=username, project_id=project.projectID) }}">
+            <button type="submit" class="btn-delete" onclick="return confirm('Delete this project?')">Delete</button>
+          </form>
+        </footer>
+      </article>
+      {% endfor %}
+    {% else %}
+      <p class="empty-state">No projects yet. Add your first project below.</p>
+    {% endif %}
+  </section>
+
+  <section class="project-add">
+    <h2>New Project</h2>
+    <form method="post" action="{{ url_for('project.create', username=username) }}">
+      <div class="field">
+        <label for="project-name">Name</label>
+        <input type="text" id="project-name" name="name" required autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="project-description">Description</label>
+        <textarea id="project-description" name="description" rows="3"></textarea>
+      </div>
+      <div class="field">
+        <label for="project-next-step">Next Step</label>
+        <input type="text" id="project-next-step" name="next_step" autocomplete="off">
+      </div>
+      <button type="submit">Add Project</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

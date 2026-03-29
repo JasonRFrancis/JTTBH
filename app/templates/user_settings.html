@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings - jttbh{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h1>Settings</h1>
+</header>
+
+<section class="settings-section" aria-labelledby="todo-lists-heading">
+  <h2 id="todo-lists-heading">Todo List Names</h2>
+  <p>Customise the display names for your four personal todo lists.</p>
+
+  <form method="post"
+        action="{{ url_for('user.save_setting', username=username) }}"
+        class="settings-form">
+    {% for n in range(1, 5) %}
+    {% set key = 'todo_list' ~ n ~ '_name' %}
+    <div class="form-field">
+      <label for="field-{{ key }}">List {{ n }} name</label>
+      <input type="text"
+             id="field-{{ key }}"
+             name="value"
+             value="{{ prefs.get(key, '') }}"
+             maxlength="50"
+             placeholder="List {{ n }}">
+      <input type="hidden" name="key" value="{{ key }}">
+    </div>
+    {% if not loop.last %}
+    <hr class="form-divider">
+    {% endif %}
+    {% endfor %}
+    <button type="submit" class="btn btn--primary">Save List Names</button>
+  </form>
+
+  <p class="form-note">
+    <strong>Note:</strong> Each "Save" button saves only the field shown in that form section.
+    To rename multiple lists, save each one individually or submit the form once with all four names.
+  </p>
+</section>
+
+<hr>
+
+<section class="settings-section" aria-labelledby="todo-lists-multi-heading">
+  <h2 id="todo-lists-multi-heading">Update All List Names</h2>
+  <p>Save all four list names in one submission. Each name is saved as a separate preference.</p>
+  <form method="post"
+        action="{{ url_for('user.save_setting', username=username) }}"
+        class="settings-form"
+        id="all-lists-form">
+    {% for n in range(1, 5) %}
+    {% set key = 'todo_list' ~ n ~ '_name' %}
+    <div class="form-field">
+      <label for="multi-field-{{ key }}">List {{ n }} name</label>
+      <input type="text"
+             id="multi-field-{{ key }}"
+             name="value_{{ n }}"
+             value="{{ prefs.get(key, '') }}"
+             maxlength="50"
+             placeholder="List {{ n }}">
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn--primary">Save All</button>
+  </form>
+</section>
+
+<hr>
+
+<section class="settings-section" aria-labelledby="vacations-heading">
+  <h2 id="vacations-heading">Vacation Periods</h2>
+  <p>Mark date ranges as vacation so scheduled habits and todos are suppressed.</p>
+
+  {% if vacations %}
+  <table class="data-table">
+    <caption class="sr-only">Saved vacation periods</caption>
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Start</th>
+        <th scope="col">End</th>
+        <th scope="col">Description</th>
+        <th scope="col"><span class="sr-only">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for vac in vacations %}
+      <tr>
+        <td>{{ vac.name }}</td>
+        <td><time datetime="{{ vac.start }}">{{ vac.start }}</time></td>
+        <td><time datetime="{{ vac.end }}">{{ vac.end }}</time></td>
+        <td>{{ vac.description or '—' }}</td>
+        <td>
+          <form method="post"
+                action="{{ url_for('vacation.delete', username=username, vacation_id=vac.vacationID) }}"
+                style="display:inline">
+            <button type="submit" class="btn btn--danger btn--small"
+                    onclick="return confirm('Delete vacation &quot;{{ vac.name }}&quot;?')">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty-state">No vacation periods saved.</p>
+  {% endif %}
+
+  <form method="post"
+        action="{{ url_for('vacation.create', username=username) }}"
+        class="settings-form settings-form--vacation"
+        aria-labelledby="add-vacation-heading">
+    <h3 id="add-vacation-heading">Add Vacation Period</h3>
+
+    <div class="form-field">
+      <label for="vac-name">Name <span aria-hidden="true">*</span></label>
+      <input type="text"
+             id="vac-name"
+             name="name"
+             required
+             maxlength="100"
+             placeholder="e.g. Summer break">
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label for="vac-start">Start date <span aria-hidden="true">*</span></label>
+        <input type="date"
+               id="vac-start"
+               name="start"
+               required>
+      </div>
+
+      <div class="form-field">
+        <label for="vac-end">End date <span aria-hidden="true">*</span></label>
+        <input type="date"
+               id="vac-end"
+               name="end"
+               required>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label for="vac-desc">Description</label>
+      <textarea id="vac-desc"
+                name="description"
+                rows="3"
+                maxlength="500"
+                placeholder="Optional notes"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn--primary">Add Vacation</button>
+  </form>
+</section>
+{% endblock %}
+
+{% block js %}
+<script>
+/**
+ * The "update all" form posts each list name as a separate preference.
+ * We intercept submit, POST each field individually via fetch, then reload.
+ */
+(function () {
+  const form = document.getElementById('all-lists-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const action = '{{ url_for("user.save_setting", username=username) }}';
+    const keys   = ['todo_list1_name','todo_list2_name','todo_list3_name','todo_list4_name'];
+
+    try {
+      for (let i = 0; i < keys.length; i++) {
+        const input = form.querySelector('[name="value_' + (i + 1) + '"]');
+        if (!input) continue;
+        const body  = new FormData();
+        body.append('key',   keys[i]);
+        body.append('value', input.value);
+        await fetch(action, { method: 'POST', body });
+      }
+      // Reload to show flash messages from the last redirect
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to save all list names:', err);
+    }
+  });
+}());
+</script>
+{% endblock %}

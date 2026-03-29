@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Todo Search – jttbh{% endblock %}
+
+{% set area = 'todo' %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/todo.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h1>Todo Search</h1>
+  <a href="{{ url_for('todo.index', username=username) }}">&#8592; Back to Todo</a>
+</header>
+
+{# =====================================================================
+   Search form
+   ===================================================================== #}
+<section class="todo-search" aria-label="Search">
+  <form class="todo-search__form"
+        method="get"
+        action="{{ url_for('todo.search', username=username) }}"
+        role="search">
+    <label for="search-input" class="sr-only">Search todos</label>
+    <input type="search"
+           id="search-input"
+           name="q"
+           value="{{ query | e }}"
+           placeholder="Search title and notes…"
+           autocomplete="off"
+           autofocus
+           aria-label="Search todos">
+    <button type="submit">Search</button>
+  </form>
+</section>
+
+{# =====================================================================
+   Results
+   ===================================================================== #}
+{% if query %}
+<section class="todo-search__results" aria-label="Search results" aria-live="polite">
+
+  {% if results %}
+  <p class="todo-search__count">
+    {{ results | length }} result{% if results | length != 1 %}s{% endif %}
+    for <q>{{ query | e }}</q>
+  </p>
+
+  {#
+    Group results by due date (daily items) or by list type/name.
+    We sort in Python so we display them cleanly in the template.
+  #}
+  {% set ns = namespace(last_group='') %}
+  {% for item in results %}
+    {# Compute the display group header #}
+    {% if item.list_type == 'daily' %}
+      {% set group_key = item.due.isoformat() if item.due else 'No date' %}
+      {% set group_label = item.due.strftime('%A, %-d %B %Y') if item.due else 'No date' %}
+    {% elif item.list_type == 'planning' %}
+      {% set group_key = 'planning:' ~ (item.list_name or '') %}
+      {% set group_label = {
+          'next_week':    'Planning – Next Week',
+          'this_month':   'Planning – This Month',
+          'next_month':   'Planning – Next Month',
+          'someday_soon': 'Planning – Someday Soon'
+        }.get(item.list_name, 'Planning – ' ~ (item.list_name or '')) %}
+    {% else %}
+      {% set group_key = 'custom:' ~ (item.list_name or '') %}
+      {% set group_label = 'My Lists – ' ~ (item.list_name or 'Unknown') %}
+    {% endif %}
+
+    {% if group_key != ns.last_group %}
+    {% if not loop.first %}</ol>{% endif %}
+    <h2 class="todo-search__group">{{ group_label }}</h2>
+    <ol class="todo-search__list">
+    {% set ns.last_group = group_key %}
+    {% endif %}
+
+    <li class="todo-search__item{% if item.completed %} todo-item--completed{% endif %}">
+      <span class="todo-search__status" aria-label="{{ 'Completed' if item.completed else 'Incomplete' }}">
+        {% if item.completed %}&#10003;{% else %}&nbsp;{% endif %}
+      </span>
+      <span class="todo-search__title">{{ item.title }}</span>
+      {% if item.content %}
+      <p class="todo-search__content">{{ item.content }}</p>
+      {% endif %}
+      <footer class="todo-search__meta">
+        {% if item.due %}
+        <time datetime="{{ item.due.isoformat() }}">{{ item.due.strftime('%-d %b %Y') }}</time>
+        {% endif %}
+        {% if item.list_type != 'daily' %}
+        <span class="todo-search__listtype">{{ item.list_type | capitalize }}</span>
+        {% endif %}
+        {% if item.completed %}
+        <span class="todo-search__completed">Completed
+          <time datetime="{{ item.completed.isoformat() }}">
+            {{ item.completed.strftime('%-d %b %Y') }}
+          </time>
+        </span>
+        {% endif %}
+      </footer>
+    </li>
+
+    {% if loop.last %}</ol>{% endif %}
+  {% endfor %}
+
+  {% else %}
+  <p class="todo-search__empty">No results found for <q>{{ query | e }}</q>.</p>
+  {% endif %}
+
+</section>
+{% endif %}
+{% endblock %}
+
+{% block js %}
+<script src="{{ url_for('static', filename='js/todo.js') }}" defer></script>
+{% endblock %}

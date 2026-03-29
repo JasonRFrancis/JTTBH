@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}500 Server Error - jttbh{% endblock %}
+
+{% block content %}
+<article class="error-page">
+  <header>
+    <h1>500</h1>
+    <p class="error-subtitle">Internal Server Error</p>
+  </header>
+  <section>
+    <p>Something went wrong on our end. The error has been logged.</p>
+    <p>Please try again in a moment. If the problem persists, contact the administrator.</p>
+    {% if session.get('user_id') %}
+    <p>
+      <a href="{{ url_for('dashboard.index', username=session.username) }}">Return to Dashboard</a>
+    </p>
+    {% else %}
+    <p>
+      <a href="{{ url_for('auth.login') }}">Sign in</a>
+    </p>
+    {% endif %}
+  </section>
+</article>
+{% endblock %}

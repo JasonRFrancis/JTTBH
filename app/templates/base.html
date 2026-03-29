@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}jttbh{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  {% block css %}{% endblock %}
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}" sizes="any">
+</head>
+<body>
+
+  <header>
+    <a class="site-name" href="/">jttbh</a>
+    {% if session.get('user_id') %}
+    <login>
+      <span class="login-username">{{ session.username }}</span>
+      <a href="{{ url_for('user.settings', username=session.username) }}">Settings</a>
+      <a href="{{ url_for('auth.logout') }}">Sign out</a>
+    </login>
+    {% endif %}
+  </header>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <section class="messages" aria-live="polite" aria-label="Notifications">
+      {% for category, message in messages %}
+      <p class="message message--{{ category }}" role="alert">{{ message }}</p>
+      {% endfor %}
+    </section>
+    {% endif %}
+  {% endwith %}
+
+  <main class="{{ area | default('') }}">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% if session.get('user_id') %}
+  <footer>
+    <nav aria-label="Main navigation">
+      {% if has_perm(8) %}
+      <a href="{{ url_for('dashboard.index', username=session.username) }}"{% if area == 'dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
+      {% endif %}
+      {% if has_perm(16) %}
+      <a href="{{ url_for('todo.index', username=session.username) }}"{% if area == 'todo' %} aria-current="page"{% endif %}>Todo</a>
+      {% endif %}
+      {% if has_perm(32) %}
+      <a href="{{ url_for('habit.index', username=session.username) }}"{% if area == 'habit' %} aria-current="page"{% endif %}>Habits</a>
+      {% endif %}
+      {% if has_perm(64) %}
+      <a href="{{ url_for('project.index', username=session.username) }}"{% if area == 'project' %} aria-current="page"{% endif %}>Projects</a>
+      {% endif %}
+      {% if has_perm(256) %}
+      <a href="{{ url_for('bookmark.index', username=session.username) }}"{% if area == 'bookmark' %} aria-current="page"{% endif %}>Bookmarks</a>
+      {% endif %}
+      {% if has_perm(512) %}
+      <a href="{{ url_for('fitness.index', username=session.username) }}"{% if area == 'fitness' %} aria-current="page"{% endif %}>Fitness</a>
+      {% endif %}
+      {% if has_perm(128) %}
+      <a href="{{ url_for('triage.index', username=session.username) }}"{% if area == 'triage' %} aria-current="page"{% endif %}>Triage</a>
+      {% endif %}
+      {% if has_perm(1024) %}
+      <a href="{{ url_for('chore.index', username=session.username) }}"{% if area == 'chore' %} aria-current="page"{% endif %}>Chores</a>
+      {% endif %}
+      {% if has_perm(2048) %}
+      <a href="{{ url_for('book.index', username=session.username) }}"{% if area == 'book' %} aria-current="page"{% endif %}>Books</a>
+      {% endif %}
+      {% if has_perm(4096) %}
+      <a href="{{ url_for('journal.index', username=session.username) }}"{% if area == 'journal' %} aria-current="page"{% endif %}>Journal</a>
+      {% endif %}
+      {% if has_perm(2) %}
+      <a href="{{ url_for('podcast.subscription', username=session.username) }}"{% if area == 'podcast' %} aria-current="page"{% endif %}>Podcast</a>
+      {% endif %}
+      {% if has_perm(4) %}
+      <a href="{{ url_for('appointment.index', username=session.username) }}"{% if area == 'appointment' %} aria-current="page"{% endif %}>Appointments</a>
+      {% endif %}
+    </nav>
+  </footer>
+  {% endif %}
+
+  <script>
+    /* Permission constants available to feature JS */
+    const PERM = {
+      ADMIN:       1,
+      PODCAST:     2,
+      APPOINTMENT: 4,
+      DASHBOARD:   8,
+      TODO:        16,
+      HABIT:       32,
+      PROJECT:     64,
+      TRIAGE:      128,
+      BOOKMARK:    256,
+      FITNESS:     512,
+      CHORE:       1024,
+      BOOK:        2048,
+      JOURNAL:     4096
+    };
+    {% if session.get('user_id') %}
+    const SESSION = {
+      userId:    {{ session.user_id | tojson }},
+      username:  {{ session.username | tojson }},
+      permRead:  {{ session.get('perm_read', 0) }},
+      permWrite: {{ session.get('perm_write', 0) }}
+    };
+    {% else %}
+    const SESSION = { userId: null, username: null, permRead: 0, permWrite: 0 };
+    {% endif %}
+  </script>
+  <script src="{{ url_for('static', filename='js/base.js') }}" defer></script>
+  {% block js %}{% endblock %}
+
+</body>
+</html>

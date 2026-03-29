@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Vacations - jttbh{% endblock %}
+
+{% set area = 'vacation' %}
+
+{% block content %}
+<main class="vacation">
+  <header>
+    <h1>Vacations</h1>
+    <p class="subtitle">Vacation periods pause habit streaks for affected dates.</p>
+  </header>
+
+  <section class="vacation-list">
+    {% if vacations %}
+    <ul class="vacation-items">
+      {% for v in vacations %}
+      <li class="vacation-item{% if v.start <= today and v.end >= today %} vacation-item--active{% endif %}">
+        <header class="vacation-header">
+          <strong class="vacation-name">{{ v.name }}</strong>
+          {% if v.start <= today and v.end >= today %}
+          <span class="badge-active">Active</span>
+          {% endif %}
+          <form method="post"
+                action="{{ url_for('vacation.delete', username=username, vacation_id=v.vacationID) }}"
+                style="display:inline">
+            <button type="submit" class="btn-delete-small"
+                    onclick="return confirm('Delete vacation &quot;{{ v.name }}&quot;?')">Delete</button>
+          </form>
+        </header>
+        <div class="vacation-dates">
+          <time datetime="{{ v.start.isoformat() if v.start else '' }}">{{ v.start }}</time>
+          <span>&ndash;</span>
+          <time datetime="{{ v.end.isoformat() if v.end else '' }}">{{ v.end }}</time>
+        </div>
+        {% if v.description %}
+        <p class="vacation-description">{{ v.description }}</p>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty-state">No vacation periods recorded.</p>
+    {% endif %}
+  </section>
+
+  <section class="vacation-add">
+    <h2>Add Vacation Period</h2>
+    <form method="post" action="{{ url_for('vacation.create', username=username) }}">
+      <div class="field">
+        <label for="vac-name">Name</label>
+        <input type="text" id="vac-name" name="name" required placeholder="e.g. Summer vacation">
+      </div>
+      <div class="field">
+        <label for="vac-start">Start Date</label>
+        <input type="date" id="vac-start" name="start" required value="{{ today.isoformat() }}">
+      </div>
+      <div class="field">
+        <label for="vac-end">End Date</label>
+        <input type="date" id="vac-end" name="end" required value="{{ today.isoformat() }}">
+      </div>
+      <div class="field">
+        <label for="vac-description">Description</label>
+        <textarea id="vac-description" name="description" rows="2"></textarea>
+      </div>
+      <button type="submit">Add Vacation</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,241 @@
+/* bookmark.css
+   Styles for the bookmark index and read-later pages.
+   Mobile-first; no CSS framework dependencies.
+*/
+
+/* ---------------------------------------------------------------------------
+   Page layout
+*/
+
+.bookmark-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.bookmark-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.read-later-link {
+  font-size: 0.875rem;
+  color: var(--color-link, #1a73e8);
+  text-decoration: none;
+}
+
+.read-later-link:hover {
+  text-decoration: underline;
+}
+
+/* ---------------------------------------------------------------------------
+   Add bookmark (collapsible)
+*/
+
+.bookmark-add {
+  margin-bottom: 1.5rem;
+}
+
+.bookmark-add details summary {
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: var(--color-link, #1a73e8);
+  padding: 0.5rem 0;
+}
+
+.bookmark-add form {
+  padding: 1rem;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.bookmark-add input[type="url"],
+.bookmark-add input[type="text"] {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 3px;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.field--inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.field--inline label {
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.bookmark-add button[type="submit"] {
+  align-self: flex-start;
+  padding: 0.4rem 1.25rem;
+  background: var(--color-link, #1a73e8);
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.bookmark-add button[type="submit"]:hover {
+  opacity: 0.9;
+}
+
+/* ---------------------------------------------------------------------------
+   Day groupings
+*/
+
+.bookmark-day {
+  margin-bottom: 2rem;
+}
+
+.bookmark-day h2 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary, #888);
+  margin: 0 0 0.75rem;
+  border-bottom: 1px solid var(--color-border, #eee);
+  padding-bottom: 0.35rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Bookmark items
+*/
+
+.bookmark-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.bookmark-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--color-border, #f0f0f0);
+}
+
+.bookmark-item:last-child {
+  border-bottom: none;
+}
+
+.bookmark-item--read {
+  opacity: 0.55;
+}
+
+.bookmark-item--later .bookmark-link {
+  font-style: italic;
+}
+
+.bookmark-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.bookmark-link {
+  display: block;
+  color: var(--color-link, #1a73e8);
+  text-decoration: none;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.15rem;
+}
+
+.bookmark-link:hover {
+  text-decoration: underline;
+}
+
+.bookmark-tags {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #888);
+  display: block;
+}
+
+.badge-later {
+  display: inline-block;
+  font-size: 0.7rem;
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffcc80;
+  border-radius: 3px;
+  padding: 0.1rem 0.4rem;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+
+/* ---------------------------------------------------------------------------
+   Mark-read button
+*/
+
+.bookmark-read-form {
+  flex-shrink: 0;
+}
+
+.btn-mark-read {
+  background: none;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 3px;
+  padding: 0.2rem 0.6rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary, #555);
+  line-height: 1.4;
+}
+
+.btn-mark-read:hover {
+  background: #e8f5e9;
+  border-color: #2e7d32;
+  color: #2e7d32;
+}
+
+/* ---------------------------------------------------------------------------
+   Read-later page
+*/
+
+.bookmark-read-later .bookmark-header {
+  margin-bottom: 1.5rem;
+}
+
+.bookmark-read-later .bookmark-item {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.bookmark-description {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #666);
+  margin: 0.25rem 0 0;
+}
+
+.bookmark-read-later .btn-mark-read {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+  padding: 0.35rem 1rem;
+  font-size: 0.875rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Empty state
+*/
+
+.empty-state {
+  color: var(--color-text-secondary, #888);
+  font-style: italic;
+}

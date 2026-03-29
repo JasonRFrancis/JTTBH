@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+
+{% block title %}Users - Admin - jttbh{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h1>User Management</h1>
+  <nav class="admin-nav" aria-label="Admin navigation">
+    <a href="{{ url_for('admin.users', username=username) }}" aria-current="page">Users</a>
+    <a href="{{ url_for('admin.log', username=username) }}">Access Log</a>
+  </nav>
+</header>
+
+{% set pending_users  = users | selectattr('approval_status', 'equalto', 'pending')  | list %}
+{% set approved_users = users | selectattr('approval_status', 'equalto', 'approved') | list %}
+{% set rejected_users = users | selectattr('approval_status', 'equalto', 'rejected') | list %}
+
+{% if pending_users %}
+<section class="admin-section" aria-labelledby="pending-heading">
+  <h2 id="pending-heading">Pending Approval ({{ pending_users | length }})</h2>
+  <table class="data-table">
+    <caption class="sr-only">Users awaiting approval</caption>
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Email</th>
+        <th scope="col">Username</th>
+        <th scope="col">Registered</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in pending_users %}
+      <tr>
+        <td>{{ user.name }}</td>
+        <td>{{ user.email }}</td>
+        <td><code>{{ user.username }}</code></td>
+        <td><time datetime="{{ user.created }}">{{ user.created }}</time></td>
+        <td class="actions">
+          <form method="post"
+                action="{{ url_for('admin.approve_user', username=username, user_id=user.userID) }}"
+                class="inline-form">
+            <button type="submit" class="btn btn--success btn--sm">Approve</button>
+          </form>
+          <form method="post"
+                action="{{ url_for('admin.reject_user', username=username, user_id=user.userID) }}"
+                class="inline-form"
+                onsubmit="return confirm('Reject {{ user.username }}?')">
+            <button type="submit" class="btn btn--danger btn--sm">Reject</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+{% if approved_users %}
+<section class="admin-section" aria-labelledby="approved-heading">
+  <h2 id="approved-heading">Approved Users ({{ approved_users | length }})</h2>
+  <table class="data-table">
+    <caption class="sr-only">Approved users and their permissions</caption>
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Email</th>
+        <th scope="col">Username</th>
+        <th scope="col">Read Permissions</th>
+        <th scope="col">Write Permissions</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in approved_users %}
+      <tr>
+        <td>{{ user.name }}</td>
+        <td>{{ user.email }}</td>
+        <td><code>{{ user.username }}</code></td>
+        <td>
+          <ul class="perm-list">
+            {% for bit, label in perm_labels %}
+            {% if user.perm_read and (user.perm_read | int) & bit %}
+            <li><span class="perm-badge perm-badge--on">{{ label }}</span></li>
+            {% endif %}
+            {% endfor %}
+          </ul>
+        </td>
+        <td>
+          <ul class="perm-list">
+            {% for bit, label in perm_labels %}
+            {% if user.perm_write and (user.perm_write | int) & bit %}
+            <li><span class="perm-badge perm-badge--on">{{ label }}</span></li>
+            {% endif %}
+            {% endfor %}
+          </ul>
+        </td>
+        <td>
+          <button type="button"
+                  class="btn btn--sm btn--secondary"
+                  aria-expanded="false"
+                  aria-controls="perm-form-{{ user.userID }}"
+                  onclick="togglePermForm('{{ user.userID }}')">
+            Edit Permissions
+          </button>
+          <form method="post"
+                action="{{ url_for('admin.reject_user', username=username, user_id=user.userID) }}"
+                class="inline-form"
+                onsubmit="return confirm('Revoke access for {{ user.username }}?')">
+            <button type="submit" class="btn btn--danger btn--sm">Revoke</button>
+          </form>
+        </td>
+      </tr>
+      <tr id="perm-form-{{ user.userID }}" class="perm-form-row" hidden>
+        <td colspan="6">
+          <form method="post"
+                action="{{ url_for('admin.update_permissions', username=username, user_id=user.userID) }}"
+                class="perm-form">
+            <fieldset>
+              <legend>Read permissions for {{ user.username }}</legend>
+              {% set current_read = (user.perm_read | int) if user.perm_read else 0 %}
+              {% set read_bits = namespace(value=0) %}
+              {% for bit, label in perm_labels %}
+              <label class="perm-check">
+                <input type="checkbox"
+                       name="read_bit_{{ bit }}"
+                       value="{{ bit }}"
+                       data-perm-type="read"
+                       {% if current_read & bit %}checked{% endif %}>
+                {{ label }}
+              </label>
+              {% endfor %}
+              <input type="hidden" name="perm_read" id="perm_read_{{ user.userID }}" value="{{ current_read }}">
+            </fieldset>
+            <fieldset>
+              <legend>Write permissions for {{ user.username }}</legend>
+              {% set current_write = (user.perm_write | int) if user.perm_write else 0 %}
+              {% for bit, label in perm_labels %}
+              <label class="perm-check">
+                <input type="checkbox"
+                       name="write_bit_{{ bit }}"
+                       value="{{ bit }}"
+                       data-perm-type="write"
+                       {% if current_write & bit %}checked{% endif %}>
+                {{ label }}
+              </label>
+              {% endfor %}
+              <input type="hidden" name="perm_write" id="perm_write_{{ user.userID }}" value="{{ current_write }}">
+            </fieldset>
+            <button type="submit" class="btn btn--primary">Save Permissions</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+{% if rejected_users %}
+<section class="admin-section" aria-labelledby="rejected-heading">
+  <h2 id="rejected-heading">Rejected ({{ rejected_users | length }})</h2>
+  <table class="data-table">
+    <caption class="sr-only">Rejected user registrations</caption>
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Email</th>
+        <th scope="col">Username</th>
+        <th scope="col">Registered</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in rejected_users %}
+      <tr>
+        <td>{{ user.name }}</td>
+        <td>{{ user.email }}</td>
+        <td><code>{{ user.username }}</code></td>
+        <td><time datetime="{{ user.created }}">{{ user.created }}</time></td>
+        <td>
+          <form method="post"
+                action="{{ url_for('admin.approve_user', username=username, user_id=user.userID) }}"
+                class="inline-form">
+            <button type="submit" class="btn btn--success btn--sm">Approve</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+{% if not users %}
+<p>No users found.</p>
+{% endif %}
+{% endblock %}
+
+{% block js %}
+<script>
+/**
+ * Toggle permission edit form row visibility.
+ * @param {string} userId
+ */
+function togglePermForm(userId) {
+  const row = document.getElementById('perm-form-' + userId);
+  if (!row) return;
+  const isHidden = row.hidden;
+  row.hidden = !isHidden;
+
+  // Update aria-expanded on the trigger button
+  const btn = row.previousElementSibling.querySelector('[aria-controls="perm-form-' + userId + '"]');
+  if (btn) btn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+}
+
+/**
+ * When checkboxes change, recompute the hidden perm integer fields.
+ */
+document.addEventListener('change', function (e) {
+  const cb = e.target;
+  if (!cb.matches('input[type="checkbox"][data-perm-type]')) return;
+
+  const form      = cb.closest('form');
+  const permType  = cb.dataset.permType;  // 'read' or 'write'
+  const userId    = form.closest('tr').id.replace('perm-form-', '');
+  const hiddenId  = permType + '_' + userId;  // wait – see note below
+
+  // Collect all checked bits of this type within the form
+  let total = 0;
+  form.querySelectorAll('input[type="checkbox"][data-perm-type="' + permType + '"]:checked')
+      .forEach(function (box) { total += parseInt(box.value, 10); });
+
+  const hidden = form.querySelector('input[name="perm_' + permType + '"]');
+  if (hidden) hidden.value = total;
+});
+</script>
+{% endblock %}

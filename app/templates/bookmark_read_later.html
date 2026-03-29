@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Read Later - Bookmarks - jttbh{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/bookmark.css') }}">
+{% endblock %}
+
+{% set area = 'bookmark' %}
+
+{% block content %}
+<main class="bookmark bookmark-read-later">
+  <header class="bookmark-header">
+    <h1>Read Later</h1>
+    <a href="{{ url_for('bookmark.index', username=username) }}">&larr; All Bookmarks</a>
+  </header>
+
+  {% if bookmarks %}
+  <ul class="bookmark-list">
+    {% for bookmark in bookmarks %}
+    <li class="bookmark-item">
+      <div class="bookmark-main">
+        <a href="{{ bookmark.url }}" target="_blank" rel="noopener noreferrer" class="bookmark-link">
+          {{ bookmark.title or bookmark.url }}
+        </a>
+        {% if bookmark.tags %}
+        <span class="bookmark-tags">{{ bookmark.tags }}</span>
+        {% endif %}
+      </div>
+      {% if bookmark.description %}
+      <p class="bookmark-description">{{ bookmark.description }}</p>
+      {% endif %}
+      <form method="post" action="{{ url_for('bookmark.mark_read', username=username, bookmark_id=bookmark.bookmarkID) }}" class="bookmark-read-form">
+        <button type="submit" class="btn-mark-read">Mark as Read</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty-state">Read Later list is empty.</p>
+  {% endif %}
+</main>
+{% endblock %}

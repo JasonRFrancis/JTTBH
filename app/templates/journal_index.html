@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Journal - jttbh{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/journal.css') }}">
+{% endblock %}
+
+{% set area = 'journal' %}
+
+{% block content %}
+<main class="journal">
+  <header class="journal-header">
+    <h1>Journal</h1>
+    <time datetime="{{ entry_date }}">{{ entry_date }}</time>
+    <nav class="journal-nav">
+      {% set prev_date = (entry_date_obj - timedelta(days=1)).isoformat() %}
+      {% set next_date = (entry_date_obj + timedelta(days=1)).isoformat() %}
+      <a href="{{ url_for('journal.index_date', username=username, date_str=prev_date) }}">&larr; Previous</a>
+      {% if entry_date != today %}
+      <a href="{{ url_for('journal.index_date', username=username, date_str=today) }}">Today</a>
+      {% endif %}
+      {% if entry_date < today %}
+      <a href="{{ url_for('journal.index_date', username=username, date_str=next_date) }}">Next &rarr;</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  <!-- Daily Questions -->
+  {% if questions %}
+  <section class="journal-questions">
+    <h2>Daily Questions</h2>
+    {% for question in questions %}
+    <article class="journal-question">
+      <p class="question-text">{{ question.question }}</p>
+      <form method="post" action="{{ url_for('journal.save_answer', username=username, question_id=question.questionID) }}">
+        <textarea name="answer" rows="3" placeholder="Your answer...">{{ answers.get(question.questionID, {}).get('answer', '') }}</textarea>
+        <input type="hidden" name="answered" value="{{ entry_date }}">
+        <button type="submit">Save</button>
+      </form>
+    </article>
+    {% endfor %}
+  </section>
+  {% else %}
+  <section class="journal-questions">
+    <h2>Daily Questions</h2>
+    <p class="empty-state">No questions configured for today. <a href="{{ url_for('journal.questions', username=username) }}">Manage questions</a></p>
+  </section>
+  {% endif %}
+
+  <!-- Mood Tracker -->
+  <section class="journal-mood">
+    <h2>Mood</h2>
+    <form method="post" action="{{ url_for('journal.save_mood', username=username) }}">
+      <input type="hidden" name="answered" value="{{ entry_date }}">
+      {% if categories %}
+        {% for category in categories %}
+        <fieldset>
+          <legend>{{ category.name }}</legend>
+          {% set cat_values = mood_values_by_category.get(category.categoryID, []) %}
+          {% if cat_values %}
+            {% for value in cat_values %}
+            <label class="mood-option">
+              <input type="radio" name="mood_{{ category.categoryID }}" value="{{ value.value }}"
+                {% if current_moods.get(category.categoryID) == value.value %}checked{% endif %}>
+              <span class="mood-label" {% if value.color %}style="color: {{ value.color }}"{% endif %}>
+                {% if value.icon %}{{ value.icon }} {% endif %}{{ value.name }}
+              </span>
+            </label>
+            {% endfor %}
+          {% else %}
+            <p class="empty-state">No values defined for this category. <a href="{{ url_for('journal.mood_settings', username=username) }}">Add values</a></p>
+          {% endif %}
+        </fieldset>
+        {% endfor %}
+      {% else %}
+        <!-- Default: single overall mood when no categories configured -->
+        <fieldset>
+          <legend>Overall Mood</legend>
+          <label class="mood-option">
+            <input type="radio" name="mood_default" value="1"
+              {% if current_moods.get('default') == 1 %}checked{% endif %}>
+            Happy
+          </label>
+          <label class="mood-option">
+            <input type="radio" name="mood_default" value="0"
+              {% if current_moods.get('default') == 0 %}checked{% endif %}>
+            Sad
+          </label>
+          <p class="mood-hint"><a href="{{ url_for('journal.mood_settings', username=username) }}">Configure mood categories</a></p>
+        </fieldset>
+      {% endif %}
+      <button type="submit">Record Mood</button>
+    </form>
+  </section>
+
+  <footer class="journal-footer">
+    <a href="{{ url_for('journal.questions', username=username) }}">Manage Questions</a>
+    <a href="{{ url_for('journal.mood_settings', username=username) }}">Mood Settings</a>
+  </footer>
+</main>
+{% endblock %}

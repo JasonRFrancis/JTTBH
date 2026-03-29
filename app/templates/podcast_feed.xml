@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+     xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>{{ feed.name | e }}</title>
+    {% if feed.description %}
+    <description>{{ feed.description | e }}</description>
+    {% else %}
+    <description>{{ feed.name | e }}</description>
+    {% endif %}
+    <link>{{ feed_url | e }}</link>
+    <language>en-us</language>
+    {% if feed.artwork %}
+    <image>
+      <url>{{ feed.artwork | e }}</url>
+      <title>{{ feed.name | e }}</title>
+      <link>{{ feed_url | e }}</link>
+    </image>
+    <itunes:image href="{{ feed.artwork | e }}" />
+    {% endif %}
+    {% for episode in episodes %}
+    <item>
+      <title>{{ episode.title | e }}</title>
+      {% if episode.author %}
+      <itunes:author>{{ episode.author | e }}</itunes:author>
+      {% endif %}
+      {% if episode.description %}
+      <description>{{ episode.description | e }}</description>
+      <content:encoded><![CDATA[{{ episode.description }}]]></content:encoded>
+      {% endif %}
+      <enclosure url="{{ episode.file_url | e }}"
+                 {% if episode.file_size %}length="{{ episode.file_size }}"{% else %}length="0"{% endif %}
+                 type="{{ episode.file_type or 'audio/mpeg' }}" />
+      <guid isPermaLink="false">{{ episode.episodeID }}</guid>
+      <pubDate>{{ episode.created.strftime('%a, %d %b %Y %H:%M:%S +0000') if episode.created else '' }}</pubDate>
+      {% if episode.duration %}
+      <itunes:duration>{{ episode.duration }}</itunes:duration>
+      {% endif %}
+      {% if episode.episode %}
+      <itunes:episode>{{ episode.episode }}</itunes:episode>
+      {% endif %}
+      {% if episode.season %}
+      <itunes:season>{{ episode.season }}</itunes:season>
+      {% endif %}
+      {% if episode.artwork %}
+      <itunes:image href="{{ episode.artwork | e }}" />
+      {% endif %}
+    </item>
+    {% endfor %}
+  </channel>
+</rss>

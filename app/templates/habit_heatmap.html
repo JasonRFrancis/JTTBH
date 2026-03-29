@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Habit Heat Map{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/habit.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="habit-heatmap">
+
+  <header class="habit-header">
+    <h1>Habit Heat Map</h1>
+    <nav class="habit-nav" aria-label="Habit navigation">
+      <a href="{{ url_for('habit.index', username=username) }}">Calendar View</a>
+      <a href="{{ url_for('habit.settings', username=username) }}">Manage Habits</a>
+    </nav>
+  </header>
+
+  <!-- Heatmap grid -->
+  <section class="heatmap" aria-label="Habit completion heatmap">
+
+    <div class="heatmap-legend" aria-label="Heat level legend">
+      <span class="legend-label">Less</span>
+      <span class="heatmap-day heat-0" aria-label="No completions" title="0%"></span>
+      <span class="heatmap-day heat-1" aria-label="1-25% completions" title="1-25%"></span>
+      <span class="heatmap-day heat-2" aria-label="26-50% completions" title="26-50%"></span>
+      <span class="heatmap-day heat-3" aria-label="51-75% completions" title="51-75%"></span>
+      <span class="heatmap-day heat-4" aria-label="76-100% completions" title="76-100%"></span>
+      <span class="legend-label">More</span>
+    </div>
+
+    <!-- Day-of-week labels -->
+    <div class="heatmap-dow-labels" aria-hidden="true">
+      <span>Sun</span>
+      <span>Mon</span>
+      <span>Tue</span>
+      <span>Wed</span>
+      <span>Thu</span>
+      <span>Fri</span>
+      <span>Sat</span>
+    </div>
+
+    <div class="heatmap-grid" role="grid" aria-label="Daily habit completion grid">
+      {% for week in heatmap_weeks %}
+      <div class="heatmap-week" role="row">
+        {% for day in week %}
+        {% if day is none %}
+          <span class="heatmap-day heat-empty" role="gridcell" aria-hidden="true"></span>
+        {% else %}
+          <a
+            href="{{ url_for('habit.index', username=username, date_str=day.date) }}"
+            class="heatmap-day heat-{{ day.level }}"
+            role="gridcell"
+            title="{{ day.date }}: {{ day.completed }}/{{ day.total }} ({{ '%.0f' | format(day.pct * 100) }}%)"
+            aria-label="{{ day.date }}: {{ day.completed }} of {{ day.total }} habits completed">
+          </a>
+        {% endif %}
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+
+  </section>
+
+  <!-- Streaks section -->
+  <section class="streaks" aria-label="Current habit streaks">
+    <h2>Current Streaks</h2>
+    {% set active_streaks = habits_with_streaks | selectattr('streak', 'gt', 0) | list %}
+    {% if active_streaks %}
+    <ul class="streaks-list">
+      {% for habit in active_streaks | sort(attribute='streak', reverse=True) %}
+      <li class="streak-item">
+        <span class="streak-name">{{ habit.name }}</span>
+        <span class="streak-count">
+          {{ habit.streak }} day{{ 's' if habit.streak != 1 }}
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="streaks-empty">No active streaks yet. Keep going!</p>
+    {% endif %}
+  </section>
+
+  <!-- Summary stats -->
+  <section class="heatmap-stats" aria-label="Summary statistics">
+    <h2>This Year</h2>
+    {% set total_applicable = heatmap_data | sum(attribute='total') %}
+    {% set total_completed  = heatmap_data | sum(attribute='completed') %}
+    <dl class="stats-grid">
+      <div class="stat">
+        <dt>Total Completions</dt>
+        <dd>{{ total_completed }}</dd>
+      </div>
+      <div class="stat">
+        <dt>Opportunities</dt>
+        <dd>{{ total_applicable }}</dd>
+      </div>
+      <div class="stat">
+        <dt>Overall Rate</dt>
+        <dd>
+          {% if total_applicable > 0 %}
+            {{ '%.0f' | format((total_completed / total_applicable) * 100) }}%
+          {% else %}
+            N/A
+          {% endif %}
+        </dd>
+      </div>
+    </dl>
+  </section>
+
+</main>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+  const username = {{ username | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/habit.js') }}"></script>
+{% endblock %}

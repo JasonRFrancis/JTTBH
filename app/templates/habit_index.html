@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Habits{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/habit.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="habit">
+
+  <header class="habit-header">
+    <h1>Habits</h1>
+    <nav class="habit-nav" aria-label="Habit navigation">
+      <a href="{{ url_for('habit.settings', username=username) }}">Manage Habits</a>
+      <a href="{{ url_for('habit.heatmap', username=username) }}">Heat Map</a>
+    </nav>
+  </header>
+
+  <!-- Today's progress -->
+  <section class="habit-today" aria-label="Today's progress">
+    <h2>
+      Today:
+      <span class="habit-today-count">{{ today_completed }}/{{ today_total }}</span>
+      completed
+    </h2>
+    {% if today_total > 0 %}
+    <progress
+      class="habit-progress"
+      value="{{ today_completed }}"
+      max="{{ today_total }}"
+      aria-label="{{ today_completed }} of {{ today_total }} habits completed today">
+    </progress>
+    {% else %}
+    <p class="habit-no-habits">No habits scheduled for today.</p>
+    {% endif %}
+  </section>
+
+  <!-- 28-day calendar -->
+  <section class="habit-calendar" aria-label="28-day habit calendar">
+
+    {% for day in calendar_data %}
+    <article
+      class="habit-day{% if day.is_today %} today{% endif %}"
+      id="day-{{ day.date }}"
+      aria-label="{{ day.date | format_day_short }}{% if day.is_today %} (today){% endif %}">
+
+      <header class="habit-day-header">
+        <time datetime="{{ day.date }}">{{ day.date | format_day_short }}</time>
+      </header>
+
+      <habit-grid data-date="{{ day.date }}" class="habit-grid">
+        {% for cell in day.grid %}
+
+        {% if cell.habitID %}
+          {# Determine CSS classes for this cell #}
+          {% set cell_classes = ['habit-cell'] %}
+          {% if cell.completed == 1 %}{% set cell_classes = cell_classes + ['completed'] %}{% endif %}
+          {% if not cell.applies %}{% set cell_classes = cell_classes + ['inactive'] %}{% endif %}
+
+          <button
+            class="{{ cell_classes | join(' ') }}"
+            data-habit-id="{{ cell.habitID }}"
+            data-date="{{ day.date }}"
+            data-position="{{ cell.position }}"
+            {% if not cell.applies %}disabled aria-disabled="true"{% endif %}
+            {% if cell.color %}style="--habit-color: {{ cell.color }};"{% endif %}
+            aria-label="{{ cell.name }}: {{ 'completed' if cell.completed == 1 else 'not completed' }}"
+            aria-pressed="{{ 'true' if cell.completed == 1 else 'false' }}"
+            title="{{ cell.name }}{% if cell.streak is defined and cell.streak > 0 %} ({{ cell.streak }}-day streak){% endif %}">
+            {% if cell.icon_svg %}
+              {{ cell.icon_svg | safe }}
+            {% else %}
+              <span class="habit-initial" aria-hidden="true">{{ cell.name[0] | upper }}</span>
+            {% endif %}
+          </button>
+
+        {% else %}
+          <span
+            class="habit-cell empty"
+            data-position="{{ cell.position }}"
+            aria-hidden="true">
+          </span>
+        {% endif %}
+
+        {% endfor %}
+      </habit-grid>
+
+    </article>
+    {% endfor %}
+
+  </section>
+
+</main>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+  const username = {{ username | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/habit.js') }}"></script>
+{% endblock %}

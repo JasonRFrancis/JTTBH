@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Habits{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/habit.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="habit-settings">
+
+  <header class="habit-header">
+    <h1>Manage Habits</h1>
+    <nav class="habit-nav" aria-label="Habit navigation">
+      <a href="{{ url_for('habit.index', username=username) }}">Back to Habits</a>
+      <a href="{{ url_for('habit.heatmap', username=username) }}">Heat Map</a>
+    </nav>
+  </header>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages" aria-live="polite">
+      {% for category, message in messages %}
+      <p class="flash flash-{{ category }}">{{ message }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Add new habit -->
+  <section class="habit-add" aria-label="Add new habit">
+    <h2>Add Habit</h2>
+    <form
+      method="post"
+      action="{{ url_for('habit.create', username=username) }}"
+      class="habit-form"
+      novalidate>
+
+      <div class="form-row">
+        <label for="new-name">Name <span aria-hidden="true">*</span></label>
+        <input
+          type="text"
+          id="new-name"
+          name="name"
+          maxlength="100"
+          required
+          autocomplete="off"
+          placeholder="e.g. Morning run">
+      </div>
+
+      <div class="form-row">
+        <label for="new-description">Description</label>
+        <textarea
+          id="new-description"
+          name="description"
+          rows="2"
+          placeholder="Optional notes about this habit"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label for="new-action">Action URL</label>
+        <input
+          type="url"
+          id="new-action"
+          name="action"
+          placeholder="https://example.com (optional)">
+      </div>
+
+      <fieldset class="form-fieldset">
+        <legend>Days of Week</legend>
+        <div class="dayweek-checkboxes">
+          <label class="dayweek-label">
+            <input type="checkbox" name="dayweek" value="1"> Sun
+          </label>
+          <label class="dayweek-label">
+            <input type="checkbox" name="dayweek" value="2" checked> Mon
+          </label>
+          <label class="dayweek-label">
+            <input type="checkbox" name="dayweek" value="4" checked> Tue
+          </label>
+          <label class="dayweek-label">
+            <input type="checkbox" name="dayweek" value="8" checked> Wed
+          </label>
+          <label class="dayweek-label">
+            <input type="checkbox" name="dayweek" value="16" checked> Thu
+          </label>
+          <label class="dayweek-label">
+            <input type="checkbox" name="dayweek" value="32" checked> Fri
+          </label>
+          <label class="dayweek-label">
+            <input type="checkbox" name="dayweek" value="64"> Sat
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="form-row form-row-inline">
+        <div>
+          <label for="new-position">Grid Position (0–24)</label>
+          <input
+            type="number"
+            id="new-position"
+            name="position"
+            min="0"
+            max="24"
+            value="0">
+          <small>Row × 5 + Column (0 = top-left, 24 = bottom-right)</small>
+        </div>
+
+        <div>
+          <label for="new-color">Color</label>
+          <input
+            type="color"
+            id="new-color"
+            name="color"
+            value="#2563eb">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label for="new-icon">Icon</label>
+        <select id="new-icon" name="icon" class="icon-select">
+          <option value="">— None —</option>
+          {% for icon in icons %}
+          <option value="{{ icon.name }}">{{ icon.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Icon preview -->
+      <div id="new-icon-preview" class="icon-preview" aria-live="polite"></div>
+
+      <div class="form-row">
+        <label class="checkbox-label">
+          <input type="checkbox" name="vacation_mode" value="1" checked>
+          Pause during vacation
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Add Habit</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Grid position visualiser -->
+  <section class="grid-helper" aria-label="Grid position helper">
+    <h2>Grid Layout</h2>
+    <p class="grid-helper-hint">Position = row &times; 5 + column. Drag habits to rearrange.</p>
+    <div class="habit-grid-preview" id="grid-preview" data-username="{{ username }}">
+      {% for pos in range(25) %}
+      {% set ns = namespace(found=false) %}
+      {% for habit in habits %}
+        {% if habit.position == pos and not ns.found %}
+          {% set ns.found = true %}
+          <div
+            class="grid-preview-cell occupied"
+            data-habit-id="{{ habit.habitID }}"
+            data-position="{{ pos }}"
+            draggable="true"
+            title="{{ habit.name }} (pos {{ pos }})"
+            {% if habit.color %}style="background-color: {{ habit.color }};"{% endif %}>
+            <span class="grid-pos-num">{{ pos }}</span>
+            <span class="grid-habit-name">{{ habit.name[:8] }}{% if habit.name|length > 8 %}…{% endif %}</span>
+          </div>
+        {% endif %}
+      {% endfor %}
+      {% if not ns.found %}
+        <div
+          class="grid-preview-cell empty"
+          data-position="{{ pos }}"
+          title="Position {{ pos }}">
+          <span class="grid-pos-num">{{ pos }}</span>
+        </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    <button type="button" id="save-positions" class="btn btn-secondary" style="display:none;">
+      Save Positions
+    </button>
+  </section>
+
+  <!-- Existing habits -->
+  <section class="habit-list" aria-label="Current habits">
+    <h2>Current Habits ({{ habits | length }})</h2>
+
+    {% if habits %}
+    <div class="habit-items">
+      {% for habit in habits %}
+      <article
+        class="habit-item{% if edit_habit and edit_habit.habitID == habit.habitID %} habit-item-active{% endif %}"
+        id="habit-{{ habit.habitID }}">
+
+        <header class="habit-item-header">
+          {% if habit.color %}
+          <span class="habit-item-swatch" style="background-color: {{ habit.color }};" aria-hidden="true"></span>
+          {% endif %}
+          <h3 class="habit-item-name">{{ habit.name }}</h3>
+          <div class="habit-item-meta">
+            <span>Position {{ habit.position }}</span>
+            <span>{{ habit.dayweek | dayweek_label }}</span>
+            {% if not habit.active %}<span class="badge-inactive">Inactive</span>{% endif %}
+          </div>
+        </header>
+
+        <details {% if edit_habit and edit_habit.habitID == habit.habitID %}open{% endif %}>
+          <summary>Edit this habit</summary>
+
+          <form
+            method="post"
+            action="{{ url_for('habit.update', username=username, habit_id=habit.habitID) }}"
+            class="habit-form"
+            novalidate>
+
+            <div class="form-row">
+              <label for="name-{{ habit.habitID }}">Name <span aria-hidden="true">*</span></label>
+              <input
+                type="text"
+                id="name-{{ habit.habitID }}"
+                name="name"
+                maxlength="100"
+                required
+                value="{{ habit.name }}">
+            </div>
+
+            <div class="form-row">
+              <label for="desc-{{ habit.habitID }}">Description</label>
+              <textarea
+                id="desc-{{ habit.habitID }}"
+                name="description"
+                rows="2">{{ habit.description or '' }}</textarea>
+            </div>
+
+            <div class="form-row">
+              <label for="action-{{ habit.habitID }}">Action URL</label>
+              <input
+                type="url"
+                id="action-{{ habit.habitID }}"
+                name="action"
+                value="{{ habit.action or '' }}">
+            </div>
+
+            <fieldset class="form-fieldset">
+              <legend>Days of Week</legend>
+              <div class="dayweek-checkboxes">
+                {% set dayweek_bits = [
+                  (1,  'Sun'),
+                  (2,  'Mon'),
+                  (4,  'Tue'),
+                  (8,  'Wed'),
+                  (16, 'Thu'),
+                  (32, 'Fri'),
+                  (64, 'Sat'),
+                ] %}
+                {% for bit, label in dayweek_bits %}
+                <label class="dayweek-label">
+                  <input
+                    type="checkbox"
+                    name="dayweek"
+                    value="{{ bit }}"
+                    {% if habit.dayweek and (habit.dayweek | int) & bit %}checked{% endif %}>
+                  {{ label }}
+                </label>
+                {% endfor %}
+              </div>
+            </fieldset>
+
+            <div class="form-row form-row-inline">
+              <div>
+                <label for="pos-{{ habit.habitID }}">Grid Position (0–24)</label>
+                <input
+                  type="number"
+                  id="pos-{{ habit.habitID }}"
+                  name="position"
+                  min="0"
+                  max="24"
+                  value="{{ habit.position or 0 }}">
+              </div>
+
+              <div>
+                <label for="color-{{ habit.habitID }}">Color</label>
+                <input
+                  type="color"
+                  id="color-{{ habit.habitID }}"
+                  name="color"
+                  value="{{ habit.color or '#2563eb' }}">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label for="icon-{{ habit.habitID }}">Icon</label>
+              <select
+                id="icon-{{ habit.habitID }}"
+                name="icon"
+                class="icon-select"
+                data-preview="icon-preview-{{ habit.habitID }}">
+                <option value="">— None —</option>
+                {% for icon in icons %}
+                <option
+                  value="{{ icon.name }}"
+                  {% if habit.icon == icon.name %}selected{% endif %}>
+                  {{ icon.name }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div id="icon-preview-{{ habit.habitID }}" class="icon-preview" aria-live="polite"></div>
+
+            <div class="form-row form-row-inline">
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="vacation_mode"
+                  value="1"
+                  {% if habit.vacation_mode %}checked{% endif %}>
+                Pause during vacation
+              </label>
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="active"
+                  value="1"
+                  {% if habit.active %}checked{% endif %}>
+                Active
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+
+          </form>
+
+          <!-- Delete form (separate so it doesn't interfere with the update form) -->
+          <div class="habit-delete-zone">
+            <form
+              method="post"
+              action="{{ url_for('habit.delete', username=username, habit_id=habit.habitID) }}"
+              onsubmit="return confirm('Delete habit &quot;{{ habit.name | replace('&quot;', '') }}&quot;? This cannot be undone.');">
+              <button type="submit" class="btn btn-danger">Delete Habit</button>
+            </form>
+          </div>
+
+        </details>
+      </article>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <p class="habit-list-empty">No habits yet. Add one above to get started.</p>
+    {% endif %}
+
+  </section>
+
+</main>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+  const username = {{ username | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/habit.js') }}"></script>
+{% endblock %}

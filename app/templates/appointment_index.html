@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Appointments - jttbh{% endblock %}
+
+{% set area = 'appointment' %}
+
+{% block content %}
+<main class="appointment">
+  <header>
+    <h1>Appointments</h1>
+    <p class="subtitle">Manage your public booking pages.</p>
+  </header>
+
+  <section class="appointment-list">
+    <h2>Your Appointment Types</h2>
+    {% if appointments %}
+    <ul class="appointment-items">
+      {% for appt in appointments %}
+      <li class="appointment-item{% if not appt.active %} appointment-item--inactive{% endif %}">
+        <header class="appointment-header">
+          <strong class="appointment-name">{{ appt.name }}</strong>
+          {% if appt.type %}
+          <span class="appointment-type">{{ appt.type }}</span>
+          {% endif %}
+          {% if not appt.active %}
+          <span class="badge-inactive">Inactive</span>
+          {% endif %}
+        </header>
+        {% if appt.description %}
+        <p class="appointment-description">{{ appt.description }}</p>
+        {% endif %}
+        {% if appt.location %}
+        <p class="appointment-location">{{ appt.location }}</p>
+        {% endif %}
+        <div class="appointment-link">
+          <span>Public URL: </span>
+          <code>/book/{{ appt.url }}</code>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty-state">No appointment types configured. Full scheduling implementation coming soon.</p>
+    {% endif %}
+  </section>
+
+  <section class="appointment-coming-soon">
+    <p><em>Full appointment scheduling (time blocks, invitations, email confirmations) is coming soon.</em></p>
+  </section>
+</main>
+{% endblock %}

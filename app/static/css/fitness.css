@@ -1,0 +1,218 @@
+/* fitness.css
+   Styles for fitness index and workout log pages.
+   Mobile-first; no CSS framework dependencies.
+*/
+
+/* ---------------------------------------------------------------------------
+   Page layout
+*/
+
+.fitness-header {
+  margin-bottom: 1.5rem;
+}
+
+.fitness-header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+}
+
+.fitness-header time {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary, #555);
+  margin-bottom: 0.75rem;
+}
+
+.fitness-nav {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.fitness-nav a {
+  color: var(--color-link, #1a73e8);
+  text-decoration: none;
+}
+
+.fitness-nav a:hover,
+.fitness-nav a[aria-current="page"] {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+/* ---------------------------------------------------------------------------
+   Program info
+*/
+
+.fitness-program {
+  background: var(--color-surface-alt, #fafafa);
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.fitness-program h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.fitness-program p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #555);
+}
+
+/* ---------------------------------------------------------------------------
+   Exercise list
+*/
+
+.fitness-today h2 {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+  border-bottom: 1px solid var(--color-border, #ddd);
+  padding-bottom: 0.5rem;
+}
+
+.exercise-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem;
+}
+
+.exercise-item {
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  background: var(--color-surface, #fff);
+}
+
+.exercise-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.exercise-name {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.exercise-muscle,
+.exercise-equipment {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #888);
+  background: var(--color-surface-alt, #f5f5f5);
+  border-radius: 3px;
+  padding: 0.1rem 0.4rem;
+}
+
+.exercise-prescription {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #444);
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.exercise-notes {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--color-text-secondary, #888);
+  margin: 0.4rem 0 0;
+}
+
+.exercise-video {
+  display: inline-block;
+  font-size: 0.8rem;
+  color: var(--color-link, #1a73e8);
+  text-decoration: none;
+  margin-top: 0.4rem;
+}
+
+.exercise-video:hover {
+  text-decoration: underline;
+}
+
+/* ---------------------------------------------------------------------------
+   Today's log summary
+*/
+
+.fitness-log-summary {
+  border-top: 1px solid var(--color-border, #ddd);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.fitness-log-summary h2 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Log history
+*/
+
+.log-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.log-item {
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  background: var(--color-surface, #fff);
+}
+
+.log-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.log-date {
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.log-program,
+.log-location {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #888);
+  background: var(--color-surface-alt, #f5f5f5);
+  border-radius: 3px;
+  padding: 0.1rem 0.4rem;
+}
+
+.log-times {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #666);
+}
+
+.log-notes {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #555);
+  margin: 0.35rem 0 0;
+  font-style: italic;
+}
+
+/* ---------------------------------------------------------------------------
+   No-program / no-content state
+*/
+
+.fitness-no-program {
+  padding: 1rem 0;
+}
+
+.empty-state {
+  color: var(--color-text-secondary, #888);
+  font-style: italic;
+}

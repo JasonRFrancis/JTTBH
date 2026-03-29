@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Journal Questions - jttbh{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/journal.css') }}">
+{% endblock %}
+
+{% set area = 'journal' %}
+
+{% block content %}
+<main class="journal journal-questions-admin">
+  <header>
+    <h1>Daily Questions</h1>
+    <a href="{{ url_for('journal.index', username=username) }}">&larr; Back to Journal</a>
+  </header>
+
+  <section class="questions-list">
+    {% if all_questions %}
+    <table class="questions-table">
+      <thead>
+        <tr>
+          <th>Day of Year</th>
+          <th>Question</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for q in all_questions %}
+        <tr>
+          <td class="question-day">{{ q.day }}</td>
+          <td class="question-text">{{ q.question }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No questions configured yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="question-add">
+    <h2>Add Question</h2>
+    <form method="post" action="{{ url_for('journal.question_create', username=username) }}">
+      <div class="field">
+        <label for="q-day">Day of Year (1-366)</label>
+        <input type="number" id="q-day" name="day" min="1" max="366" required inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="q-text">Question</label>
+        <textarea id="q-text" name="question" rows="3" required placeholder="What is one thing you're grateful for today?"></textarea>
+      </div>
+      <button type="submit">Add Question</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

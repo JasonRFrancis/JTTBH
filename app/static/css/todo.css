@@ -1,0 +1,684 @@
+/*
+ * todo.css
+ * ========
+ * Styles for the Todo feature.
+ *
+ * Structure
+ * ---------
+ * 1. Custom properties (design tokens)
+ * 2. Screen-reader utilities
+ * 3. Page header & date navigation
+ * 4. Weekly view (5-column grid)
+ *    4a. Day column & heading
+ *    4b. Todo item
+ *    4c. Blank input slot
+ * 5. Custom / Planning list sections
+ * 6. Detail panel & move form
+ * 7. Search page
+ * 8. Responsive breakpoints
+ */
+
+/* =========================================================================
+   1. Design tokens
+   ========================================================================= */
+
+:root {
+  --todo-col-min:       14rem;
+  --todo-col-gap:       0.75rem;
+  --todo-item-height:   2.25rem;
+  --todo-radius:        4px;
+
+  --color-current-day:  #f0f7ff;
+  --color-today-accent: #0066cc;
+  --color-completed:    #888;
+  --color-completed-bg: #f8f8f8;
+  --color-border:       #ddd;
+  --color-hover:        #f5f5f5;
+  --color-input-focus:  #0066cc;
+  --color-delete:       #cc3300;
+  --color-success:      #2a7a2a;
+
+  --transition-fast:    120ms ease;
+}
+
+
+/* =========================================================================
+   2. Screen-reader utilities
+   ========================================================================= */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+
+/* =========================================================================
+   3. Page header & date navigation
+   ========================================================================= */
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.date-nav__prev,
+.date-nav__next {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--todo-radius);
+  text-decoration: none;
+  color: inherit;
+  font-size: 1.1rem;
+  transition: background var(--transition-fast);
+}
+
+.date-nav__prev:hover,
+.date-nav__next:hover {
+  background: var(--color-hover);
+}
+
+.date-nav__picker input[type="date"] {
+  border: 1px solid var(--color-border);
+  border-radius: var(--todo-radius);
+  padding: 0.3rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.todo-search-link {
+  margin-left: auto;
+  font-size: 0.9rem;
+}
+
+
+/* =========================================================================
+   4. Weekly view
+   ========================================================================= */
+
+.todo-weekly {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--todo-col-min), 1fr));
+  gap: var(--todo-col-gap);
+  padding: var(--todo-col-gap);
+  align-items: start;
+}
+
+/* --- 4a. Day column ---------------------------------------------------- */
+
+.todo-day {
+  border: 1px solid var(--color-border);
+  border-radius: var(--todo-radius);
+  overflow: hidden;
+}
+
+.todo-day--current {
+  background: var(--color-current-day);
+  border-color: var(--color-today-accent);
+}
+
+.todo-day__header {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--color-border);
+  background: inherit;
+}
+
+.todo-day--current .todo-day__header {
+  background: var(--color-today-accent);
+  color: #fff;
+}
+
+.todo-day--current .todo-day__header a {
+  color: #fff;
+}
+
+.todo-day__heading {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.todo-day__heading a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.todo-day__date-num {
+  font-size: 1.2rem;
+  font-weight: 700;
+  display: block;
+  text-align: center;
+}
+
+todo-list {
+  display: block;
+  padding: 0.25rem 0;
+}
+
+
+/* --- 4b. Todo item ----------------------------------------------------- */
+
+todo-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  padding: 0.1rem 0.5rem;
+  min-height: var(--todo-item-height);
+  border-bottom: 1px solid transparent;
+  position: relative;
+}
+
+todo-item:last-of-type {
+  border-bottom: none;
+}
+
+todo-item[draggable="true"] {
+  cursor: grab;
+}
+
+todo-item.todo-item--dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+todo-item.todo-item--drag-over {
+  border-top: 2px solid var(--color-today-accent);
+}
+
+todo-item.todo-item--completed .todo-item__title {
+  text-decoration: line-through;
+  color: var(--color-completed);
+}
+
+todo-item.todo-item--completed {
+  background: var(--color-completed-bg);
+}
+
+/* Completion toggle button */
+.todo-item__toggle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+}
+
+.todo-item__checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 1.5px solid #aaa;
+  border-radius: 2px;
+  background: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--color-success);
+  margin-top: 0.55rem;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.todo-item__checkbox--checked {
+  border-color: var(--color-success);
+  background: #e8f5e8;
+}
+
+.todo-item__checkbox:hover {
+  border-color: var(--color-today-accent);
+}
+
+/* Title */
+.todo-item__title {
+  flex: 1;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  padding: 0.4rem 0.2rem;
+  word-break: break-word;
+  cursor: text;
+  border-radius: 2px;
+  transition: background var(--transition-fast);
+  min-width: 0;
+}
+
+.todo-item__title[contenteditable="true"] {
+  background: #fffbf0;
+  outline: 1px solid var(--color-input-focus);
+  cursor: text;
+}
+
+/* Hidden update form */
+.todo-item__update-form {
+  display: none;
+}
+
+/* Details / options toggle */
+.todo-item__details {
+  flex-shrink: 0;
+  position: relative;
+}
+
+.todo-item__details-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #aaa;
+  border-radius: 2px;
+  margin-top: 0.4rem;
+  transition: color var(--transition-fast), background var(--transition-fast);
+  list-style: none;
+}
+
+.todo-item__details-toggle:hover {
+  color: #333;
+  background: var(--color-hover);
+}
+
+/* Remove the default disclosure triangle on <details> */
+.todo-item__details > summary::-webkit-details-marker { display: none; }
+.todo-item__details > summary::marker { content: ''; }
+
+
+/* --- 4c. Blank input slot --------------------------------------------- */
+
+todo-item.todo-item--blank {
+  padding: 0.1rem 0.35rem;
+}
+
+.todo-new {
+  width: 100%;
+  display: flex;
+}
+
+.todo-new input[type="text"] {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid transparent;
+  padding: 0.4rem 0.4rem;
+  font-size: 0.88rem;
+  background: transparent;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.todo-new input[type="text"]:focus {
+  border-bottom-color: var(--color-input-focus);
+}
+
+.todo-new input[type="text"]::placeholder {
+  color: #ccc;
+}
+
+
+/* =========================================================================
+   5. Custom / Planning list sections
+   ========================================================================= */
+
+.todo-custom {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  border-top: 2px solid var(--color-border);
+  margin-top: 0.5rem;
+}
+
+.todo-list-group__heading {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.5rem;
+}
+
+.todo-list-group__lists {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--todo-col-gap);
+}
+
+.todo-list-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--todo-radius);
+  min-width: var(--todo-col-min);
+  flex: 1 1 var(--todo-col-min);
+  max-width: 26rem;
+  overflow: hidden;
+}
+
+.todo-list-card__header {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  background: #fafafa;
+}
+
+.todo-list-card__header h3 {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+
+/* =========================================================================
+   6. Detail panel
+   ========================================================================= */
+
+.todo-item__detail-panel {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 10;
+  min-width: 16rem;
+  max-width: 22rem;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--todo-radius);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.todo-item__content {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #444;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.todo-item__edit-form textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--color-border);
+  border-radius: var(--todo-radius);
+  padding: 0.4rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+.todo-item__edit-form button,
+.todo-item__move button,
+.todo-item__delete-btn {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--todo-radius);
+  background: #f5f5f5;
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: background var(--transition-fast);
+}
+
+.todo-item__edit-form button:hover,
+.todo-item__move button:hover {
+  background: var(--color-hover);
+}
+
+.todo-item__delete-btn {
+  border-color: var(--color-delete);
+  color: var(--color-delete);
+  background: #fff5f3;
+  width: 100%;
+  text-align: center;
+}
+
+.todo-item__delete-btn:hover {
+  background: var(--color-delete);
+  color: #fff;
+}
+
+/* Move sub-panel */
+.todo-item__move > summary {
+  font-size: 0.82rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0.2rem 0;
+  list-style: none;
+}
+
+.todo-item__move > summary::-webkit-details-marker { display: none; }
+.todo-item__move > summary::marker { content: ''; }
+
+.todo-item__move form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-top: 0.4rem;
+}
+
+.todo-item__move label {
+  font-size: 0.82rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.todo-item__move input,
+.todo-item__move select {
+  border: 1px solid var(--color-border);
+  border-radius: var(--todo-radius);
+  padding: 0.25rem 0.4rem;
+  font-size: 0.82rem;
+}
+
+
+/* =========================================================================
+   7. Search page
+   ========================================================================= */
+
+.todo-search {
+  padding: 1rem;
+  max-width: 50rem;
+}
+
+.todo-search__form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.todo-search__form input[type="search"] {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--todo-radius);
+  font-size: 1rem;
+}
+
+.todo-search__form input[type="search"]:focus {
+  outline: 2px solid var(--color-input-focus);
+  outline-offset: 1px;
+}
+
+.todo-search__form button {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-today-accent);
+  border-radius: var(--todo-radius);
+  background: var(--color-today-accent);
+  color: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.todo-search__results {
+  padding: 0 1rem;
+}
+
+.todo-search__count {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.todo-search__group {
+  font-size: 0.88rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.3rem;
+  margin: 1.2rem 0 0.5rem;
+}
+
+.todo-search__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.todo-search__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.todo-search__item.todo-item--completed .todo-search__title {
+  text-decoration: line-through;
+  color: var(--color-completed);
+}
+
+.todo-search__status {
+  flex-shrink: 0;
+  color: var(--color-success);
+  font-size: 0.9rem;
+  margin-top: 0.1rem;
+}
+
+.todo-search__title {
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.todo-search__content {
+  font-size: 0.82rem;
+  color: #555;
+  margin: 0.25rem 0 0;
+}
+
+.todo-search__meta {
+  font-size: 0.78rem;
+  color: #888;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.2rem;
+}
+
+.todo-search__empty {
+  color: #666;
+  font-style: italic;
+}
+
+
+/* =========================================================================
+   8. Responsive breakpoints
+   ========================================================================= */
+
+/* Mobile: single column */
+@media (max-width: 480px) {
+  :root {
+    --todo-col-min: calc(100vw - 2rem);
+  }
+
+  .todo-weekly {
+    grid-template-columns: 1fr;
+  }
+
+  .todo-day:not(.todo-day--current) {
+    display: none;
+  }
+
+  .todo-day--current {
+    display: block;
+  }
+
+  .date-nav {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .todo-item__detail-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    max-width: 100%;
+    border-radius: var(--todo-radius) var(--todo-radius) 0 0;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
+  }
+}
+
+/* Tablet: 2–3 columns */
+@media (min-width: 481px) and (max-width: 1024px) {
+  :root {
+    --todo-col-min: calc(50% - 1rem);
+  }
+
+  .todo-weekly {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Wide tablet: 3 columns */
+@media (min-width: 768px) and (max-width: 1100px) {
+  .todo-weekly {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Desktop: 5 columns */
+@media (min-width: 1101px) {
+  .todo-weekly {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+/* Very wide: constrain max width */
+@media (min-width: 1400px) {
+  .todo-weekly {
+    grid-template-columns: repeat(5, minmax(var(--todo-col-min), 18rem));
+    justify-content: start;
+  }
+}

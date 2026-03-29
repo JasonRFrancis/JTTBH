@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Triage - jttbh{% endblock %}
+
+{% set area = 'triage' %}
+
+{% block content %}
+<main class="triage">
+  <header class="triage-header">
+    <h1>Triage</h1>
+  </header>
+
+  {% if google_error %}
+  <section class="triage-error">
+    <p class="error-message">{{ google_error }}</p>
+    <p><a href="{{ url_for('auth.login') }}">Re-authenticate with Google</a> to enable Gmail and Calendar access.</p>
+  </section>
+  {% else %}
+
+  <section class="triage-emails">
+    <h2>Inbox <span class="count">({{ emails | length }})</span></h2>
+    {% if emails %}
+    <ul class="email-list">
+      {% for email in emails %}
+      <li class="email-item">
+        <strong class="email-from">{{ email.get('from', 'Unknown') }}</strong>
+        <span class="email-subject">{{ email.get('subject', '(no subject)') }}</span>
+        <time class="email-date">{{ email.get('date', '') }}</time>
+        <p class="email-snippet">{{ email.get('snippet', '') }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty-state">Inbox zero. Nothing to triage.</p>
+    {% endif %}
+  </section>
+
+  <section class="triage-calendar">
+    <h2>Upcoming Events <span class="count">({{ calendar_events | length }})</span></h2>
+    {% if calendar_events %}
+    <ul class="event-list">
+      {% for event in calendar_events %}
+      <li class="event-item">
+        <strong class="event-title">{{ event.get('summary', 'Untitled') }}</strong>
+        <time class="event-time">{{ event.get('start', {}).get('dateTime', event.get('start', {}).get('date', '')) }}</time>
+        {% if event.get('description') %}
+        <p class="event-description">{{ event.description }}</p>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty-state">No upcoming calendar events.</p>
+    {% endif %}
+  </section>
+
+  {% endif %}
+</main>
+{% endblock %}

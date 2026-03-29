@@ -1,0 +1,249 @@
+/* project.css
+   Styles for the project list and project view pages.
+   Mobile-first; no CSS framework dependencies.
+*/
+
+/* ---------------------------------------------------------------------------
+   Project index
+*/
+
+.project header h1 {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+}
+
+.project-list {
+  margin-bottom: 2rem;
+}
+
+.project-item {
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: var(--color-surface, #fff);
+}
+
+.project-item header {
+  margin-bottom: 0.5rem;
+}
+
+.project-item header h2 {
+  font-size: 1.1rem;
+  margin: 0 0 0.25rem;
+}
+
+.project-item header h2 a {
+  color: var(--color-link, #1a73e8);
+  text-decoration: none;
+}
+
+.project-item header h2 a:hover {
+  text-decoration: underline;
+}
+
+.project-item .next-step {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #555);
+  margin: 0.25rem 0 0;
+}
+
+.project-description {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary, #555);
+  margin: 0.5rem 0 0;
+}
+
+.project-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-delete {
+  background: none;
+  border: 1px solid var(--color-danger, #c62828);
+  color: var(--color-danger, #c62828);
+  padding: 0.25rem 0.75rem;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.btn-delete:hover {
+  background: var(--color-danger, #c62828);
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------------------
+   Project add form
+*/
+
+.project-add {
+  border-top: 1px solid var(--color-border, #ddd);
+  padding-top: 1.5rem;
+}
+
+.project-add h2 {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Project view
+*/
+
+.project-view .project-header {
+  margin-bottom: 1.5rem;
+}
+
+.project-view .breadcrumb {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #555);
+  margin-bottom: 0.5rem;
+}
+
+.project-view .breadcrumb a {
+  color: var(--color-link, #1a73e8);
+  text-decoration: none;
+}
+
+.project-view .breadcrumb span[aria-hidden] {
+  margin: 0 0.35rem;
+}
+
+.project-view h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+}
+
+.project-view .next-step {
+  color: var(--color-text-secondary, #555);
+  margin: 0;
+}
+
+.project-description {
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+/* ---------------------------------------------------------------------------
+   Resources
+*/
+
+.project-resources {
+  margin-bottom: 2rem;
+}
+
+.project-resources h2 {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+}
+
+.resource-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+.resource-item {
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.resource-link {
+  font-weight: bold;
+  color: var(--color-link, #1a73e8);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.resource-link:hover {
+  text-decoration: underline;
+}
+
+.resource-content {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #555);
+  margin: 0;
+}
+
+.resource-note {
+  font-size: 0.875rem;
+  font-style: italic;
+  color: var(--color-text-secondary, #555);
+  margin: 0;
+}
+
+.resource-delete-form {
+  margin-top: 0.25rem;
+}
+
+.btn-delete-small {
+  background: none;
+  border: none;
+  color: var(--color-danger, #c62828);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0;
+  text-decoration: underline;
+}
+
+/* ---------------------------------------------------------------------------
+   Danger zone
+*/
+
+.project-danger {
+  border-top: 1px solid var(--color-border, #ddd);
+  padding-top: 1rem;
+  margin-top: 2rem;
+}
+
+.project-danger details summary {
+  cursor: pointer;
+  color: var(--color-danger, #c62828);
+  font-size: 0.875rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Shared form fields
+*/
+
+.field {
+  margin-bottom: 0.75rem;
+}
+
+.field label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.field input[type="text"],
+.field textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 3px;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+/* ---------------------------------------------------------------------------
+   Empty state
+*/
+
+.empty-state {
+  color: var(--color-text-secondary, #888);
+  font-style: italic;
+}

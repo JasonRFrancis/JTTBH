@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Podcast Feeds - jttbh{% endblock %}
+
+{% set area = 'podcast' %}
+
+{% block content %}
+<header class="page-header">
+  <h1>Podcast Feeds</h1>
+  <nav class="feature-nav">
+    <a href="{{ url_for('podcast.subscription', username=username) }}" aria-current="page">Feeds</a>
+    <a href="{{ url_for('podcast.list_index', username=username) }}">Lists</a>
+  </nav>
+</header>
+
+<section aria-labelledby="feeds-heading">
+  <h2 id="feeds-heading">Your Feeds</h2>
+  {% if feeds %}
+  <ul class="podcast-items">
+    {% for feed in feeds %}
+    <li class="podcast-item">
+      {% if feed.artwork %}
+      <img src="{{ feed.artwork }}" alt="{{ feed.name }} artwork" class="podcast-artwork" width="60" height="60">
+      {% endif %}
+      <div class="podcast-info">
+        <strong class="podcast-name">{{ feed.name }}</strong>
+        {% if feed.description %}
+        <p class="podcast-description">{{ feed.description }}</p>
+        {% endif %}
+        <p class="podcast-link">
+          RSS: <a href="{{ url_for('podcast.feed_xml', username=username, feed_id=feed.feedID) }}"
+                  target="_blank" rel="noopener noreferrer">
+            {{ url_for('podcast.feed_xml', username=username, feed_id=feed.feedID, _external=True) }}
+          </a>
+        </p>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty-state">No feeds yet. Create one below.</p>
+  {% endif %}
+</section>
+
+{% if has_write_perm(2) %}
+<section aria-labelledby="add-feed-heading">
+  <h2 id="add-feed-heading">Create Feed</h2>
+  <form method="post" action="{{ url_for('podcast.subscription_create', username=username) }}">
+    <div class="field">
+      <label for="feed-name">Name <span aria-hidden="true">*</span></label>
+      <input type="text" id="feed-name" name="name" required maxlength="200"
+             placeholder="My Podcast Feed">
+    </div>
+    <div class="field">
+      <label for="feed-description">Description</label>
+      <textarea id="feed-description" name="description" rows="2" maxlength="500"></textarea>
+    </div>
+    <button type="submit" class="btn btn--primary">Create Feed</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

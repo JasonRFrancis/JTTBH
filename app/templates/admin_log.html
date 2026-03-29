@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Access Log - Admin - jttbh{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h1>Access Log</h1>
+  <nav class="admin-nav" aria-label="Admin navigation">
+    <a href="{{ url_for('admin.users', username=username) }}">Users</a>
+    <a href="{{ url_for('admin.log', username=username) }}" aria-current="page">Access Log</a>
+  </nav>
+</header>
+
+<section aria-labelledby="log-heading">
+  <h2 id="log-heading">Recent Requests <small>(last 200)</small></h2>
+
+  {% if log_rows %}
+  <table class="data-table data-table--log">
+    <caption class="sr-only">Recent HTTP request log</caption>
+    <thead>
+      <tr>
+        <th scope="col">ID</th>
+        <th scope="col">User</th>
+        <th scope="col">Method</th>
+        <th scope="col">Path</th>
+        <th scope="col">Status</th>
+        <th scope="col">IP</th>
+        <th scope="col">Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in log_rows %}
+      <tr class="log-row log-row--{{ row.status_code // 100 }}xx">
+        <td>{{ row.id }}</td>
+        <td>{{ row.username or '—' }}</td>
+        <td><code>{{ row.method }}</code></td>
+        <td class="log-path"><code>{{ row.path }}</code></td>
+        <td>
+          <span class="status-badge status-badge--{{ row.status_code // 100 }}xx">
+            {{ row.status_code }}
+          </span>
+        </td>
+        <td>{{ row.ip_address or '—' }}</td>
+        <td><time datetime="{{ row.created_at }}">{{ row.created_at }}</time></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>No log entries found.</p>
+  {% endif %}
+</section>
+{% endblock %}

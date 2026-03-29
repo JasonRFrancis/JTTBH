@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Fitness - jttbh{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/fitness.css') }}">
+{% endblock %}
+
+{% set area = 'fitness' %}
+
+{% block content %}
+<main class="fitness">
+  <header class="fitness-header">
+    <h1>Fitness</h1>
+    <time datetime="{{ today.isoformat() }}">{{ today.strftime('%A, %B %-d') }}</time>
+    <nav class="fitness-nav">
+      <a href="{{ url_for('fitness.index', username=username) }}" aria-current="page">Today</a>
+      <a href="{{ url_for('fitness.log', username=username) }}">Log</a>
+    </nav>
+  </header>
+
+  {% if not program %}
+  <section class="fitness-no-program">
+    <p>No active workout program. Set up a program to see today's exercises.</p>
+  </section>
+  {% else %}
+  <section class="fitness-program">
+    <h2>{{ program.name }}</h2>
+    {% if program.description %}
+    <p>{{ program.description }}</p>
+    {% endif %}
+  </section>
+
+  <section class="fitness-today">
+    <h2>Today's Exercises</h2>
+    {% if exercises %}
+    <ol class="exercise-list">
+      {% for exercise in exercises %}
+      <li class="exercise-item">
+        <header class="exercise-header">
+          <strong class="exercise-name">{{ exercise.exercise_name }}</strong>
+          {% if exercise.muscle_group %}
+          <span class="exercise-muscle">{{ exercise.muscle_group }}</span>
+          {% endif %}
+          {% if exercise.equipment_type %}
+          <span class="exercise-equipment">{{ exercise.equipment_type | replace('_', ' ') }}</span>
+          {% endif %}
+        </header>
+        <div class="exercise-prescription">
+          {% if exercise.recommended_sets %}
+          <span>{{ exercise.recommended_sets }} sets</span>
+          {% endif %}
+          {% if exercise.recommended_reps %}
+          <span>&times; {{ exercise.recommended_reps }} reps</span>
+          {% endif %}
+          {% if exercise.recommended_weight %}
+          <span>@ {{ exercise.recommended_weight }} lbs</span>
+          {% endif %}
+        </div>
+        {% if exercise.notes %}
+        <p class="exercise-notes">{{ exercise.notes }}</p>
+        {% endif %}
+        {% if exercise.video_url %}
+        <a href="{{ exercise.video_url }}" target="_blank" rel="noopener noreferrer" class="exercise-video">Watch video</a>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <p class="empty-state">Rest day. No exercises scheduled for {{ day_name }}.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if todays_log %}
+  <section class="fitness-log-summary">
+    <h2>Today's Workout Log</h2>
+    <p>
+      Logged
+      {% if todays_log.start_time %}from {{ todays_log.start_time.strftime('%H:%M') }}{% endif %}
+      {% if todays_log.end_time %}to {{ todays_log.end_time.strftime('%H:%M') }}{% endif %}
+      at {{ todays_log.location or 'gym' }}.
+    </p>
+    {% if todays_log.notes %}
+    <p>{{ todays_log.notes }}</p>
+    {% endif %}
+  </section>
+  {% endif %}
+</main>
+{% endblock %}

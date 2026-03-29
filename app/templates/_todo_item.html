@@ -1,0 +1,118 @@
+{#
+  Partial: _todo_item.html
+  ========================
+  Renders a single todo item for use inside any todo-list.
+
+  Expected context variables
+  --------------------------
+  item     : dict  — the todo row dict from the model
+  username : str   — URL username segment
+
+  Optional context variables (set by including template)
+  -------------------------------------------------------
+  list_type : str  — overrides item.list_type for the move form default
+  list_name : str  — overrides item.list_name for the move form default
+#}
+<todo-item
+  data-id="{{ item.todoID }}"
+  class="todo-item{% if item.completed %} todo-item--completed{% endif %}"
+  draggable="true"
+  role="listitem">
+
+  {# --- Completion toggle -------------------------------------------- #}
+  <form class="todo-item__toggle"
+        method="post"
+        action="{{ url_for('todo.toggle', username=username, todo_id=item.todoID) }}">
+    <button type="submit"
+            class="todo-item__checkbox{% if item.completed %} todo-item__checkbox--checked{% endif %}"
+            aria-label="{{ 'Mark incomplete' if item.completed else 'Mark complete' }}: {{ item.title }}"
+            aria-pressed="{{ 'true' if item.completed else 'false' }}">
+      <span aria-hidden="true">{% if item.completed %}&#10003;{% endif %}</span>
+    </button>
+  </form>
+
+  {# --- Inline edit title -------------------------------------------- #}
+  <span class="todo-item__title"
+        data-raw="{{ item.title | e }}"
+        contenteditable="false"
+        aria-label="Todo: {{ item.title }}">
+    {{- item.title -}}
+  </span>
+
+  {# Hidden update form (submitted by JS on blur/enter) #}
+  <form class="todo-item__update-form"
+        method="post"
+        action="{{ url_for('todo.update', username=username, todo_id=item.todoID) }}"
+        aria-hidden="true">
+    <input type="hidden" name="title" value="{{ item.title | e }}">
+    <input type="hidden" name="content" value="{{ item.content | e if item.content else '' }}">
+  </form>
+
+  {# --- Detail / options menu ---------------------------------------- #}
+  <details class="todo-item__details">
+    <summary class="todo-item__details-toggle" aria-label="Options for {{ item.title }}">
+      <span aria-hidden="true">&#8943;</span>
+    </summary>
+
+    <div class="todo-item__detail-panel">
+
+      {# Content (Markdown, server-rendered on initial load) #}
+      {% if item.content %}
+      <div class="todo-item__content">
+        {{ item.content }}
+      </div>
+      {% endif %}
+
+      {# Edit content form #}
+      <form class="todo-item__edit-form"
+            method="post"
+            action="{{ url_for('todo.update', username=username, todo_id=item.todoID) }}">
+        <label for="content-{{ item.todoID }}" class="sr-only">Notes</label>
+        <textarea id="content-{{ item.todoID }}"
+                  name="content"
+                  rows="3"
+                  placeholder="Add notes (Markdown supported)…">{{ item.content or '' }}</textarea>
+        <input type="hidden" name="title" value="{{ item.title | e }}">
+        <button type="submit">Save notes</button>
+      </form>
+
+      {# Move form #}
+      <details class="todo-item__move">
+        <summary>Move to…</summary>
+        <form method="post"
+              action="{{ url_for('todo.move', username=username, todo_id=item.todoID) }}">
+          <label for="move-due-{{ item.todoID }}">Date
+            <input type="date" id="move-due-{{ item.todoID }}"
+                   name="new_due"
+                   value="{{ item.due.isoformat() if item.due else '' }}">
+          </label>
+          <label for="move-listtype-{{ item.todoID }}">List type
+            <select id="move-listtype-{{ item.todoID }}" name="new_list_type">
+              <option value="daily"    {% if item.list_type == 'daily'    %}selected{% endif %}>Daily</option>
+              <option value="planning" {% if item.list_type == 'planning' %}selected{% endif %}>Planning</option>
+              <option value="custom"   {% if item.list_type == 'custom'   %}selected{% endif %}>My Lists</option>
+            </select>
+          </label>
+          <label for="move-listname-{{ item.todoID }}">List name
+            <input type="text" id="move-listname-{{ item.todoID }}"
+                   name="new_list_name"
+                   value="{{ item.list_name or '' }}"
+                   placeholder="e.g. next_week">
+          </label>
+          <button type="submit">Move</button>
+        </form>
+      </details>
+
+      {# Delete form #}
+      <form class="todo-item__delete-form"
+            method="post"
+            action="{{ url_for('todo.delete', username=username, todo_id=item.todoID) }}">
+        <button type="submit"
+                class="todo-item__delete-btn"
+                aria-label="Delete: {{ item.title }}">Delete</button>
+      </form>
+
+    </div>{# /.detail-panel #}
+  </details>
+
+</todo-item>

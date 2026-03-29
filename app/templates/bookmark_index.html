@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Bookmarks - jttbh{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/bookmark.css') }}">
+{% endblock %}
+
+{% set area = 'bookmark' %}
+
+{% block content %}
+<main class="bookmark">
+  <header class="bookmark-header">
+    <h1>Bookmarks</h1>
+    <a href="{{ url_for('bookmark.read_later', username=username) }}" class="read-later-link">Read Later</a>
+  </header>
+
+  <section class="bookmark-add">
+    <details>
+      <summary>Add Bookmark</summary>
+      <form method="post" action="{{ url_for('bookmark.create', username=username) }}">
+        <div class="field">
+          <label for="bm-url">URL</label>
+          <input type="url" id="bm-url" name="url" required placeholder="https://" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="bm-title">Title</label>
+          <input type="text" id="bm-title" name="title" placeholder="Page title" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="bm-tags">Tags</label>
+          <input type="text" id="bm-tags" name="tags" placeholder="tag1, tag2" autocomplete="off">
+        </div>
+        <div class="field field--inline">
+          <label>
+            <input type="checkbox" name="read_later" value="1"> Read Later
+          </label>
+        </div>
+        <button type="submit">Add</button>
+      </form>
+    </details>
+  </section>
+
+  {% if bookmarks_by_day %}
+    {% for day, items in bookmarks_by_day.items() %}
+    <section class="bookmark-day">
+      <h2><time datetime="{{ day }}">{{ day }}</time></h2>
+      <ul class="bookmark-list">
+        {% for bookmark in items %}
+        <li class="bookmark-item{% if bookmark.read %} bookmark-item--read{% endif %}{% if bookmark.read_later and not bookmark.read %} bookmark-item--later{% endif %}">
+          <div class="bookmark-main">
+            <a href="{{ bookmark.url }}" target="_blank" rel="noopener noreferrer" class="bookmark-link">
+              {{ bookmark.title or bookmark.url }}
+            </a>
+            {% if bookmark.tags %}
+            <span class="bookmark-tags">{{ bookmark.tags }}</span>
+            {% endif %}
+            {% if bookmark.read_later and not bookmark.read %}
+            <span class="badge-later">Read Later</span>
+            {% endif %}
+          </div>
+          {% if not bookmark.read %}
+          <form method="post" action="{{ url_for('bookmark.mark_read', username=username, bookmark_id=bookmark.bookmarkID) }}" class="bookmark-read-form">
+            <button type="submit" class="btn-mark-read" title="Mark as read">&#10003;</button>
+          </form>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endfor %}
+  {% else %}
+    <p class="empty-state">No bookmarks saved yet. Add your first bookmark above.</p>
+  {% endif %}
+</main>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Workout Log - Fitness - jttbh{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/fitness.css') }}">
+{% endblock %}
+
+{% set area = 'fitness' %}
+
+{% block content %}
+<main class="fitness fitness-log-view">
+  <header class="fitness-header">
+    <h1>Workout Log</h1>
+    <nav class="fitness-nav">
+      <a href="{{ url_for('fitness.index', username=username) }}">Today</a>
+      <a href="{{ url_for('fitness.log', username=username) }}" aria-current="page">Log</a>
+    </nav>
+  </header>
+
+  {% if logs %}
+  <section class="log-history">
+    <ul class="log-list">
+      {% for log in logs %}
+      <li class="log-item">
+        <header class="log-header">
+          <time class="log-date" datetime="{{ log.log_date.isoformat() if log.log_date else '' }}">
+            {{ log.log_date.strftime('%A, %B %-d, %Y') if log.log_date else 'Unknown date' }}
+          </time>
+          {% if log.program_name %}
+          <span class="log-program">{{ log.program_name }}</span>
+          {% endif %}
+          <span class="log-location">{{ log.location or 'gym' }}</span>
+        </header>
+        {% if log.start_time or log.end_time %}
+        <div class="log-times">
+          {% if log.start_time %}
+          <span>{{ log.start_time.strftime('%H:%M') }}</span>
+          {% endif %}
+          {% if log.end_time %}
+          <span>&ndash; {{ log.end_time.strftime('%H:%M') }}</span>
+          {% endif %}
+        </div>
+        {% endif %}
+        {% if log.notes %}
+        <p class="log-notes">{{ log.notes }}</p>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% else %}
+  <p class="empty-state">No workouts logged yet.</p>
+  {% endif %}
+</main>
+{% endblock %}

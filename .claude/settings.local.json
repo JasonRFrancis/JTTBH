@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod:*)",
+      "Bash(tree:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(ls:*)",
+      "Bash(# Check for any imports in templates that might cause issues grep -rn \"\"perm_read &\\\\|perm_write &\\\\|session\\\\.perm_read\\\\|session\\\\.perm_write\"\" /Users/jason/Documents/JTTBH/app/templates/)",
+      "Bash(/Users/jason/Documents/JTTBH/migrations/20250101_initial.sql:*)",
+      "Bash(while read f)",
+      "Bash(do echo \"  $f\")",
+      "Bash(done)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

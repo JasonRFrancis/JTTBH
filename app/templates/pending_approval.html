@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Pending Approval - jttbh{% endblock %}
+
+{% block content %}
+<article class="auth-card">
+  <header>
+    <h1>Account Pending</h1>
+  </header>
+
+  <section>
+    <p>Your account registration has been received and is awaiting administrator approval.</p>
+    <p>You will receive an email notification once your account has been reviewed. This typically takes less than 24 hours.</p>
+    <p>If you have questions, please contact the site administrator.</p>
+  </section>
+
+  <footer>
+    <a href="{{ url_for('auth.logout') }}" class="btn btn--secondary">Sign out</a>
+  </footer>
+</article>
+{% endblock %}

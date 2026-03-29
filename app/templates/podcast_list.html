@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Podcast Lists - jttbh{% endblock %}
+
+{% set area = 'podcast' %}
+
+{% block content %}
+<header class="page-header">
+  <h1>Podcast Lists</h1>
+  <nav class="feature-nav">
+    <a href="{{ url_for('podcast.subscription', username=username) }}">Feeds</a>
+    <a href="{{ url_for('podcast.list_index', username=username) }}" aria-current="page">Lists</a>
+  </nav>
+</header>
+
+<section aria-labelledby="lists-heading">
+  <h2 id="lists-heading">Your Lists</h2>
+  {% if all_lists %}
+  <ul class="podcast-items">
+    {% for lst in all_lists %}
+    <li class="podcast-item">
+      <div class="podcast-info">
+        <strong class="podcast-name">{{ lst.title }}</strong>
+        {% if lst.category %}
+        <span class="podcast-category">{{ lst.category }}</span>
+        {% endif %}
+        {% if lst.description %}
+        <p class="podcast-description">{{ lst.description }}</p>
+        {% endif %}
+        <p class="podcast-meta">Frequency: {{ lst.frequency }}</p>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty-state">No lists yet. Create one below.</p>
+  {% endif %}
+</section>
+
+{% if has_write_perm(2) %}
+<section aria-labelledby="add-list-heading">
+  <h2 id="add-list-heading">Create List</h2>
+  <form method="post" action="{{ url_for('podcast.list_create', username=username) }}">
+    <div class="field">
+      <label for="list-title">Title <span aria-hidden="true">*</span></label>
+      <input type="text" id="list-title" name="title" required maxlength="200"
+             placeholder="My Podcast List">
+    </div>
+    <div class="field">
+      <label for="list-description">Description</label>
+      <textarea id="list-description" name="description" rows="2" maxlength="500"></textarea>
+    </div>
+    <div class="field">
+      <label for="list-category">Category</label>
+      <input type="text" id="list-category" name="category" maxlength="100"
+             placeholder="e.g. News, Technology">
+    </div>
+    <div class="field">
+      <label for="list-frequency">Frequency</label>
+      <select id="list-frequency" name="frequency">
+        <option value="daily">Daily</option>
+        <option value="twoperday">Twice per day</option>
+        <option value="threeperday">Three per day</option>
+        <option value="fourperday">Four per day</option>
+        <option value="weekly">Weekly</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn--primary">Create List</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}
