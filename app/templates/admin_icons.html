@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Icons{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="admin-header">
+  <h1>Icons</h1>
+  <nav aria-label="Admin navigation">
+    <a href="{{ url_for('admin.users', username=username) }}">Users</a>
+    <a href="{{ url_for('admin.log',   username=username) }}">Log</a>
+  </nav>
+</header>
+
+<section class="admin-section" aria-labelledby="add-icon-heading">
+  <h2 id="add-icon-heading">Add Icon</h2>
+  <form method="post" action="{{ url_for('admin.icon_create', username=username) }}" class="icon-form">
+    <div class="form-row">
+      <label for="new-name">Name <span aria-hidden="true">*</span></label>
+      <input type="text" id="new-name" name="name" required maxlength="100"
+             placeholder="e.g. exercise">
+    </div>
+    <div class="form-row">
+      <label for="new-description">Description</label>
+      <textarea id="new-description" name="description" rows="2"
+                placeholder="Optional description"></textarea>
+    </div>
+    <div class="form-row">
+      <label for="new-svg">SVG Code <span aria-hidden="true">*</span></label>
+      <textarea id="new-svg" name="svg" rows="10" required
+                class="svg-input" data-preview="new-preview"
+                placeholder="Paste SVG markup here…" spellcheck="false"></textarea>
+    </div>
+    <figure class="icon-preview-box" id="new-preview" aria-label="SVG preview"></figure>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Add Icon</button>
+    </div>
+  </form>
+</section>
+
+<section class="admin-section" aria-labelledby="icons-heading">
+  <h2 id="icons-heading">Current Icons ({{ icons | length }})</h2>
+
+  {% if icons %}
+  <ul class="icon-grid" role="list">
+    {% for icon in icons %}
+    <li class="icon-card" id="icon-{{ icon.imageID }}">
+
+      <div class="icon-display" aria-label="{{ icon.name }}">
+        {{ icon.svg | safe }}
+      </div>
+      <p class="icon-card-name">{{ icon.name }}</p>
+      {% if icon.description %}
+      <p class="icon-card-desc">{{ icon.description }}</p>
+      {% endif %}
+
+      <details>
+        <summary>Edit</summary>
+
+        <form method="post"
+              action="{{ url_for('admin.icon_update', username=username, image_id=icon.imageID) }}"
+              class="icon-form">
+          <div class="form-row">
+            <label for="name-{{ icon.imageID }}">Name <span aria-hidden="true">*</span></label>
+            <input type="text" id="name-{{ icon.imageID }}" name="name"
+                   value="{{ icon.name }}" required maxlength="100">
+          </div>
+          <div class="form-row">
+            <label for="desc-{{ icon.imageID }}">Description</label>
+            <textarea id="desc-{{ icon.imageID }}" name="description"
+                      rows="2">{{ icon.description or '' }}</textarea>
+          </div>
+          <div class="form-row">
+            <label for="svg-{{ icon.imageID }}">SVG Code <span aria-hidden="true">*</span></label>
+            <textarea id="svg-{{ icon.imageID }}" name="svg" rows="10" required
+                      class="svg-input" data-preview="preview-{{ icon.imageID }}"
+                      spellcheck="false">{{ icon.svg }}</textarea>
+          </div>
+          <figure class="icon-preview-box" id="preview-{{ icon.imageID }}"
+                  aria-label="SVG preview">{{ icon.svg | safe }}</figure>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+
+        <form method="post"
+              action="{{ url_for('admin.icon_delete', username=username, image_id=icon.imageID) }}"
+              onsubmit="return confirm('Delete icon \'{{ icon.name }}\'?')">
+          <button type="submit" class="btn btn-danger">Delete Icon</button>
+        </form>
+
+      </details>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>No icons yet. Add one above.</p>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block js %}
+<script>
+document.querySelectorAll('.svg-input').forEach(function (textarea) {
+  var preview = document.getElementById(textarea.dataset.preview);
+  if (!preview) return;
+  textarea.addEventListener('input', function () {
+    preview.innerHTML = textarea.value;
+  });
+});
+</script>
+{% endblock %}

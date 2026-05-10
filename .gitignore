@@ -109,4 +109,4 @@ site/
 # Production deployment files (if needed)
 *.pid
 *.sock
-./user.sql
+user.sql

@@ -30,6 +30,8 @@ read  = 8190   (2+4+8+16+32+64+128+256+512+1024+2048+4096 – everything except 
 write = 8190
 """
 
+import uuid
+
 from flask import (
     Blueprint,
     render_template,
@@ -137,6 +139,19 @@ def _get_user_by_id(user_id: str) -> dict | None:
     )
 
 
+def _get_all_icons() -> list[dict]:
+    return db_manager.execute_query(
+        'SELECT imageID, name, description, svg FROM svg ORDER BY name'
+    )
+
+
+def _get_icon_by_id(image_id: str) -> dict | None:
+    return db_manager.execute_one(
+        'SELECT imageID, name, description, svg FROM svg WHERE imageID = %s',
+        (image_id,),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Routes – GET
 # ---------------------------------------------------------------------------
@@ -163,18 +178,9 @@ def log(username: str):
     """Render the recent access-log page."""
     rows = db_manager.execute_query(
         """
-        SELECT
-            l.id,
-            l.user_id,
-            u.username,
-            l.method,
-            l.path,
-            l.status_code,
-            l.ip_address,
-            l.created_at
-        FROM log l
-        LEFT JOIN `user` u ON u.userID = l.user_id
-        ORDER BY l.id DESC
+        SELECT id, userid, username, resource, `get`, `post`, ip, user_agent, created
+        FROM log
+        ORDER BY id DESC
         LIMIT 200
         """,
     )
@@ -315,3 +321,76 @@ def update_permissions(username: str, user_id: str):
 
     flash(f'Permissions updated for {target["username"]}.', 'success')
     return redirect(url_for('admin.users', username=username))
+
+
+# ---------------------------------------------------------------------------
+# Routes – Icons
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/icons')
+@login_required
+@permission_required_read(PERM_ADMIN)
+def icons(username: str):
+    """Render the icon management page."""
+    return render_template(
+        'admin_icons.html',
+        username=username,
+        area='admin',
+        icons=_get_all_icons(),
+    )
+
+
+@admin_bp.route('/icon/create/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_ADMIN)
+@permission_required_write(PERM_ADMIN)
+def icon_create(username: str):
+    """Insert a new SVG icon."""
+    name = request.form.get('name', '').strip()
+    svg  = request.form.get('svg',  '').strip()
+    if not name or not svg:
+        flash('Name and SVG code are required.', 'error')
+        return redirect(url_for('admin.icons', username=username))
+    description = request.form.get('description', '').strip() or None
+    db_manager.execute_insert(
+        'INSERT INTO svg (imageID, name, description, svg, created_by) VALUES (%s, %s, %s, %s, %s)',
+        (str(uuid.uuid4()), name, description, svg, session['user_id']),
+    )
+    flash(f'Icon "{name}" added.', 'success')
+    return redirect(url_for('admin.icons', username=username))
+
+
+@admin_bp.route('/icon/update/post/<image_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_ADMIN)
+@permission_required_write(PERM_ADMIN)
+def icon_update(username: str, image_id: str):
+    """Update an existing SVG icon."""
+    if _get_icon_by_id(image_id) is None:
+        abort(404)
+    name = request.form.get('name', '').strip()
+    svg  = request.form.get('svg',  '').strip()
+    if not name or not svg:
+        flash('Name and SVG code are required.', 'error')
+        return redirect(url_for('admin.icons', username=username))
+    description = request.form.get('description', '').strip() or None
+    db_manager.execute_update(
+        'UPDATE svg SET name=%s, description=%s, svg=%s WHERE imageID=%s',
+        (name, description, svg, image_id),
+    )
+    flash(f'Icon "{name}" updated.', 'success')
+    return redirect(url_for('admin.icons', username=username))
+
+
+@admin_bp.route('/icon/delete/post/<image_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_ADMIN)
+@permission_required_write(PERM_ADMIN)
+def icon_delete(username: str, image_id: str):
+    """Hard-delete an SVG icon."""
+    icon = _get_icon_by_id(image_id)
+    if icon is None:
+        abort(404)
+    db_manager.execute_update('DELETE FROM svg WHERE imageID=%s', (image_id,))
+    flash(f'Icon "{icon["name"]}" deleted.', 'success')
+    return redirect(url_for('admin.icons', username=username))
