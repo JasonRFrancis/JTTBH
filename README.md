@@ -160,7 +160,7 @@ Before deploying to production:
 1. **Create OAuth credentials**
    - Go to: https://console.cloud.google.com/apis/credentials
    - Create OAuth client ID (Web application)
-   - Authorized redirect URIs: `https://jttbh.org/auth/oauth2callback`
+   - Authorized redirect URIs: `https://jttbh.com/auth/oauth2callback`
 
 2. **Required scopes**
    - `openid` - User authentication
@@ -173,7 +173,7 @@ Before deploying to production:
    ```bash
    GOOGLE_CLIENT_ID=your_client_id
    GOOGLE_CLIENT_SECRET=your_client_secret
-   GOOGLE_REDIRECT_URI=https://jttbh.org/auth/oauth2callback
+   GOOGLE_REDIRECT_URI=https://jttbh.com/auth/oauth2callback
    ```
 
 **Note**: Gmail/Calendar scopes require Google OAuth verification which can take 2-4 weeks. Basic authentication works without these scopes.

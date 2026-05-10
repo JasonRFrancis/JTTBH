@@ -258,7 +258,7 @@
                     type="checkbox"
                     name="dayweek"
                     value="{{ bit }}"
-                    {% if habit.dayweek and (habit.dayweek | int) & bit %}checked{% endif %}>
+                    {% if bitand(habit.dayweek, bit) %}checked{% endif %}>
                   {{ label }}
                 </label>
                 {% endfor %}

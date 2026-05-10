@@ -10,7 +10,8 @@
       "Bash(/Users/jason/Documents/JTTBH/migrations/20250101_initial.sql:*)",
       "Bash(while read f)",
       "Bash(do echo \"  $f\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(grep *)"
     ],
     "deny": [],
     "ask": []

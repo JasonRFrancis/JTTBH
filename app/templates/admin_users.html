@@ -80,7 +80,7 @@
         <td>
           <ul class="perm-list">
             {% for bit, label in perm_labels %}
-            {% if user.perm_read and (user.perm_read | int) & bit %}
+            {% if bitand(user.perm_read, bit) %}
             <li><span class="perm-badge perm-badge--on">{{ label }}</span></li>
             {% endif %}
             {% endfor %}
@@ -89,7 +89,7 @@
         <td>
           <ul class="perm-list">
             {% for bit, label in perm_labels %}
-            {% if user.perm_write and (user.perm_write | int) & bit %}
+            {% if bitand(user.perm_write, bit) %}
             <li><span class="perm-badge perm-badge--on">{{ label }}</span></li>
             {% endif %}
             {% endfor %}
@@ -126,7 +126,7 @@
                        name="read_bit_{{ bit }}"
                        value="{{ bit }}"
                        data-perm-type="read"
-                       {% if current_read & bit %}checked{% endif %}>
+                       {% if bitand(current_read, bit) %}checked{% endif %}>
                 {{ label }}
               </label>
               {% endfor %}
@@ -141,7 +141,7 @@
                        name="write_bit_{{ bit }}"
                        value="{{ bit }}"
                        data-perm-type="write"
-                       {% if current_write & bit %}checked{% endif %}>
+                       {% if bitand(current_write, bit) %}checked{% endif %}>
                 {{ label }}
               </label>
               {% endfor %}

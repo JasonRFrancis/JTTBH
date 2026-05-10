@@ -59,7 +59,7 @@ echo "-- Database setup"
 echo "   Run the following as root to create the database and user:"
 echo "   mysql -u root -p << 'EOF'"
 echo "   CREATE DATABASE IF NOT EXISTS jttbh CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-echo "   CREATE USER IF NOT EXISTS 'jttbh'@'localhost' IDENTIFIED BY 'CHANGE_ME';"
+echo "   CREATE USER IF NOT EXISTS 'jttbh'@'localhost' IDENTIFIED BY 'CHANGE_ME_STRONG_PASSWORD';"
 echo "   GRANT ALL PRIVILEGES ON jttbh.* TO 'jttbh'@'localhost';"
 echo "   FLUSH PRIVILEGES;"
 echo "   EOF"
@@ -97,14 +97,24 @@ sudo systemctl enable "$SERVICE_NAME"
 echo "   Systemd unit created and enabled."
 
 # -------------------------------------------------------------------
-# 5. Nginx configuration
+# 5. File permissions (nginx runs as www-data and needs to traverse
+#    the home directory to serve static files)
+# -------------------------------------------------------------------
+echo ""
+echo "-- Setting file permissions..."
+chmod 755 /home/jttbh
+chmod -R 755 "$DEPLOY_DIR/app/static"
+echo "   Permissions set."
+
+# -------------------------------------------------------------------
+# 6. Nginx configuration
 # -------------------------------------------------------------------
 echo ""
 echo "-- Creating Nginx configuration at $NGINX_CONF..."
 sudo tee "$NGINX_CONF" > /dev/null << 'EOF'
 server {
     listen 80;
-    server_name jttbh.org www.jttbh.org;
+    server_name jttbh.com www.jttbh.com;
 
     location / {
         return 301 https://$host$request_uri;
@@ -113,11 +123,11 @@ server {
 
 server {
     listen 443 ssl http2;
-    server_name jttbh.org www.jttbh.org;
+    server_name jttbh.com www.jttbh.com;
 
     # SSL certificates (replace with your Let's Encrypt paths)
-    ssl_certificate /etc/letsencrypt/live/jttbh.org/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/jttbh.org/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/jttbh.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/jttbh.com/privkey.pem;
 
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers off;
@@ -139,14 +149,14 @@ server {
 EOF
 
 sudo ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/jttbh
+sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && echo "   Nginx config is valid."
 
 echo ""
 echo "=== Setup complete ==="
 echo ""
 echo "Next steps:"
-echo "  1. Configure .env with real credentials"
-echo "  2. Import database schema"
-echo "  3. Set up SSL: certbot --nginx -d jttbh.org -d www.jttbh.org"
-echo "  4. Start services: sudo systemctl start $SERVICE_NAME && sudo systemctl reload nginx"
-echo "  5. Verify: sudo systemctl status $SERVICE_NAME"
+echo "  1. Import database schema: mysql -u jttbh -p jttbh < $DEPLOY_DIR/schema.sql"
+echo "  2. Set up SSL: sudo certbot --nginx -d jttbh.com -d www.jttbh.com"
+echo "  3. Start services: sudo systemctl start $SERVICE_NAME && sudo systemctl reload nginx"
+echo "  4. Verify: sudo systemctl status $SERVICE_NAME"

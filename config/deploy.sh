@@ -60,4 +60,4 @@ fi
 
 echo ""
 echo "=== Deploy complete ==="
-echo "App URL: https://jttbh.org"
+echo "App URL: https://jttbh.com"

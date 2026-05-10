@@ -74,6 +74,7 @@ def create_app(config_object=None):
         timedelta=timedelta,
         has_perm=_has_perm,
         has_write_perm=_has_write_perm,
+        bitand=lambda a, b: int(a or 0) & b,
     )
 
     # ------------------------------------------------------------------

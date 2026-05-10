@@ -130,7 +130,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
       ```
 3. Project Overview
   1. `Just Trying to be Helpful` or `jttbh` is a site developed in Python Flask using a mysql database. Its primary purpose is to bring together the various streams of information and track the goals, habits, tasks, and projects that a person might want to manage in their life
-  2. Hosting: This project is developed and tested locally and is deployed to jttbh.org, hosted on a `Linode` Ubuntu server
+  2. Hosting: This project is developed and tested locally and is deployed to jttbh.com, hosted on a `Linode` Ubuntu server
   3. Source Control: The source is hosted at `https://github.com/JasonRFrancis/JTTBH` and is deployed into production from that repository. The `main` branch is always production-ready
   4. Overall Organization: The project uses the following structure:
     ```
@@ -498,7 +498,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
       1. Create OAuth 2.0 credentials:
         1. Go to: https://console.cloud.google.com/apis/credentials
         2. Create OAuth client ID (Web application)
-        3. Authorized redirect URIs: `https://jttbh.org/auth/oauth2callback`
+        3. Authorized redirect URIs: `https://jttbh.com/auth/oauth2callback`
       2. Required scopes:
         1. `openid` (user authentication)
         2. `email` (user email)
@@ -508,7 +508,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
       3. Environment variables:
         1. `GOOGLE_CLIENT_ID=<your_client_id>`
         2. `GOOGLE_CLIENT_SECRET=<your_client_secret>`
-        3. `GOOGLE_REDIRECT_URI=https://jttbh.org/auth/oauth2callback`
+        3. `GOOGLE_REDIRECT_URI=https://jttbh.com/auth/oauth2callback`
       4. Implementation: See `routes/auth.py` lines 15-45 for production OAuth flow
   5. Database Architecture
     1. Primary Keys and Indexing
