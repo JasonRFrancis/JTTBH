@@ -842,6 +842,66 @@ main.habit-settings {
 
 
 /* --------------------------------------------------------------------------
+   Position picker (settings forms)
+   -------------------------------------------------------------------------- */
+
+.pos-picker {
+  display: grid;
+  grid-template-columns: repeat(5, 2.25rem);
+  gap: 3px;
+  margin-top: 0.4rem;
+}
+
+.pos-picker-cell {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.pos-picker-cell:hover:not(:disabled):not(.selected) {
+  background: #eff6ff;
+  border-color: var(--habit-accent);
+  color: var(--habit-accent);
+}
+
+.pos-picker-cell.selected {
+  background: var(--habit-accent);
+  color: #fff;
+  border-color: var(--habit-accent);
+}
+
+.pos-picker-cell.occupied:not(.selected):not(.conflicted) {
+  background: #fefce8;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.pos-picker-cell.conflicted {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #ef4444;
+  cursor: not-allowed;
+}
+
+.pos-picker-cell:focus-visible {
+  outline: 2px solid var(--habit-accent);
+  outline-offset: 2px;
+}
+
+
+/* --------------------------------------------------------------------------
    Responsive tweaks
    -------------------------------------------------------------------------- */
 

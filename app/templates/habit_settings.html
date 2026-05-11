@@ -94,27 +94,26 @@
         </div>
       </fieldset>
 
-      <div class="form-row form-row-inline">
-        <div>
-          <label for="new-position">Grid Position (0–24)</label>
-          <input
-            type="number"
-            id="new-position"
-            name="position"
-            min="0"
-            max="24"
-            value="0">
-          <small>Row × 5 + Column (0 = top-left, 24 = bottom-right)</small>
+      <div class="form-row">
+        <label>Grid Position</label>
+        <div class="pos-picker" data-habit-id="">
+          {% for pos in range(25) %}
+          <button type="button"
+                  class="pos-picker-cell{% if pos == 0 %} selected{% endif %}"
+                  data-position="{{ pos }}"
+                  title="Position {{ pos }}">{{ pos }}</button>
+          {% endfor %}
         </div>
+        <input type="hidden" name="position" value="0">
+      </div>
 
-        <div>
-          <label for="new-color">Color</label>
-          <input
-            type="color"
-            id="new-color"
-            name="color"
-            value="#2563eb">
-        </div>
+      <div class="form-row">
+        <label for="new-color">Color</label>
+        <input
+          type="color"
+          id="new-color"
+          name="color"
+          value="#2563eb">
       </div>
 
       <div class="form-row">
@@ -265,26 +264,26 @@
               </div>
             </fieldset>
 
-            <div class="form-row form-row-inline">
-              <div>
-                <label for="pos-{{ habit.habitID }}">Grid Position (0–24)</label>
-                <input
-                  type="number"
-                  id="pos-{{ habit.habitID }}"
-                  name="position"
-                  min="0"
-                  max="24"
-                  value="{{ habit.position or 0 }}">
+            <div class="form-row">
+              <label>Grid Position</label>
+              <div class="pos-picker" data-habit-id="{{ habit.habitID }}">
+                {% for pos in range(25) %}
+                <button type="button"
+                        class="pos-picker-cell{% if (habit.position or 0) == pos %} selected{% endif %}"
+                        data-position="{{ pos }}"
+                        title="Position {{ pos }}">{{ pos }}</button>
+                {% endfor %}
               </div>
+              <input type="hidden" name="position" value="{{ habit.position or 0 }}">
+            </div>
 
-              <div>
-                <label for="color-{{ habit.habitID }}">Color</label>
-                <input
-                  type="color"
-                  id="color-{{ habit.habitID }}"
-                  name="color"
-                  value="{{ habit.color or '#2563eb' }}">
-              </div>
+            <div class="form-row">
+              <label for="color-{{ habit.habitID }}">Color</label>
+              <input
+                type="color"
+                id="color-{{ habit.habitID }}"
+                name="color"
+                value="{{ habit.color or '#2563eb' }}">
             </div>
 
             <div class="form-row">

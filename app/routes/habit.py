@@ -147,6 +147,55 @@ def index(username: str, date_str: str):
     )
 
 
+@habit_bp.route('/positions/json')
+@login_required
+@permission_required_read(PERM_HABIT)
+def positions_json(username: str):
+    """
+    Return all occupied grid positions for the current user.
+
+    Query params
+    ------------
+    dayweek : int
+        Bitmask of the days being planned for the habit being edited/created.
+        A position is marked conflicted when its occupant's dayweek overlaps
+        with this value (bitwise AND != 0).
+    exclude : str (optional)
+        habitID to omit from results (the habit currently being edited, so it
+        does not conflict with its own current position).
+
+    Response
+    --------
+    {"positions": [{"position": 3, "habitID": "...", "name": "...",
+                    "dayweek": 62, "conflicted": true}, ...]}
+    """
+    user_id = session['user_id']
+
+    try:
+        dayweek = int(request.args.get('dayweek', 0))
+    except (ValueError, TypeError):
+        dayweek = 0
+
+    exclude_id = request.args.get('exclude', '').strip()
+
+    habits = HabitModel.get_habits(user_id)
+
+    positions = []
+    for habit in habits:
+        if habit['habitID'] == exclude_id:
+            continue
+        habit_dayweek = int(habit['dayweek'] or 0)
+        positions.append({
+            'position':  habit['position'],
+            'habitID':   habit['habitID'],
+            'name':      habit['name'],
+            'dayweek':   habit_dayweek,
+            'conflicted': bool(dayweek & habit_dayweek),
+        })
+
+    return jsonify({'positions': positions})
+
+
 @habit_bp.route('/heatmap')
 @login_required
 @permission_required_read(PERM_HABIT)

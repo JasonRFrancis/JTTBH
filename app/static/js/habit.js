@@ -402,6 +402,96 @@
 
 
   /* -------------------------------------------------------------------------
+     4. Grid position picker (settings page)
+     ------------------------------------------------------------------------- */
+
+  /**
+   * Wire up all .pos-picker grids on the page.
+   * Each picker sits inside a form that also has dayweek checkboxes.
+   */
+  function initGridPickers() {
+    document.querySelectorAll('.pos-picker').forEach(function (picker) {
+      var form    = picker.closest('form');
+      var habitID = picker.dataset.habitId || '';
+      if (!form) return;
+
+      // Cell click: select position, update hidden input
+      picker.querySelectorAll('.pos-picker-cell').forEach(function (cell) {
+        cell.addEventListener('click', function () {
+          if (cell.disabled) return;
+          picker.querySelectorAll('.pos-picker-cell').forEach(function (c) {
+            c.classList.remove('selected');
+          });
+          cell.classList.add('selected');
+          var hidden = form.querySelector('input[name="position"]');
+          if (hidden) hidden.value = cell.dataset.position;
+        });
+      });
+
+      // Dayweek change: refresh conflict state
+      form.querySelectorAll('input[type="checkbox"][name="dayweek"]').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+          refreshPickerConflicts(picker, habitID);
+        });
+      });
+
+      // Initial load
+      refreshPickerConflicts(picker, habitID);
+    });
+  }
+
+  /**
+   * Fetch conflict data for a picker and update cell states.
+   *
+   * Cells are marked .conflicted and disabled when another habit occupies
+   * that position on overlapping days.  Occupied-but-no-conflict cells get
+   * the .occupied class (a visual hint, still clickable).
+   */
+  function refreshPickerConflicts(picker, habitID) {
+    var form    = picker.closest('form');
+    var dayweek = 0;
+    form.querySelectorAll('input[type="checkbox"][name="dayweek"]:checked')
+        .forEach(function (cb) { dayweek += parseInt(cb.value, 10) || 0; });
+    if (dayweek === 0) dayweek = 127;
+
+    var url = '/' + username + '/habit/positions/json?dayweek=' + dayweek;
+    if (habitID) url += '&exclude=' + encodeURIComponent(habitID);
+
+    fetch(url, {
+      headers:     { 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin',
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      var infoMap = {};
+      (data.positions || []).forEach(function (p) { infoMap[p.position] = p; });
+
+      picker.querySelectorAll('.pos-picker-cell').forEach(function (cell) {
+        var pos  = parseInt(cell.dataset.position, 10);
+        var info = infoMap[pos];
+
+        if (info && info.conflicted) {
+          cell.disabled = true;
+          cell.classList.add('conflicted');
+          cell.classList.remove('occupied');
+          cell.title = 'Position ' + pos + ' — conflict with “' + info.name + '”';
+        } else if (info) {
+          cell.disabled = false;
+          cell.classList.remove('conflicted');
+          cell.classList.add('occupied');
+          cell.title = 'Position ' + pos + ' — “' + info.name + '” (different days)';
+        } else {
+          cell.disabled = false;
+          cell.classList.remove('conflicted', 'occupied');
+          cell.title = 'Position ' + pos;
+        }
+      });
+    })
+    .catch(function () { /* leave cells unchanged on network error */ });
+  }
+
+
+  /* -------------------------------------------------------------------------
      Initialise everything on DOMContentLoaded
      ------------------------------------------------------------------------- */
 
@@ -409,6 +499,7 @@
     initToggleCells();
     initIconPreviews();
     initGridDrag();
+    initGridPickers();
 
     // Store original habit names on grid preview cells so drag-swap works
     document.querySelectorAll('.grid-preview-cell.occupied').forEach(function (cell) {

@@ -15,6 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    2. [User Preferences](#42-user-preferences)
    3. [Habit Tracker](#43-habit-tracker)
    4. [Todo List](#44-todo-list)
+   5. [Admin](#45-admin)
 5. [Future Features](#5-future-features)
    1. [Show Tracker](#51-show-tracker)
    2. [Movie Tracker](#52-movie-tracker)
@@ -207,6 +208,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     10. The current day can be adjusted using buttons that move forward or backward in time. A date picker allows the user to select the current day
     11. The user is provided a search option to search among todo items
     12. The dashboard version of the todo list contains the current day's items
+  5. Admin
+    1. Designated under the `admin` area; accessible only to users with `PERM_ADMIN` (bit 0, value 1)
+    2. User Management: `GET /<username>/admin/users`
+      1. Lists all users grouped by approval status (pending, approved, rejected)
+      2. Pending users can be approved or rejected; approval grants default permissions (`read=8190, write=8190`)
+      3. Approved users can have their permission bitvectors edited via a checkbox matrix
+      4. Rejecting a user sets `approval_status='rejected'` and `active=0`
+    3. Icon Management: `GET /<username>/admin/icons`
+      1. Lists all SVG icons stored in the `svg` database table, rendered inline
+      2. New icons can be added by pasting SVG markup into a textarea with a live preview
+      3. Existing icons can be edited (name, description, SVG code) or deleted
+      4. Unlike most tables, the `svg` table uses direct `UPDATE`/`DELETE` rather than the insert-only pattern, because `imageID` has a `UNIQUE KEY` constraint
+      5. Routes:
+        1. `POST /<username>/admin/icon/create/post` — insert new icon
+        2. `POST /<username>/admin/icon/update/post/<image_id>` — update icon in place
+        3. `POST /<username>/admin/icon/delete/post/<image_id>` — hard delete icon
+    4. Access Log: `GET /<username>/admin/log`
+      1. Shows the 200 most recent rows from the `log` table
+      2. Columns displayed: id, username, resource (URL path), GET params, POST data, IP, timestamp
+      3. The `log` table schema uses: `userid`, `username`, `resource`, `get`, `post`, `ip`, `user_agent`, `created`
 5. Future Features
   1. Show Tracker
     1. Tracks the shows the user would like to watch
@@ -288,6 +309,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
          4. Bottom-right (4,4) = 24
       3. If a habit does not exist at a given position, that square in the grid is left blank and is not toggleable
       4. Multiple habits can occupy the same position in the grid, just not on the same day
+      5. Position Picker (Settings page)
+         1. Grid position is selected via a 5×5 grid of buttons, not a `<input type="number">`
+         2. Positions occupied by another habit whose days overlap the currently selected days are marked **conflicted** (disabled, red tint)
+         3. Positions occupied by another habit whose days do not overlap are marked **occupied** (yellow tint, still selectable)
+         4. The picker refreshes conflict state via AJAX on every dayweek checkbox change
+         5. Endpoint: `GET /<username>/habit/positions/json?dayweek=<int>&exclude=<habitID>`
+            - `dayweek`: bitmask of the days being configured; a position is conflicted when `dayweek & other_habit.dayweek != 0`
+            - `exclude`: habitID of the habit being edited, so its own position is not self-conflicting
+            - Response: `{"positions": [{"position": 3, "habitID": "...", "name": "...", "dayweek": 62, "conflicted": true}, ...]}`
     3. Days of Week
       1. The `dayweek` field encodes which days a habit applies using a bitmask:
          ```
