@@ -17,6 +17,7 @@
 - Never mark a task complete without demonstrating it works (logs, tests, or browser test).
 - For non-trivial changes: pause and ask "is there a more elegant way?"
 - When given a bug report: just fix it. Point at logs/errors, resolve them. Zero hand-holding required.
+- **Before declaring template work complete:** verify that every `{% block %}` name in the child template exists in `base.html`. Jinja2 silently discards blocks whose names don't match — CSS and JS will not load and no error will be raised. The only valid block names are: `title`, `css`, `content`, `js`.
 
 ### A2. Task Management
 

@@ -2,7 +2,7 @@
 
 {% block title %}Habit Heat Map{% endblock %}
 
-{% block head_extra %}
+{% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/habit.css') }}">
 {% endblock %}
 
@@ -113,7 +113,7 @@
 </main>
 {% endblock %}
 
-{% block scripts_extra %}
+{% block js %}
 <script>
   const username = {{ username | tojson }};
 </script>
