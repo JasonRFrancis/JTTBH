@@ -32,38 +32,39 @@
      ------------------------------------------------------------------------- */
 
   /**
-   * Wire up all toggleable habit cells on the page.
-   * Cells with [disabled] or class "empty" are skipped.
+   * Wire up all habit checkboxes on the page.
+   * Disabled checkboxes (inactive habits) are skipped automatically by the browser.
    */
-  function initToggleCells() {
-    const cells = document.querySelectorAll('.habit-cell:not([disabled]):not(.empty)');
-    cells.forEach(function (btn) {
-      btn.addEventListener('click', handleToggleClick);
+  function initToggleCheckboxes() {
+    document.querySelectorAll('.habit-checkbox:not([disabled])').forEach(function (cb) {
+      cb.addEventListener('change', handleToggleChange);
     });
   }
 
   /**
-   * Handle a click on a habit cell.
-   * Optimistically updates the UI, then sends the toggle request.
+   * Handle a change on a habit checkbox.
+   * The checkbox already reflects the new state; we send an AJAX toggle and
+   * reconcile with the server response. CSS handles all visual updates via
+   * label:has(input:checked).
    */
-  function handleToggleClick(event) {
-    const btn     = event.currentTarget;
-    const habitId = btn.dataset.habitId;
-    const datStr  = btn.dataset.date;
+  function handleToggleChange(event) {
+    var cb      = event.currentTarget;
+    var habitId = cb.dataset.habitId;
+    var datStr  = cb.dataset.date;
 
     if (!habitId || !datStr || !username) return;
 
-    // Prevent rapid double-clicks while the request is in-flight
-    if (btn.dataset.pending === '1') return;
-    btn.dataset.pending = '1';
+    // Revert and ignore if a request is already in flight
+    if (cb.dataset.pending === '1') {
+      cb.checked = !cb.checked;
+      return;
+    }
+    cb.dataset.pending = '1';
 
-    const url = '/' + username + '/habit/toggle/post/' + habitId + '/' + datStr;
+    // Store the pre-change value for rollback
+    var wasChecked = !cb.checked;
+    var url = '/' + username + '/habit/toggle/post/' + habitId + '/' + datStr;
 
-    // Optimistic UI update
-    const wasCompleted = btn.classList.contains('completed');
-    setCompleted(btn, !wasCompleted);
-
-    // Send AJAX toggle
     if (typeof fetch === 'function') {
       fetch(url, {
         method:  'POST',
@@ -71,47 +72,30 @@
         credentials: 'same-origin',
       })
       .then(function (response) {
-        if (!response.ok) {
-          throw new Error('HTTP ' + response.status);
-        }
+        if (!response.ok) throw new Error('HTTP ' + response.status);
         return response.json();
       })
       .then(function (data) {
-        // Reconcile with server state
-        setCompleted(btn, data.completed === 1 || data.completed === true);
+        var completed = data.completed === 1 || data.completed === true;
+        cb.checked = completed;
+        var name = (cb.getAttribute('aria-label') || '').split(':')[0];
+        cb.setAttribute('aria-label', name + ': ' + (completed ? 'completed' : 'not completed'));
       })
       .catch(function () {
-        // Revert optimistic update on failure
-        setCompleted(btn, wasCompleted);
+        cb.checked = wasChecked;
       })
       .finally(function () {
-        btn.dataset.pending = '0';
+        cb.dataset.pending = '0';
       });
     } else {
-      // No fetch available – fall back to a plain form POST
-      btn.dataset.pending = '0';
+      // No fetch – fall back to a plain form POST
+      cb.dataset.pending = '0';
       var form = document.createElement('form');
       form.method = 'POST';
       form.action = url;
       document.body.appendChild(form);
       form.submit();
     }
-  }
-
-  /**
-   * Update a habit cell's visual and ARIA state.
-   *
-   * @param {HTMLElement} btn
-   * @param {boolean} completed
-   */
-  function setCompleted(btn, completed) {
-    btn.classList.toggle('completed', completed);
-    btn.setAttribute('aria-pressed', completed ? 'true' : 'false');
-    const name = btn.title || btn.getAttribute('aria-label') || 'Habit';
-    btn.setAttribute(
-      'aria-label',
-      name.split(':')[0] + ': ' + (completed ? 'completed' : 'not completed')
-    );
   }
 
 
@@ -489,7 +473,7 @@
      ------------------------------------------------------------------------- */
 
   document.addEventListener('DOMContentLoaded', function () {
-    initToggleCells();
+    initToggleCheckboxes();
     initIconPreviews();
     initGridDrag();
     initGridPickers();

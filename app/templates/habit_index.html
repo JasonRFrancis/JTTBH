@@ -53,27 +53,30 @@
         {% for cell in day.grid %}
 
         {% if cell.habitID %}
-          {# Determine CSS classes for this cell #}
           {% set cell_classes = ['habit-cell'] %}
-          {% if cell.completed == 1 %}{% set cell_classes = cell_classes + ['completed'] %}{% endif %}
           {% if not cell.applies %}{% set cell_classes = cell_classes + ['inactive'] %}{% endif %}
 
-          <button
+          <label
             class="{{ cell_classes | join(' ') }}"
-            data-habit-id="{{ cell.habitID }}"
-            data-date="{{ day.date }}"
-            data-position="{{ cell.position }}"
-            {% if not cell.applies %}disabled aria-disabled="true"{% endif %}
+            for="hc-{{ cell.habitID }}-{{ day.date }}"
             {% if cell.color %}style="--habit-color: {{ cell.color }};"{% endif %}
-            aria-label="{{ cell.name }}: {{ 'completed' if cell.completed == 1 else 'not completed' }}"
-            aria-pressed="{{ 'true' if cell.completed == 1 else 'false' }}"
             title="{{ cell.name }}{% if cell.streak is defined and cell.streak > 0 %} ({{ cell.streak }}-day streak){% endif %}">
+            <input
+              type="checkbox"
+              id="hc-{{ cell.habitID }}-{{ day.date }}"
+              class="habit-checkbox"
+              data-habit-id="{{ cell.habitID }}"
+              data-date="{{ day.date }}"
+              data-position="{{ cell.position }}"
+              {% if cell.completed == 1 %}checked{% endif %}
+              {% if not cell.applies %}disabled{% endif %}
+              aria-label="{{ cell.name }}: {{ 'completed' if cell.completed == 1 else 'not completed' }}">
             {% if cell.icon_svg %}
               {{ cell.icon_svg | safe }}
             {% else %}
               <span class="habit-initial" aria-hidden="true">{{ cell.name[0] | upper }}</span>
             {% endif %}
-          </button>
+          </label>
 
         {% else %}
           <span

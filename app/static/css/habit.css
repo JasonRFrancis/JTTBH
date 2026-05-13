@@ -199,6 +199,19 @@ habit-grid,
    Habit cells
    -------------------------------------------------------------------------- */
 
+/* Visually hide the checkbox but keep it accessible for screen readers */
+.habit-checkbox {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .habit-cell {
   display: flex;
   align-items: center;
@@ -223,7 +236,7 @@ habit-grid,
   border: 1px solid color-mix(in srgb, var(--habit-color, var(--habit-accent)) 40%, white);
 }
 
-.habit-cell.completed {
+label.habit-cell:has(input:checked) {
   background-color: var(--habit-color, var(--habit-completed));
   color: #ffffff;
   border-color: var(--habit-color, var(--habit-completed));
@@ -260,7 +273,7 @@ habit-grid,
   transform: scale(0.95);
 }
 
-.habit-cell:focus-visible {
+label.habit-cell:has(input:focus-visible) {
   outline: 2px solid var(--habit-accent);
   outline-offset: 2px;
 }
