@@ -56,11 +56,6 @@
           {% set cell_classes = ['habit-cell'] %}
           {% if not cell.applies %}{% set cell_classes = cell_classes + ['inactive'] %}{% endif %}
 
-          <label
-            class="{{ cell_classes | join(' ') }}"
-            for="hc-{{ cell.habitID }}-{{ day.date }}"
-            {% if cell.color %}style="--habit-color: {{ cell.color }};"{% endif %}
-            title="{{ cell.name }}{% if cell.streak is defined and cell.streak > 0 %} ({{ cell.streak }}-day streak){% endif %}">
             <input
               type="checkbox"
               id="hc-{{ cell.habitID }}-{{ day.date }}"
@@ -71,6 +66,11 @@
               {% if cell.completed == 1 %}checked{% endif %}
               {% if not cell.applies %}disabled{% endif %}
               aria-label="{{ cell.name }}: {{ 'completed' if cell.completed == 1 else 'not completed' }}">
+          <label
+            class="{{ cell_classes | join(' ') }}"
+            for="hc-{{ cell.habitID }}-{{ day.date }}"
+            {% if cell.color %}style="--habit-color: {{ cell.color }};"{% endif %}
+            title="{{ cell.name }}{% if cell.streak is defined and cell.streak > 0 %} ({{ cell.streak }}-day streak){% endif %}">
             {% if cell.icon_svg %}
               {{ cell.icon_svg | safe }}
             {% else %}

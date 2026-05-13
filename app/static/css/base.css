@@ -3,6 +3,23 @@
    Mobile-first, semantic, no framework.
    ============================================================ */
 
+/* Typefaces */
+@font-face { font-family: 'Futura Condensed PT Medium'; font-style: normal; font-weight: normal; src: local('Futura Condensed PT Medium'), url('futura-condensed-pt-medium-589e44ed1e3a5.woff') format('woff'); }
+@font-face { font-family: 'Futura Condensed PT Medium Oblique'; font-style: normal; font-weight: normal; src: local('Futura Condensed PT Medium Oblique'), url('futura-condensed-pt-medium-oblique-589e4507d391c.woff') format('woff'); }
+@font-face { font-family: 'Futura PT Book'; font-style: normal; font-weight: normal; src: local('Futura PT Book'), url('futura-pt-book-589a6dec272c3.woff') format('woff'); }
+@font-face { font-family: 'Futura PT Book Oblique'; font-style: normal; font-weight: normal; src: local('Futura PT Book Oblique'), url('futura-pt-book-oblique-589e44623c7b4.woff') format('woff'); }
+@font-face { font-family: 'Futura PT Light'; font-style: normal; font-weight: normal; src: local('Futura PT Light'), url('futura-pt-light-589a6e187563a.woff') format('woff'); }
+@font-face { font-family: 'Futura PT Light Oblique'; font-style: normal; font-weight: normal; src: local('Futura PT Light Oblique'), url('futura-pt-light-oblique-589e448ae90e2.woff') format('woff'); }
+@font-face { font-family: 'Futura PT Medium'; font-style: normal; font-weight: normal; src: local('Futura PT Medium'), url('futura-pt-medium-589e45b956de4.woff') format('woff'); }
+@font-face { font-family: 'Futura PT Medium Oblique'; font-style: normal; font-weight: normal; src: local('Futura PT Medium Oblique'), url('futura-pt-medium-oblique-589e460871ec2.woff') format('woff'); }
+@font-face { font-family: 'Futura PT DemiBold'; font-style: normal; font-weight: normal; src: local('Futura PT DemiBold'), url('futura-pt-demibold-589e43b852117.woff') format('woff'); }
+@font-face { font-family: 'Futura PT DemiBold Oblique'; font-style: normal; font-weight: normal; src: local('Futura PT DemiBold Oblique'), url('futura-pt-demibold-oblique-589e43ec3ea82.woff') format('woff'); }
+@font-face { font-family: 'Futura PT Bold'; font-style: normal; font-weight: normal; src: local('Futura PT Bold'), url('futura-pt-bold-589e44b6aacd3.woff') format('woff'); }
+@font-face { font-family: 'Futura PT Bold Oblique'; font-style: normal; font-weight: normal; src: local('Futura PT Bold Oblique'), url('futura-pt-bold-oblique-589e453384a18.woff') format('woff'); }
+@font-face { font-family: 'Futura PT Heavy'; font-style: normal; font-weight: normal; src: local('Futura PT Heavy'), url('futura-pt-heavy-589a6dd12187e.woff') format('woff'); }
+@font-face { font-family: 'Futura PT Heavy Oblique'; font-style: normal; font-weight: normal; src: local('Futura PT Heavy Oblique'), url('futura-pt-heavy-oblique-589a6e480ab16.woff') format('woff'); }
+
+
 /* ------------------------------------------------------------
    Custom properties
    ------------------------------------------------------------ */
@@ -10,8 +27,8 @@
   /* Colours */
   --color-primary:     #2563eb;
   --color-primary-dk:  #1d4ed8;
-  --color-text:        #1a1a2e;
-  --color-text-muted:  #64748b;
+  --color-text:        #212529;
+  --color-text-muted:  #868e96;
   --color-bg:          #ffffff;
   --color-surface:     #f8fafc;
   --color-border:      #e2e8f0;
@@ -31,10 +48,8 @@
   --color-msg-success-bd: #86efac;
 
   /* Typography */
-  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-                 Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --font-mono:   ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo,
-                 Consolas, 'DejaVu Sans Mono', monospace;
+  --font-family: 'Futura PT Medium', Helvetica, Arial, sans-serif;
+  --font-mono:   ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
   --font-size-base: 1rem;
   --line-height:    1.6;
 
@@ -51,13 +66,15 @@
 
   /* Layout */
   --content-max: 1100px;
-  --header-h:    3.5rem;
+  --header-h:    4.5rem;
   --radius:      0.375rem;
   --radius-lg:   0.5rem;
 
   /* Transitions */
   --transition: 150ms ease;
 }
+
+
 
 /* ------------------------------------------------------------
    Reset / base
@@ -82,7 +99,7 @@ body {
   background: var(--color-bg);
   min-height: 100dvh;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto auto auto;
   grid-template-areas:
     "header"
     "messages"
@@ -150,8 +167,6 @@ hr {
    ------------------------------------------------------------ */
 header {
   grid-area: header;
-  background: var(--color-text);
-  color: #fff;
   height: var(--header-h);
   display: flex;
   align-items: center;
@@ -160,12 +175,13 @@ header {
   position: sticky;
   top: 0;
   z-index: 100;
+  background: #ffffff;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 1) 75%, rgba(255, 255, 255, 0) 100%);
 }
 
 .site-name {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #fff;
   text-decoration: none;
   letter-spacing: 0.05em;
 }
@@ -254,7 +270,6 @@ login a:hover {
    ------------------------------------------------------------ */
 main {
   grid-area: main;
-  max-width: var(--content-max);
   width: 100%;
   margin: 0 auto;
   padding: var(--space-6) var(--space-6) var(--space-12);

@@ -11,7 +11,7 @@
 :root {
   --habit-accent:          #fff;
   --habit-completed:       #000;
-  --habit-completed-light: #dcfce7;
+  --habit-completed-light: #000;
   --habit-inactive:        #d1d5db;
   --habit-inactive-border: #9ca3af;
   --habit-empty-bg:        transparent;
@@ -150,11 +150,7 @@
 
 /* Day card */
 .habit-day {
-  background: var(--habit-card-bg);
-  border: 1px solid var(--habit-card-border);
-  border-radius: 8px;
   padding: 0.5rem;
-  box-shadow: var(--habit-card-shadow);
 }
 
 .habit-day.today {
@@ -211,29 +207,24 @@ habit-grid,
   justify-content: center;
   width: var(--habit-cell-size);
   height: var(--habit-cell-size);
-  border-radius: var(--habit-cell-radius);
   font-size: clamp(0.55rem, 2.5vw, 0.7rem);
   font-weight: 700;
   cursor: pointer;
   border: none;
-  background: var(--habit-inactive);
-  color: #4b5563;
-  transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
   position: relative;
   overflow: hidden;
 }
 
 /* Use per-habit CSS variable for accent colour */
 .habit-cell:not(.inactive):not(.empty) {
-  background-color: color-mix(in srgb, var(--habit-color, var(--habit-accent)) 20%, white);
-  border: 1px solid color-mix(in srgb, var(--habit-color, var(--habit-accent)) 40%, white);
 }
 
 label.habit-cell:has(input:checked) {
-  background-color: var(--habit-color, var(--habit-completed));
-  color: #ffffff;
-  border-color: var(--habit-color, var(--habit-completed));
+  background-color: #000;
 }
+  label.habit-cell:has(input:checked) svg {
+    filter: invert(100%) saturate(1352%) brightness(119%) contrast(119%);    
+  }
 
 .habit-cell.inactive {
   background: repeating-linear-gradient(
