@@ -9,14 +9,14 @@
    -------------------------------------------------------------------------- */
 
 :root {
-  --habit-accent:          #2563eb;
-  --habit-completed:       #16a34a;
+  --habit-accent:          #fff;
+  --habit-completed:       #000;
   --habit-completed-light: #dcfce7;
   --habit-inactive:        #d1d5db;
   --habit-inactive-border: #9ca3af;
   --habit-empty-bg:        transparent;
   --habit-cell-size:       clamp(2rem, 8vw, 2.75rem);
-  --habit-cell-radius:     6px;
+  --habit-cell-radius:     0px;
   --habit-today-border:    #2563eb;
   --habit-card-bg:         #ffffff;
   --habit-card-border:     #e5e7eb;
@@ -202,14 +202,7 @@ habit-grid,
 /* Visually hide the checkbox but keep it accessible for screen readers */
 .habit-checkbox {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  left: -100000em;
 }
 
 .habit-cell {
