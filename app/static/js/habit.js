@@ -67,10 +67,7 @@
     if (typeof fetch === 'function') {
       fetch(url, {
         method:  'POST',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          'Content-Type':     'application/json',
-        },
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
         credentials: 'same-origin',
       })
       .then(function (response) {
@@ -388,11 +385,7 @@
     .then(function () {
       _pendingPositions = {};
       saveBtn.textContent = 'Saved!';
-      saveBtn.style.display = 'none';
-      setTimeout(function () {
-        saveBtn.textContent = originalText;
-        saveBtn.disabled    = false;
-      }, 1500);
+      setTimeout(function () { window.location.reload(); }, 600);
     })
     .catch(function () {
       saveBtn.textContent = 'Error – try again';

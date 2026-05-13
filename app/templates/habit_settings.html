@@ -95,16 +95,16 @@
       </fieldset>
 
       <div class="form-row">
-        <label>Grid Position</label>
+        <label>Grid Position <span aria-hidden="true">*</span></label>
         <div class="pos-picker" data-habit-id="">
           {% for pos in range(25) %}
           <button type="button"
-                  class="pos-picker-cell{% if pos == 0 %} selected{% endif %}"
+                  class="pos-picker-cell"
                   data-position="{{ pos }}"
                   title="Position {{ pos }}">{{ pos }}</button>
           {% endfor %}
         </div>
-        <input type="hidden" name="position" value="0">
+        <input type="hidden" name="position" value="">
       </div>
 
       <div class="form-row">

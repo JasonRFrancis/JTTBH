@@ -319,12 +319,18 @@ def create(username: str):
     if dayweek == 0:
         dayweek = 127  # default: all days
 
-    # Parse position
+    # Parse position (empty string means user never clicked a cell)
+    position_raw = request.form.get('position', '').strip()
+    if not position_raw:
+        flash('Please select a grid position for this habit.', 'error')
+        return redirect(url_for('habit.settings', username=username))
     try:
-        position = int(request.form.get('position', 0))
-        position = max(0, min(24, position))
+        position = int(position_raw)
+        if not 0 <= position <= 24:
+            raise ValueError
     except (ValueError, TypeError):
-        position = 0
+        flash('Please select a valid grid position (0–24).', 'error')
+        return redirect(url_for('habit.settings', username=username))
 
     description   = request.form.get('description', '').strip() or None
     action        = request.form.get('action', '').strip() or None

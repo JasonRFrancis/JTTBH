@@ -464,7 +464,9 @@ applies = bool(habit['dayweek'] & day_bit)
 - Heatmap shows historical completion data (GitHub-style grid).
 - Settings page lists all habits; clicking one opens edit form for that habit.
 - `vacation_mode` = habit is paused during vacation periods.
-- **Position picker:** The settings form uses a 5×5 grid of buttons (not a number input) for selecting a grid position. Positions occupied by another habit with overlapping days are marked `conflicted` (disabled, red). Positions occupied on non-overlapping days are marked `occupied` (yellow, still selectable). The picker updates via AJAX on every dayweek checkbox change using `GET /positions/json`; the `exclude` param omits the habit being edited so its own position is not self-conflicting.
+- **Position picker:** The settings form uses a 5×5 grid of buttons (not a number input) for selecting a grid position. Positions occupied by another habit with overlapping days are marked `conflicted` (disabled, red). Positions occupied on non-overlapping days are marked `occupied` (yellow, still selectable). The picker updates via AJAX on every dayweek checkbox change using `GET /positions/json`; the `exclude` param omits the habit being edited so its own position is not self-conflicting. **Creating a habit requires an explicit position selection** — the hidden `position` field starts empty and the server rejects empty submissions with a flash error.
+- **Toggle AJAX:** Habit cell toggle POSTs with `X-Requested-With: XMLHttpRequest` only — no `Content-Type` header (no body is sent).
+- **Drag-to-reorder:** After saving positions via the "Save Positions" button, the page reloads (600 ms delay) so the grid preview and all position pickers reflect the new state.
 
 ---
 

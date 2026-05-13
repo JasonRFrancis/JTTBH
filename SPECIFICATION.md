@@ -318,6 +318,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
             - `dayweek`: bitmask of the days being configured; a position is conflicted when `dayweek & other_habit.dayweek != 0`
             - `exclude`: habitID of the habit being edited, so its own position is not self-conflicting
             - Response: `{"positions": [{"position": 3, "habitID": "...", "name": "...", "dayweek": 62, "conflicted": true}, ...]}`
+         6. **Create form requires explicit selection**: the hidden `position` input starts empty; the server rejects the form with a flash error if no position is clicked
+      6. Drag-to-reorder (Grid Layout section)
+         1. Habits can be dragged to swap positions in the grid preview
+         2. A "Save Positions" button appears after any drag
+         3. On save, positions are batch-POSTed to `POST /reorder/post`; the page reloads after 600 ms to reflect the new layout
     3. Days of Week
       1. The `dayweek` field encodes which days a habit applies using a bitmask:
          ```
