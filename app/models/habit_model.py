@@ -663,8 +663,9 @@ class HabitModel:
             }
         """
         today      = date.today()
-        start_date = ref_date - timedelta(days=21)
-        end_date   = ref_date + timedelta(days=7)
+        sdays      = today.weekday() + 1
+        start_date = ref_date - (timedelta(days=7) + timedelta(days=sdays))
+        end_date   = ref_date + timedelta(days=13) - timedelta(days=sdays)
 
         habits  = HabitModel.get_habits(user_id)
         entries = HabitModel.get_entries(user_id, start_date, end_date)

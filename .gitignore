@@ -110,3 +110,4 @@ site/
 *.pid
 *.sock
 user.sql
+test.html

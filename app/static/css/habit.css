@@ -9,18 +9,11 @@
    -------------------------------------------------------------------------- */
 
 :root {
-  --habit-accent:          #fff;
-  --habit-completed:       #000;
-  --habit-completed-light: #000;
-  --habit-inactive:        #d1d5db;
-  --habit-inactive-border: #9ca3af;
-  --habit-empty-bg:        transparent;
-  --habit-cell-size:       clamp(2rem, 8vw, 2.75rem);
-  --habit-cell-radius:     0px;
-  --habit-today-border:    #2563eb;
-  --habit-card-bg:         #ffffff;
-  --habit-card-border:     #e5e7eb;
-  --habit-card-shadow:     0 1px 3px rgba(0,0,0,0.08);
+  --habit-completed: #000;
+  --habit-inactive:  #d1d5db;
+  --habit-cell-size: clamp(2rem, 8vw, 2.75rem);
+  --habit-card-bg:   #ffffff;
+  --habit-card-border: #e5e7eb;
 
   /* Heat map colours (GitHub-inspired greens) */
   --heat-0: #ebedf0;
@@ -41,7 +34,11 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 0.5rem 1rem;
-  margin-bottom: 1.25rem;
+  padding: 0 0 var(--space-12) 0;
+  position: sticky;
+  top: var(--header-h);
+  z-index: 2;
+  background: var(--color-bg);
 }
 
 .habit-header h1 {
@@ -57,7 +54,7 @@
 
 .habit-nav a {
   font-size: 0.875rem;
-  color: var(--habit-accent);
+  color: var(--accent-habit);
   text-decoration: none;
 }
 
@@ -83,7 +80,7 @@
 
 .habit-today-count {
   font-weight: 700;
-  color: var(--habit-accent);
+  color: var(--accent-habit);
 }
 
 .habit-progress {
@@ -151,16 +148,20 @@
 /* Day card */
 .habit-day {
   padding: 0.5rem;
+  padding-left: 0;
 }
 
 .habit-day.today {
-  border-color: var(--habit-today-border);
-  border-width: 2px;
-  background: #eff6ff;
+  background: var(--oc-gray-1);
 }
 
 .habit-day-header {
+  position: sticky;
+  top: var(--header-h);
+  z-index: 5;
+  background: var(--color-bg);
   margin-bottom: 0.375rem;
+  padding-left: 0;
 }
 
 .habit-day-header time {
@@ -173,7 +174,7 @@
 }
 
 .habit-day.today .habit-day-header time {
-  color: var(--habit-accent);
+  color: var(--accent-habit);
 }
 
 
@@ -210,21 +211,17 @@ habit-grid,
   font-size: clamp(0.55rem, 2.5vw, 0.7rem);
   font-weight: 700;
   cursor: pointer;
-  border: none;
   position: relative;
   overflow: hidden;
 }
 
-/* Use per-habit CSS variable for accent colour */
-.habit-cell:not(.inactive):not(.empty) {
-}
-
-label.habit-cell:has(input:checked) {
+input:checked + label.habit-cell {
   background-color: #000;
 }
-  label.habit-cell:has(input:checked) svg {
-    filter: invert(100%) saturate(1352%) brightness(119%) contrast(119%);    
-  }
+
+input:checked + label.habit-cell svg {
+  filter: invert(1);
+}
 
 .habit-cell.inactive {
   background: repeating-linear-gradient(
@@ -240,7 +237,7 @@ label.habit-cell:has(input:checked) {
 }
 
 .habit-cell.empty {
-  background: var(--habit-empty-bg);
+  background: transparent;
   cursor: default;
   pointer-events: none;
   border: 1px dashed #e5e7eb;
@@ -257,8 +254,8 @@ label.habit-cell:has(input:checked) {
   transform: scale(0.95);
 }
 
-label.habit-cell:has(input:focus-visible) {
-  outline: 2px solid var(--habit-accent);
+input.habit-checkbox:focus-visible + label.habit-cell {
+  outline: 2px solid var(--accent-habit);
   outline-offset: 2px;
 }
 
@@ -509,7 +506,7 @@ main.habit-settings {
 .form-row textarea:focus,
 .form-row select:focus {
   outline: none;
-  border-color: var(--habit-accent);
+  border-color: var(--accent-habit);
   box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
 }
 
@@ -568,12 +565,12 @@ main.habit-settings {
 
 .dayweek-label:has(input:checked) {
   background: #eff6ff;
-  border-color: var(--habit-accent);
-  color: var(--habit-accent);
+  border-color: var(--accent-habit);
+  color: var(--accent-habit);
 }
 
 .dayweek-label input {
-  accent-color: var(--habit-accent);
+  accent-color: var(--accent-habit);
 }
 
 .checkbox-label {
@@ -585,7 +582,7 @@ main.habit-settings {
 }
 
 .checkbox-label input {
-  accent-color: var(--habit-accent);
+  accent-color: var(--accent-habit);
   width: 1rem;
   height: 1rem;
 }
@@ -618,7 +615,7 @@ main.habit-settings {
 }
 
 .btn-primary {
-  background: var(--habit-accent);
+  background: var(--accent-habit);
   color: #ffffff;
 }
 
@@ -660,7 +657,7 @@ main.habit-settings {
 .icon-preview svg {
   width: 2rem;
   height: 2rem;
-  color: var(--habit-accent);
+  color: var(--accent-habit);
 }
 
 
@@ -682,7 +679,7 @@ main.habit-settings {
 }
 
 .habit-item-active {
-  border-color: var(--habit-accent);
+  border-color: var(--accent-habit);
 }
 
 .habit-item-header {
@@ -804,7 +801,7 @@ main.habit-settings {
 
 .grid-preview-cell.occupied {
   background: #eff6ff;
-  border-color: var(--habit-accent);
+  border-color: var(--accent-habit);
   cursor: grab;
   color: #1e3a8a;
 }
@@ -821,7 +818,7 @@ main.habit-settings {
 
 .grid-preview-cell.drag-over {
   background: #dbeafe;
-  border-color: var(--habit-accent);
+  border-color: var(--accent-habit);
   border-style: dashed;
 }
 
@@ -869,14 +866,14 @@ main.habit-settings {
 
 .pos-picker-cell:hover:not(:disabled):not(.selected) {
   background: #eff6ff;
-  border-color: var(--habit-accent);
-  color: var(--habit-accent);
+  border-color: var(--accent-habit);
+  color: var(--accent-habit);
 }
 
 .pos-picker-cell.selected {
-  background: var(--habit-accent);
+  background: var(--accent-habit);
   color: #fff;
-  border-color: var(--habit-accent);
+  border-color: var(--accent-habit);
 }
 
 .pos-picker-cell.occupied:not(.selected):not(.conflicted) {
@@ -893,7 +890,7 @@ main.habit-settings {
 }
 
 .pos-picker-cell:focus-visible {
-  outline: 2px solid var(--habit-accent);
+  outline: 2px solid var(--accent-habit);
   outline-offset: 2px;
 }
 

@@ -12,7 +12,9 @@
       "Bash(do echo \"  $f\")",
       "Bash(done)",
       "Bash(grep *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "WebFetch(domain:yeun.github.io)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": [],
     "ask": []
