@@ -37,7 +37,7 @@
   <footer>
     <nav aria-label="Main navigation">
       {% if has_perm(1) %}
-      <a href="{{ url_for('admin.index', username=session.username) }}"{% if area == 'admin' %} aria-current="page"{% endif %}>Admin</a>
+      <a href="{{ url_for('admin.icons', username=session.username) }}"{% if area == 'admin' %} aria-current="page"{% endif %}>Admin</a>
       {% endif %}
       {% if has_perm(8) %}
       <a href="{{ url_for('dashboard.index', username=session.username) }}"{% if area == 'dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
