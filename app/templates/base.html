@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}jttbh{% endblock %}</title>
+  <title>{% block title %}JTTBH{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
   {% block css %}{% endblock %}
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}" sizes="any">
@@ -11,12 +11,10 @@
 <body>
 
   <header>
-    <a class="site-name" href="/">jttbh</a>
+    <a class="site-name" href="/">Just Trying to be Helpful</a>
     {% if session.get('user_id') %}
     <login>
-      <span class="login-username">{{ session.username }}</span>
-      <a href="{{ url_for('user.settings', username=session.username) }}">Settings</a>
-      <a href="{{ url_for('auth.logout') }}">Sign out</a>
+      <a href="{{ url_for('user.settings', username=session.username) }}" class="login-username">{{ session.username }}</a>
     </login>
     {% endif %}
   </header>
@@ -38,6 +36,9 @@
   {% if session.get('user_id') %}
   <footer>
     <nav aria-label="Main navigation">
+      {% if has_perm(1) %}
+      <a href="{{ url_for('admin.index', username=session.username) }}"{% if area == 'admin' %} aria-current="page"{% endif %}>Admin</a>
+      {% endif %}
       {% if has_perm(8) %}
       <a href="{{ url_for('dashboard.index', username=session.username) }}"{% if area == 'dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
       {% endif %}
