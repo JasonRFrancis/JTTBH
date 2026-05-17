@@ -14,7 +14,7 @@
     <a class="site-name" href="/">Just Trying to be Helpful</a>
     {% if session.get('user_id') %}
     <login>
-      <a href="{{ url_for('user.settings', username=session.username) }}" class="login-username">{{ session.username }}</a>
+      <a href="{{ url_for('user.settings', username=session.username) }}" class="login-username">{{ session.username.upper() }}</a>
     </login>
     {% endif %}
   </header>

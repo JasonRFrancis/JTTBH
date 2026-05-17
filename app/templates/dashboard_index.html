@@ -11,7 +11,7 @@
 </header>
 
 {% if has_perm(32) %}
-<section class="widget habit-widget" aria-labelledby="habit-widget-heading">
+<section class="widget habit-widget habit" aria-labelledby="habit-widget-heading">
   <header class="widget-header">
     <h2 id="habit-widget-heading">
       <a href="{{ url_for('habit.index', username=username) }}">Habits</a>

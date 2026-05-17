@@ -7,21 +7,19 @@
 {% endblock %}
 
 {% block content %}
-<main class="habit">
-
-  <header class="habit-header">
+  <header class="page">
     <h1>Habits</h1>
-    <nav class="habit-nav" aria-label="Habit navigation">
+    <nav aria-label="Habit navigation">
       <a href="{{ url_for('habit.settings', username=username) }}">Manage Habits</a>
       <a href="{{ url_for('habit.heatmap', username=username) }}">Heat Map</a>
     </nav>
   </header>
 
   <!-- Today's progress -->
-  <section class="habit-today" aria-label="Today's progress">
+  <section class="today" aria-label="Today's progress">
     <h2>
       Today:
-      <span class="habit-today-count">{{ today_completed }}/{{ today_total }}</span>
+      <span class="today-count">{{ today_completed }}/{{ today_total }}</span>
       completed
     </h2>
     {% if today_total > 0 %}
@@ -32,30 +30,30 @@
       aria-label="{{ today_completed }} of {{ today_total }} habits completed today">
     </progress>
     {% else %}
-    <p class="habit-no-habits">No habits scheduled for today.</p>
+    <p class="no-habits">No habits scheduled for today.</p>
     {% endif %}
   </section>
 
   <!-- 28-day calendar -->
-  <section class="habit-calendar" aria-label="28-day habit calendar">
+  <habit-calendar aria-label="28-day habit calendar">
 
     {% for day in calendar_data %}
-    <article
-      class="habit-day{% if day.is_today %} today{% endif %}"
+    <habit-day
+      {% if day.is_today %}class="today"{% endif %}
       id="day-{{ day.date }}"
       aria-label="{{ day.date | format_day_short }}{% if day.is_today %} (today){% endif %}">
 
-      <header class="habit-day-header">
+      <header>
         <time datetime="{{ day.date }}">{{ day.date | format_day_short }}</time>
       </header>
 
-      <habit-grid data-date="{{ day.date }}" class="habit-grid">
+      <habit-grid data-date="{{ day.date }}">
         {% for cell in day.grid %}
 
         {% if cell.habitID %}
           {% set cell_classes = ['habit-cell'] %}
           {% if not cell.applies %}{% set cell_classes = cell_classes + ['inactive'] %}{% endif %}
-
+          <habit-cell>
             <input
               type="checkbox"
               id="hc-{{ cell.habitID }}-{{ day.date }}"
@@ -66,35 +64,34 @@
               {% if cell.completed == 1 %}checked{% endif %}
               {% if not cell.applies %}disabled{% endif %}
               aria-label="{{ cell.name }}: {{ 'completed' if cell.completed == 1 else 'not completed' }}">
-          <label
-            class="{{ cell_classes | join(' ') }}"
-            for="hc-{{ cell.habitID }}-{{ day.date }}"
-            {% if cell.color %}style="--habit-color: {{ cell.color }};"{% endif %}
-            title="{{ cell.name }}{% if cell.streak is defined and cell.streak > 0 %} ({{ cell.streak }}-day streak){% endif %}">
-            {% if cell.icon_svg %}
-              {{ cell.icon_svg | safe }}
-            {% else %}
-              <span class="habit-initial" aria-hidden="true">{{ cell.name[0] | upper }}</span>
-            {% endif %}
-          </label>
-
+            <label
+              class="{{ cell_classes | join(' ') }}"
+              for="hc-{{ cell.habitID }}-{{ day.date }}"
+              {% if cell.color %}style="--habit-color: {{ cell.color }};"{% endif %}
+              title="{{ cell.name }}{% if cell.streak is defined and cell.streak > 0 %} ({{ cell.streak }}-day streak){% endif %}">
+              {% if cell.icon_svg %}
+                {{ cell.icon_svg | safe }}
+              {% else %}
+                <span class="habit-initial" aria-hidden="true">{{ cell.name[0] | upper }}</span>
+              {% endif %}
+            </label>
+          </habit-cell>
         {% else %}
-          <span
-            class="habit-cell empty"
+          <habit-cell
+            class="empty"
             data-position="{{ cell.position }}"
             aria-hidden="true">
-          </span>
+          </habit-cell>
         {% endif %}
 
         {% endfor %}
       </habit-grid>
 
-    </article>
+    </habit-day>
     {% endfor %}
 
-  </section>
+  </habit-calendar>
 
-</main>
 {% endblock %}
 
 {% block js %}
