@@ -215,8 +215,9 @@ main.habit {
     }
 
     svg {
-      width: var(--habit-icon-size);
-      height: var(--habit-icon-size);
+      display: inline-block;
+      width: var(--habit-cell-size);
+      height: var(--habit-cell-size);
       pointer-events: none;
     }
 
@@ -225,7 +226,11 @@ main.habit {
       font-size: clamp(0.6rem, 2vw, 0.75rem);
     }
 
-
+    label {
+      display: inline-block;
+      width: var(--habit-cell-size);
+      height: var(--habit-cell-size);      
+    }
     /* Visually hide the checkbox but keep it accessible for screen readers */
     input {
       position: absolute;
