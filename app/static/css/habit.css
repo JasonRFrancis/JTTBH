@@ -165,95 +165,6 @@ main.habit {
     }
   }
 
-  /* --------- Grid ---------- */
-
-  habit-grid {
-    display: grid;
-    grid-template-columns: repeat(5, var(--habit-cell-size));
-    grid-template-rows:    repeat(5, var(--habit-cell-size));
-    gap: 2px;
-    width: fit-content;
-  }
-
-  /* --------- Cell ---------- */
-
-  habit-cell {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--habit-cell-size);
-    height: var(--habit-cell-size);
-    font-size: clamp(0.55rem, 2.5vw, 0.7rem);
-    font-weight: 700;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-
-
-    &.inactive {
-      background-color: var(--habit-inactive);
-      cursor: default;
-    }
-
-    &:not(.inactive):not(.empty):hover {
-      transform: scale(1.1);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      z-index: 1;
-    }
-
-    &:not(.inactive):not(.empty):active {
-      transform: scale(0.95);
-    }
-
-
-    .empty {
-      background: transparent;
-      cursor: default;
-      pointer-events: none;
-      border: 1px dashed #e5e7eb;
-      opacity: 0.3;
-    }
-
-    svg {
-      display: inline-block;
-      width: var(--habit-cell-size);
-      height: var(--habit-cell-size);
-      pointer-events: none;
-      filter: brightness(150%);
-
-    }
-
-    .habit-cell .habit-initial {
-      pointer-events: none;
-      font-size: clamp(0.6rem, 2vw, 0.75rem);
-    }
-
-    label {
-      display: inline-block;
-      width: var(--habit-cell-size);
-      height: var(--habit-cell-size);      
-    }
-    /* Visually hide the checkbox but keep it accessible for screen readers */
-    input {
-      position: absolute;
-      left: -100000em;
-    }
-
-    input:checked + label {
-      background-color: #000;
-
-      svg {
-        filter: invert(1);        
-      }
-
-    }
-    input:focus-visible + label.habit-cell {
-      outline: 2px solid var(--accent-habit);
-      outline-offset: 2px;
-    }
-  }
-
-
   /* --------- Heatmap ---------- */
 
   .heatmap {
@@ -849,6 +760,82 @@ main.habit {
   }
 
 
+}
+
+/* --------------------------------------------------------------------------
+   Habit grid + cell — top-level so they render on any page (e.g. dashboard)
+   -------------------------------------------------------------------------- */
+
+habit-grid {
+  display: grid;
+  grid-template-columns: repeat(5, var(--habit-cell-size));
+  grid-template-rows:    repeat(5, var(--habit-cell-size));
+  gap: 2px;
+  width: fit-content;
+}
+
+habit-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--habit-cell-size);
+  height: var(--habit-cell-size);
+  font-size: clamp(0.55rem, 2.5vw, 0.7rem);
+  font-weight: 700;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  &:not(.empty):hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    z-index: 1;
+  }
+
+  &:not(.empty):active {
+    transform: scale(0.95);
+  }
+
+  &.empty {
+    background: transparent;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  svg {
+    display: inline-block;
+    width: var(--habit-cell-size);
+    height: var(--habit-cell-size);
+    pointer-events: none;
+    filter: brightness(150%);
+  }
+
+  .habit-initial {
+    pointer-events: none;
+    font-size: clamp(0.6rem, 2vw, 0.75rem);
+  }
+
+  label {
+    display: inline-block;
+    width: var(--habit-cell-size);
+    height: var(--habit-cell-size);
+  }
+
+  input {
+    position: absolute;
+    left: -100000em;
+  }
+
+  input:checked + label {
+    background-color: #000;
+
+    svg { filter: invert(1); }
+  }
+
+  input:focus-visible + label {
+    outline: 2px solid var(--accent-habit);
+    outline-offset: 2px;
+  }
 }
 
 @media (max-width: 400px) {

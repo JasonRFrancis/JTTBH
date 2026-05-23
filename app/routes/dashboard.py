@@ -19,7 +19,7 @@ Permissions
 Requires ``PERM_DASHBOARD`` read access.
 """
 
-from datetime import date, datetime
+from datetime import date
 
 from flask import (
     Blueprint,
@@ -29,7 +29,6 @@ from flask import (
     current_app,
 )
 
-from app.services.database import db_manager
 from app.services.decorators import (
     login_required,
     permission_required_read,
@@ -37,6 +36,7 @@ from app.services.decorators import (
     PERM_HABIT,
     PERM_TODO,
 )
+from app.models.habit_model import HabitModel
 
 
 # ---------------------------------------------------------------------------
@@ -47,78 +47,25 @@ dashboard_bp = Blueprint('dashboard', __name__)
 
 
 # ---------------------------------------------------------------------------
-# Day-of-week bitmask helper
-# ---------------------------------------------------------------------------
-
-# Python weekday(): Monday=0 … Sunday=6
-# Map to bit positions matching the habit.dayweek column:
-#   Monday=1, Tuesday=2, Wednesday=4, Thursday=8,
-#   Friday=16, Saturday=32, Sunday=64
-_DOW_BITS = {
-    0: 1,    # Monday
-    1: 2,    # Tuesday
-    2: 4,    # Wednesday
-    3: 8,    # Thursday
-    4: 16,   # Friday
-    5: 32,   # Saturday
-    6: 64,   # Sunday
-}
-
-
-def _today_dow_bit() -> int:
-    """Return the bitmask value for today's day of the week."""
-    return _DOW_BITS[date.today().weekday()]
-
-
-# ---------------------------------------------------------------------------
 # Data-gathering helpers
 # ---------------------------------------------------------------------------
 
-def _get_today_habits(user_id: str) -> list[dict]:
+def _get_today_habit_grid(user_id: str) -> tuple[list[dict], int, int]:
     """
-    Return today's active habits for *user_id*.
+    Return (grid, completed_count, total_count) for today.
 
-    Only habits whose ``dayweek`` bitmask includes today are returned.
-    For each habit the most recent habit_entry for today is joined so the
-    template knows whether the habit has been completed.
+    grid is the 25-element list from HabitModel.get_grid_for_date, with
+    streak attached to each cell that has a habit.
     """
-    today     = date.today().isoformat()
-    dow_bit   = _today_dow_bit()
-
-    rows = db_manager.execute_query(
-        """
-        SELECT
-            h.habitID,
-            h.name,
-            h.icon,
-            h.position,
-            h.dayweek,
-            (
-                SELECT he.completed
-                FROM habit_entry he
-                WHERE he.habitID = h.habitID
-                  AND he.entry   = %s
-                ORDER BY he.id DESC
-                LIMIT 1
-            ) AS completed
-        FROM habit h
-        WHERE h.userID = %s
-          AND h.id = (
-              SELECT MAX(h2.id)
-              FROM habit h2
-              WHERE h2.habitID = h.habitID
-          )
-          AND h.name   IS NOT NULL
-          AND h.active = 1
-          AND (h.dayweek & %s)
-        ORDER BY h.position
-        """,
-        (today, user_id, dow_bit),
-    )
-    # Normalise completed to bool
-    for row in rows:
-        row['completed'] = bool(row.get('completed'))
-    return rows
+    today   = date.today()
+    grid    = HabitModel.get_grid_for_date(user_id, today)
+    streaks = HabitModel.calculate_streaks(user_id)
+    for cell in grid:
+        if cell['habitID']:
+            cell['streak'] = streaks.get(cell['habitID'], 0)
+    total     = sum(1 for c in grid if c['habitID'] and c['applies'])
+    completed = sum(1 for c in grid if c['habitID'] and c['applies'] and c['completed'] == 1)
+    return grid, completed, total
 
 
 def _get_today_todos(user_id: str) -> list[dict]:
@@ -161,14 +108,19 @@ def _gather_dashboard_data(user_id: str, perm_read: int) -> dict:
     users who lack certain feature access.
     """
     data: dict = {
-        'today':  date.today().isoformat(),
-        'habits': [],
-        'todos':  [],
+        'today':           date.today().isoformat(),
+        'habit_grid':      [],
+        'habit_completed': 0,
+        'habit_total':     0,
+        'todos':           [],
     }
 
     if perm_read & PERM_HABIT:
         try:
-            data['habits'] = _get_today_habits(user_id)
+            grid, completed, total = _get_today_habit_grid(user_id)
+            data['habit_grid']      = grid
+            data['habit_completed'] = completed
+            data['habit_total']     = total
         except Exception as exc:
             current_app.logger.warning('Dashboard: failed to load habits: %s', exc)
 
@@ -200,7 +152,9 @@ def index(username: str):
         username=username,
         area='dashboard',
         today=data['today'],
-        habits=data['habits'],
+        habit_grid=data['habit_grid'],
+        habit_completed=data['habit_completed'],
+        habit_total=data['habit_total'],
         todos=data['todos'],
     )
 

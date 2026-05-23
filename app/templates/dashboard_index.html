@@ -2,6 +2,12 @@
 
 {% block title %}Dashboard - jttbh{% endblock %}
 
+{% block css %}
+{% if has_perm(32) %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/habit.css') }}">
+{% endif %}
+{% endblock %}
+
 {% block content %}
 <header class="page-header">
   <h1>Dashboard</h1>
@@ -11,35 +17,44 @@
 </header>
 
 {% if has_perm(32) %}
-<section class="widget habit-widget habit" aria-labelledby="habit-widget-heading">
+<section class="widget habit-widget" aria-labelledby="habit-widget-heading">
   <header class="widget-header">
     <h2 id="habit-widget-heading">
       <a href="{{ url_for('habit.index', username=username) }}">Habits</a>
     </h2>
-    <span class="widget-meta">Today</span>
+    <span class="widget-meta">{{ habit_completed }}/{{ habit_total }} today</span>
   </header>
 
-  {% if habits %}
-  <ol class="habit-grid" data-username="{{ username }}">
-    {% for habit in habits %}
-    <li class="habit-item{% if habit.completed %} habit-item--done{% endif %}"
-        data-habit-id="{{ habit.habitID }}"
-        data-completed="{{ 'true' if habit.completed else 'false' }}"
-        title="{{ habit.name }}">
-      <button type="button"
-              class="habit-toggle"
-              aria-label="{{ habit.name }} – {% if habit.completed %}completed, click to undo{% else %}not completed, click to mark done{% endif %}"
-              aria-pressed="{{ 'true' if habit.completed else 'false' }}">
-        {% if habit.icon %}
-        <span class="habit-icon" aria-hidden="true">{{ habit.icon }}</span>
-        {% else %}
-        <span class="habit-icon habit-icon--placeholder" aria-hidden="true">&#9632;</span>
-        {% endif %}
-      </button>
-      <span class="habit-name">{{ habit.name }}</span>
-    </li>
+  {% if habit_total > 0 %}
+  <habit-grid data-date="{{ today }}">
+    {% for cell in habit_grid %}
+    {% if cell.habitID and cell.applies %}
+      <habit-cell>
+        <input
+          type="checkbox"
+          id="hc-{{ cell.habitID }}-{{ today }}"
+          class="habit-checkbox"
+          data-habit-id="{{ cell.habitID }}"
+          data-date="{{ today }}"
+          data-position="{{ cell.position }}"
+          {% if cell.completed == 1 %}checked{% endif %}
+          aria-label="{{ cell.name }}: {{ 'completed' if cell.completed == 1 else 'not completed' }}">
+        <label
+          for="hc-{{ cell.habitID }}-{{ today }}"
+          {% if cell.color %}style="--habit-color: {{ cell.color }};"{% endif %}
+          title="{{ cell.name }}{% if cell.streak is defined and cell.streak > 0 %} ({{ cell.streak }}-day streak){% endif %}">
+          {% if cell.icon_svg %}
+            {{ cell.icon_svg | safe }}
+          {% else %}
+            <span class="habit-initial" aria-hidden="true">{{ cell.name[0] | upper }}</span>
+          {% endif %}
+        </label>
+      </habit-cell>
+    {% else %}
+      <habit-cell class="empty" data-position="{{ cell.position }}" aria-hidden="true"></habit-cell>
+    {% endif %}
     {% endfor %}
-  </ol>
+  </habit-grid>
   {% else %}
   <p class="widget-empty">No habits scheduled for today.</p>
   {% endif %}
@@ -87,4 +102,11 @@
 
 {% block js %}
 <script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
+{% if has_perm(32) %}
+<script>
+  const username = {{ username | tojson }};
+  const refDate  = {{ today | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/habit.js') }}"></script>
+{% endif %}
 {% endblock %}

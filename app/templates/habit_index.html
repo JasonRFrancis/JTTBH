@@ -50,10 +50,8 @@
       <habit-grid data-date="{{ day.date }}">
         {% for cell in day.grid %}
 
-        {% if cell.habitID %}
-          {% set cell_classes = [] %}
-          {% if not cell.applies %}{% set cell_classes = cell_classes + ['inactive'] %}{% endif %}
-          <habit-cell class="{{ cell_classes | join(' ') }}">
+        {% if cell.habitID and cell.applies %}
+          <habit-cell>
             <input
               type="checkbox"
               id="hc-{{ cell.habitID }}-{{ day.date }}"
@@ -62,7 +60,6 @@
               data-date="{{ day.date }}"
               data-position="{{ cell.position }}"
               {% if cell.completed == 1 %}checked{% endif %}
-              {% if not cell.applies %}disabled{% endif %}
               aria-label="{{ cell.name }}: {{ 'completed' if cell.completed == 1 else 'not completed' }}">
             <label
               for="hc-{{ cell.habitID }}-{{ day.date }}"
