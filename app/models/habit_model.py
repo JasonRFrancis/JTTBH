@@ -450,19 +450,19 @@ class HabitModel:
         # Determine day-of-week bit for this date
         dow_bit = _date_to_dow_bit(entry_date)
 
-        # Map positions to habits (last habit wins if duplicates)
-        position_map: dict[int, dict] = {}
+        # Collect all habits per position (multiple can share a position on non-overlapping days)
+        position_habits: dict[int, list] = {}
         for habit in habits:
             pos = habit.get('position')
             if pos is None:
                 continue
-            position_map[pos] = habit
+            position_habits.setdefault(pos, []).append(habit)
 
         # Build 25-element grid
         grid = []
         for pos in range(25):
-            habit = position_map.get(pos)
-            if habit is None:
+            habits_here = position_habits.get(pos)
+            if not habits_here:
                 grid.append({
                     'position':  pos,
                     'habitID':   None,
@@ -474,9 +474,15 @@ class HabitModel:
                     'applies':   False,
                 })
             else:
-                entry = entry_map.get(habit['habitID'])
+                # Prefer the habit that applies today; fall back to first if none do
+                applying = next(
+                    (h for h in habits_here if bool(h.get('dayweek', 0) & dow_bit)),
+                    None,
+                )
+                habit  = applying if applying else habits_here[0]
+                applies = applying is not None
+                entry   = entry_map.get(habit['habitID'])
                 completed = entry['completed'] if entry else None
-                applies = bool(habit.get('dayweek', 0) & dow_bit)
                 grid.append({
                     'position':  pos,
                     'habitID':   habit['habitID'],

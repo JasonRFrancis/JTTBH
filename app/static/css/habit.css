@@ -398,7 +398,7 @@ main.habit {
 
   .habit-add,
   .habit-list,
-  .grid-helper {
+  .habit-reorder {
     margin-bottom: 2.5rem;
     max-width: 52rem;
 
@@ -722,76 +722,72 @@ main.habit {
     border: 0;
   }
 
-  .grid-preview-cell.keyboard-dragging {
-    outline: 2px dashed var(--accent-habit);
-    opacity: 0.6;
-  }
+  /* --------- Position swap list ---------- */
 
-
-  /* --------- Grid position preview ---------- */
-
-  .grid-helper-hint {
+  .reorder-hint {
     font-size: 0.8rem;
     color: #6b7280;
     margin-bottom: 0.75rem;
   }
 
-  .habit-grid-preview {
-    display: grid;
-    grid-template-columns: repeat(5, 4rem);
-    grid-template-rows:    repeat(5, 4rem);
-    gap: 4px;
-    margin-bottom: 0.75rem;
-    width: fit-content;
-  }
-
-  .grid-preview-cell {
+  .position-list {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    font-size: 0.65rem;
-    text-align: center;
     gap: 2px;
-    padding: 2px;
-    border: 1px solid #e5e7eb;
-    user-select: none;
+    margin-bottom: 0.75rem;
+  }
 
-    &.occupied {
+  .position-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: #f9fafb;
+    font-size: 0.875rem;
+    transition: background 0.1s;
+
+    &.swap-selected {
       background: #eff6ff;
       border-color: var(--accent-habit);
-      cursor: grab;
-      color: #1e3a8a;
-
-      &:active {
-        cursor: grabbing;
-        opacity: 0.7;
-      }
-    }
-
-    &.empty {
-      background: #f9fafb;
-      color: #d1d5db;
-    }
-
-    &.drag-over {
-      background: #dbeafe;
-      border-color: var(--accent-habit);
-      border-style: dashed;
+      outline: 2px solid var(--accent-habit);
+      outline-offset: 1px;
     }
   }
 
-  .grid-pos-num {
-    font-size: 0.6rem;
-    color: #9ca3af;
+  .pos-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 4px;
+    background: #e5e7eb;
+    color: #374151;
+    font-size: 0.7rem;
+    font-weight: 700;
+    flex-shrink: 0;
   }
 
-  .grid-habit-name {
-    font-size: 0.65rem;
+  .pos-name {
+    flex: 1;
     font-weight: 600;
-    word-break: break-all;
-    line-height: 1.2;
+    color: #111827;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pos-days {
+    font-size: 0.75rem;
+    color: #6b7280;
+    white-space: nowrap;
+  }
+
+  .btn-sm {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.8rem;
   }
 
 
@@ -852,15 +848,6 @@ main.habit {
     }
   }
 
-
-  /* --------- Small screens ---------- */
-
-  @media (max-width: 400px) {
-    .habit-grid-preview {
-      grid-template-columns: repeat(5, 3rem);
-      grid-template-rows:    repeat(5, 3rem);
-    }
-  }
 
 }
 

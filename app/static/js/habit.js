@@ -227,215 +227,92 @@
 
 
   /* -------------------------------------------------------------------------
-     4. Grid drag-to-reorder (mouse + keyboard)
+     4. Position swap list (settings page)
      ------------------------------------------------------------------------- */
 
-  var _draggedCell      = null;   // mouse drag source
-  var _keyboardDragCell = null;   // keyboard drag source
-  var _pendingPositions = {};     // habitID -> new position
+  var _swapSource       = null;  // { habitId, position, element }
+  var _pendingPositions = {};    // habitID -> new position
 
 
-  /* --- Shared move logic -------------------------------------------------- */
-
-  function rebuildCell(cell, pos, habitId, name, bg, isOccupied) {
-    var nameShort = name ? name.substring(0, 8) + (name.length > 8 ? '…' : '') : '';
-    cell.innerHTML =
-      '<span class="grid-pos-num">' + pos + '</span>' +
-      (name ? '<span class="grid-habit-name">' + nameShort + '</span>' : '');
-
-    cell.dataset.position      = pos;
-    cell.style.backgroundColor = bg || '';
-
-    cell.removeEventListener('dragstart',  onDragStart);
-    cell.removeEventListener('dragend',    onDragEnd);
-    cell.removeEventListener('keydown',    onGridCellKeyDown);
-
-    if (isOccupied && habitId) {
-      cell.dataset.habitId = habitId;
-      cell.setAttribute('data-orig-name', name || '');
-      cell.title = (name || habitId) + ' (pos ' + pos + ')';
-      cell.setAttribute('aria-label', (name || habitId) + ', position ' + pos + '. Press Space or Enter to move.');
-      cell.classList.add('occupied');
-      cell.classList.remove('empty');
-      cell.setAttribute('draggable', 'true');
-      cell.setAttribute('tabindex', '0');
-      cell.setAttribute('role', 'button');
-      cell.addEventListener('dragstart', onDragStart);
-      cell.addEventListener('dragend',   onDragEnd);
-      cell.addEventListener('keydown',   onGridCellKeyDown);
-    } else {
-      delete cell.dataset.habitId;
-      cell.removeAttribute('data-orig-name');
-      cell.removeAttribute('aria-label');
-      cell.title = 'Position ' + pos;
-      cell.classList.remove('occupied');
-      cell.classList.add('empty');
-      cell.removeAttribute('draggable');
-      cell.removeAttribute('tabindex');
-      cell.removeAttribute('role');
-    }
-  }
-
-  function executeGridMove(source, target) {
-    var sourceId   = source.dataset.habitId;
-    var sourcePos  = parseInt(source.dataset.position, 10);
-    var sourceName = source.getAttribute('data-orig-name') || sourceId || '';
-    var sourceBg   = source.style.backgroundColor;
-
-    var targetPos  = parseInt(target.dataset.position, 10);
-    if (!sourceId || isNaN(sourcePos) || isNaN(targetPos)) return;
-
-    var targetId   = target.dataset.habitId;
-    var targetName = target.getAttribute('data-orig-name') || targetId || '';
-    var targetBg   = target.style.backgroundColor;
-
-    if (targetId) {
-      rebuildCell(source, sourcePos, targetId, targetName, targetBg, true);
-      _pendingPositions[targetId] = sourcePos;
-    } else {
-      rebuildCell(source, sourcePos, null, '', '', false);
-    }
-
-    rebuildCell(target, targetPos, sourceId, sourceName, sourceBg, true);
-    _pendingPositions[sourceId] = targetPos;
-
+  function initPositionList() {
+    var list    = document.getElementById('position-list');
     var saveBtn = document.getElementById('save-positions');
-    if (saveBtn) saveBtn.style.display = '';
-  }
+    if (!list) return;
 
-
-  /* --- Mouse drag --------------------------------------------------------- */
-
-  function initGridDrag() {
-    var grid = document.getElementById('grid-preview');
-    if (!grid) return;
-
-    grid.querySelectorAll('.grid-preview-cell.occupied').forEach(function (cell) {
-      cell.addEventListener('dragstart', onDragStart);
-      cell.addEventListener('dragend',   onDragEnd);
+    list.querySelectorAll('.swap-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        onSwapClick(btn.closest('.position-row'));
+      });
     });
 
-    grid.querySelectorAll('.grid-preview-cell').forEach(function (cell) {
-      cell.addEventListener('dragover',  onDragOver);
-      cell.addEventListener('dragleave', onDragLeave);
-      cell.addEventListener('drop',      onDrop);
-    });
-
-    var saveBtn = document.getElementById('save-positions');
     if (saveBtn) {
       saveBtn.addEventListener('click', function () { savePendingPositions(saveBtn); });
     }
   }
 
-  function onDragStart(event) {
-    _draggedCell = event.currentTarget;
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', _draggedCell.dataset.habitId || '');
-    setTimeout(function () { if (_draggedCell) _draggedCell.style.opacity = '0.4'; }, 0);
-  }
+  function onSwapClick(row) {
+    if (!row) return;
+    var habitId  = row.dataset.habitId;
+    var btn      = row.querySelector('.swap-btn');
+    var name     = (row.querySelector('.pos-name') || {}).textContent || habitId;
 
-  function onDragEnd() {
-    if (_draggedCell) _draggedCell.style.opacity = '';
-    _draggedCell = null;
-    document.querySelectorAll('.grid-preview-cell.drag-over').forEach(function (c) {
-      c.classList.remove('drag-over');
-    });
-  }
-
-  function onDragOver(event) {
-    if (!_draggedCell) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-    event.currentTarget.classList.add('drag-over');
-  }
-
-  function onDragLeave(event) {
-    event.currentTarget.classList.remove('drag-over');
-  }
-
-  function onDrop(event) {
-    event.preventDefault();
-    var target = event.currentTarget;
-    target.classList.remove('drag-over');
-    if (!_draggedCell || _draggedCell === target) return;
-    executeGridMove(_draggedCell, target);
-  }
-
-
-  /* --- Keyboard drag ------------------------------------------------------ */
-
-  function initGridKeyboard() {
-    var grid = document.getElementById('grid-preview');
-    if (!grid) return;
-
-    grid.querySelectorAll('.grid-preview-cell.occupied').forEach(function (cell) {
-      cell.setAttribute('tabindex', '0');
-      cell.setAttribute('role', 'button');
-      var name = cell.getAttribute('data-orig-name') || cell.dataset.habitId || '';
-      cell.setAttribute('aria-label', name + ', position ' + cell.dataset.position + '. Press Space or Enter to move.');
-      cell.addEventListener('keydown', onGridCellKeyDown);
-    });
-  }
-
-  function onGridCellKeyDown(event) {
-    if (event.key !== ' ' && event.key !== 'Enter' && event.key !== 'Escape') return;
-    event.preventDefault();
-
-    var cell = event.currentTarget;
-
-    if (event.key === 'Escape') {
-      cancelKeyboardDrag();
-      return;
-    }
-
-    if (!_keyboardDragCell) {
-      if (!cell.classList.contains('occupied')) return;
-      _keyboardDragCell = cell;
-      cell.classList.add('keyboard-dragging');
-      document.querySelectorAll('#grid-preview .grid-preview-cell').forEach(function (c) {
-        if (c === cell) return;
-        c.setAttribute('tabindex', '0');
-        c.setAttribute('role', 'button');
-        if (!c.getAttribute('aria-label')) {
-          c.setAttribute('aria-label', 'Position ' + c.dataset.position + '. Press Space or Enter to move habit here.');
-        }
-        c.addEventListener('keydown', onGridCellKeyDown);
-      });
-      updateGridStatus(
-        'Moving ' + (cell.getAttribute('data-orig-name') || 'habit') +
-        '. Tab to a destination and press Space or Enter to place it. Press Escape to cancel.'
-      );
+    if (!_swapSource) {
+      _swapSource = { habitId: habitId, element: row };
+      row.classList.add('swap-selected');
+      if (btn) btn.textContent = 'Cancel';
+      updateGridStatus('Swap "' + name.trim() + '" — click another habit\'s Swap button to exchange positions, or Cancel to abort.');
+    } else if (_swapSource.habitId === habitId) {
+      cancelSwap();
     } else {
-      if (cell === _keyboardDragCell) { cancelKeyboardDrag(); return; }
-      var source = _keyboardDragCell;
-      cancelKeyboardDrag();
-      executeGridMove(source, cell);
-      cell.focus();
-      updateGridStatus('Moved. Press Save Positions to apply changes.');
+      var sourceRow   = _swapSource.element;
+      var sourcePosEl = sourceRow.querySelector('.pos-badge');
+      var targetPosEl = row.querySelector('.pos-badge');
+      var sourcePos   = parseInt(sourceRow.dataset.position, 10);
+      var targetPos   = parseInt(row.dataset.position, 10);
+
+      // Exchange positions in the DOM
+      sourceRow.dataset.position = targetPos;
+      row.dataset.position       = sourcePos;
+      if (sourcePosEl) sourcePosEl.textContent = targetPos;
+      if (targetPosEl) targetPosEl.textContent = sourcePos;
+
+      // Track for save
+      _pendingPositions[_swapSource.habitId] = targetPos;
+      _pendingPositions[habitId]             = sourcePos;
+
+      resortPositionList();
+      cancelSwap();
+
+      updateGridStatus('Positions swapped. Click Save Positions to apply.');
+      var saveBtn = document.getElementById('save-positions');
+      if (saveBtn) saveBtn.style.display = '';
     }
   }
 
-  function cancelKeyboardDrag() {
-    if (_keyboardDragCell) {
-      _keyboardDragCell.classList.remove('keyboard-dragging');
-      _keyboardDragCell = null;
+  function cancelSwap() {
+    if (_swapSource) {
+      _swapSource.element.classList.remove('swap-selected');
+      var btn = _swapSource.element.querySelector('.swap-btn');
+      if (btn) btn.textContent = 'Swap';
+      _swapSource = null;
     }
-    document.querySelectorAll('#grid-preview .grid-preview-cell.empty').forEach(function (c) {
-      c.removeAttribute('tabindex');
-      c.removeAttribute('role');
-      c.removeAttribute('aria-label');
-      c.removeEventListener('keydown', onGridCellKeyDown);
-    });
     updateGridStatus('');
+  }
+
+  function resortPositionList() {
+    var list = document.getElementById('position-list');
+    if (!list) return;
+    var rows = Array.from(list.querySelectorAll('.position-row'));
+    rows.sort(function (a, b) {
+      return parseInt(a.dataset.position, 10) - parseInt(b.dataset.position, 10);
+    });
+    rows.forEach(function (row) { list.appendChild(row); });
   }
 
   function updateGridStatus(msg) {
     var el = document.getElementById('grid-status');
     if (el) el.textContent = msg;
   }
-
-
-  /* --- Save --------------------------------------------------------------- */
 
   function savePendingPositions(saveBtn) {
     if (!username) return;
@@ -445,7 +322,6 @@
     });
     if (items.length === 0) return;
 
-    var originalText    = saveBtn.textContent;
     saveBtn.textContent = 'Saving…';
     saveBtn.disabled    = true;
 
@@ -555,14 +431,8 @@
     initToggleCheckboxes();
     startPolling();
     initIconPreviews();
-    initGridDrag();
-    initGridKeyboard();
+    initPositionList();
     initGridPickers();
-
-    document.querySelectorAll('.grid-preview-cell.occupied').forEach(function (cell) {
-      var nameEl = cell.querySelector('.grid-habit-name');
-      if (nameEl) cell.setAttribute('data-orig-name', nameEl.textContent);
-    });
   });
 
 }());

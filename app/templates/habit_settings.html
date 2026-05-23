@@ -131,45 +131,35 @@
     </form>
   </section>
 
-  <!-- Grid position visualiser -->
-  <section class="grid-helper" aria-label="Grid position helper">
-    <h2>Grid Layout</h2>
-    <p class="grid-helper-hint">Position = row &times; 5 + column. Drag habits to rearrange.</p>
-    <div class="habit-grid-preview" id="grid-preview" data-username="{{ username }}">
-      {% for pos in range(25) %}
-      {% set ns = namespace(found=false) %}
-      {% for habit in habits %}
-        {% if habit.position == pos and not ns.found %}
-          {% set ns.found = true %}
-          <div
-            class="grid-preview-cell occupied"
-            data-habit-id="{{ habit.habitID }}"
-            data-position="{{ pos }}"
-            draggable="true"
-            tabindex="0"
-            role="button"
-            aria-label="{{ habit.name }}, position {{ pos }}. Press Space or Enter to move."
-            title="{{ habit.name }} (pos {{ pos }})"
-            {% if habit.color %}style="background-color: {{ habit.color }};"{% endif %}>
-            <span class="grid-pos-num">{{ pos }}</span>
-            <span class="grid-habit-name">{{ habit.name[:8] }}{% if habit.name|length > 8 %}…{% endif %}</span>
-          </div>
+  <!-- Grid position list / swap -->
+  <section class="habit-reorder" aria-label="Grid positions">
+    <h2>Grid Positions</h2>
+    <p class="reorder-hint">
+      Habits with non-overlapping days can share a grid position (0–24).
+      Click <strong>Swap</strong> on two habits to exchange their positions.
+    </p>
+    {% if habits %}
+    <div class="position-list" id="position-list">
+      {% for habit in habits | sort(attribute='position') %}
+      <div class="position-row"
+           data-habit-id="{{ habit.habitID }}"
+           data-position="{{ habit.position }}"
+           data-dayweek="{{ habit.dayweek }}">
+        <span class="pos-badge" aria-label="Position {{ habit.position }}">{{ habit.position }}</span>
+        {% if habit.color %}
+        <span class="habit-item-swatch" style="background-color: {{ habit.color }};" aria-hidden="true"></span>
         {% endif %}
-      {% endfor %}
-      {% if not ns.found %}
-        <div
-          class="grid-preview-cell empty"
-          data-position="{{ pos }}"
-          title="Position {{ pos }}">
-          <span class="grid-pos-num">{{ pos }}</span>
-        </div>
-      {% endif %}
+        <span class="pos-name">{{ habit.name }}</span>
+        <span class="pos-days">{{ habit.dayweek | dayweek_label }}</span>
+        <button type="button" class="btn btn-sm swap-btn" data-habit-id="{{ habit.habitID }}">Swap</button>
+      </div>
       {% endfor %}
     </div>
-    <button type="button" id="save-positions" class="btn btn-secondary" style="display:none;">
-      Save Positions
-    </button>
+    <button type="button" id="save-positions" class="btn btn-secondary" style="display:none;">Save Positions</button>
     <div id="grid-status" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    {% else %}
+    <p class="habit-list-empty">No habits yet.</p>
+    {% endif %}
   </section>
 
   <!-- Existing habits -->
