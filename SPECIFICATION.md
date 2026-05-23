@@ -323,6 +323,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
          1. Habits can be dragged to swap positions in the grid preview
          2. A "Save Positions" button appears after any drag
          3. On save, positions are batch-POSTed to `POST /reorder/post`; the page reloads after 600 ms to reflect the new layout
+    9. Toggle behavior (client-side)
+      1. Clicking a habit cell is an **optimistic UI update**: the checkbox state changes immediately, no waiting for the server
+      2. The toggle POST (`POST /toggle/post/<habit_id>/<date_str>`) is fire-and-forget — it sends `change_id=<uuid>` in the form body along with `X-Requested-With: XMLHttpRequest`
+      3. `change_id` is a `crypto.randomUUID()` generated per click; stored in `habit_entry.change_id` (UNIQUE KEY) so duplicate POSTs (retries) are silently ignored by the model
+      4. A 10-second polling loop calls `GET /habit/index/json` and reconciles the DOM with server state
+         - Poll response: `{"state": {"<habitID>|<date>": {"completed": 1|0, "changeId": "uuid"|null}, ...}}`
+         - Cells with a pending POST are skipped by the reconciler until the poll response contains the matching `changeId`, at which point the pending flag is cleared and the cell is unlocked
     3. Days of Week
       1. The `dayweek` field encodes which days a habit applies using a bitmask:
          ```

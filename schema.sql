@@ -573,13 +573,15 @@ CREATE TABLE `habit_entry` (
   `entry` date NOT NULL,
   `completed` int DEFAULT NULL,
   `vacation` tinyint(1) DEFAULT NULL,
+  `change_id` varchar(36) DEFAULT NULL COMMENT 'Client-generated UUID per toggle request; UNIQUE prevents duplicate processing on retry',
   `created` datetime NOT NULL,
   `created_by` varchar(36) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_id_desc` (`id` DESC),
   KEY `idx_habit_entry` (`entry`),
   KEY `idx_user_entry` (`habitID`,`entry`),
-  KEY `id` (`id`)
+  KEY `id` (`id`),
+  UNIQUE KEY `uniq_change_id` (`change_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6697 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

@@ -160,10 +160,10 @@ class HabitModel:
         Returns
         -------
         list[dict]
-            Each dict: habitID, entry, completed, vacation.
+            Each dict: habitID, entry, completed, vacation, change_id.
         """
         sql = """
-            SELECT he.habitID, he.entry, he.completed, he.vacation
+            SELECT he.habitID, he.entry, he.completed, he.vacation, he.change_id
             FROM habit_entry he
             WHERE he.habitID IN (
                 SELECT DISTINCT h.habitID FROM habit h WHERE h.userID = %s
@@ -333,7 +333,7 @@ class HabitModel:
         ))
 
     @staticmethod
-    def toggle_entry(habit_id: str, user_id: str, entry_date: date) -> dict:
+    def toggle_entry(habit_id: str, user_id: str, entry_date: date, change_id: str = None) -> dict:
         """
         Toggle the completion status for a habit on a given date.
 
@@ -348,12 +348,24 @@ class HabitModel:
             Used for created_by; also verifies habit ownership.
         entry_date : date
             The date to toggle.
+        change_id : str, optional
+            Client-generated UUID for idempotency. If already stored, returns
+            the existing state without re-toggling.
 
         Returns
         -------
         dict
             {'completed': 1} or {'completed': None}
         """
+        # Idempotency: if we've already processed this change_id, return current state.
+        if change_id:
+            existing = db_manager.execute_one(
+                "SELECT completed FROM habit_entry WHERE change_id = %s LIMIT 1",
+                (change_id,),
+            )
+            if existing is not None:
+                return {'completed': existing['completed']}
+
         # Verify the habit belongs to this user
         habit = HabitModel.get_habit_by_id(habit_id, user_id)
         if habit is None:
@@ -376,10 +388,10 @@ class HabitModel:
             new_completed = None
 
         insert_sql = """
-            INSERT INTO habit_entry (habitID, entry, completed, created, created_by)
-            VALUES (%s, %s, %s, NOW(), %s)
+            INSERT INTO habit_entry (habitID, entry, completed, change_id, created, created_by)
+            VALUES (%s, %s, %s, %s, NOW(), %s)
         """
-        db_manager.execute_insert(insert_sql, (habit_id, entry_date, new_completed, user_id))
+        db_manager.execute_insert(insert_sql, (habit_id, entry_date, new_completed, change_id, user_id))
 
         return {'completed': new_completed}
 

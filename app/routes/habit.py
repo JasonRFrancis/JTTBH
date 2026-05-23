@@ -196,6 +196,52 @@ def positions_json(username: str):
     return jsonify({'positions': positions})
 
 
+@habit_bp.route('/index/json')
+@login_required
+@permission_required_read(PERM_HABIT)
+def index_json(username: str):
+    """
+    Return habit completion state for the 28-day calendar window as JSON.
+
+    Used by the client-side polling loop to reconcile optimistic UI updates
+    with the authoritative server state.
+
+    Query params
+    ------------
+    ref : str (optional)
+        ISO date (YYYY-MM-DD) used as the reference date for the same window
+        that GET /index/<date_str> renders.  Defaults to today.
+
+    Response
+    --------
+    {"state": {"<habitID>|<date>": {"completed": 1|0, "changeId": "uuid"|null}, ...}}
+        Only habit+date pairs that have a habit_entry row are included.
+        Missing keys should be treated as completed=0, changeId=null by the client.
+    """
+    user_id  = session['user_id']
+    ref_date = _parse_date(request.args.get('ref'))
+
+    today      = date.today()
+    sdays      = today.weekday() + 1
+    start_date = ref_date - (timedelta(days=7) + timedelta(days=sdays))
+    end_date   = ref_date + timedelta(days=13) - timedelta(days=sdays)
+
+    entries = HabitModel.get_entries(user_id, start_date, end_date)
+
+    state = {}
+    for e in entries:
+        entry_date = e['entry']
+        if isinstance(entry_date, str):
+            entry_date = date.fromisoformat(entry_date)
+        key = e['habitID'] + '|' + entry_date.isoformat()
+        state[key] = {
+            'completed': 1 if e['completed'] == 1 else 0,
+            'changeId':  e['change_id'],
+        }
+
+    return jsonify({'state': state})
+
+
 @habit_bp.route('/heatmap')
 @login_required
 @permission_required_read(PERM_HABIT)
@@ -284,8 +330,9 @@ def toggle(username: str, habit_id: str, date_str: str):
     """
     user_id    = session['user_id']
     entry_date = _parse_date(date_str)
+    change_id  = request.form.get('change_id', '').strip() or None
 
-    result = HabitModel.toggle_entry(habit_id, user_id, entry_date)
+    result = HabitModel.toggle_entry(habit_id, user_id, entry_date, change_id)
 
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if is_ajax:

@@ -7,11 +7,9 @@
 {% endblock %}
 
 {% block content %}
-<main class="habit-heatmap">
-
-  <header class="habit-header">
+  <header class="page">
     <h1>Habit Heat Map</h1>
-    <nav class="habit-nav" aria-label="Habit navigation">
+    <nav aria-label="Habit navigation">
       <a href="{{ url_for('habit.index', username=username) }}">Calendar View</a>
       <a href="{{ url_for('habit.settings', username=username) }}">Manage Habits</a>
     </nav>
@@ -20,46 +18,41 @@
   <!-- Heatmap grid -->
   <section class="heatmap" aria-label="Habit completion heatmap">
 
-    <div class="heatmap-legend" aria-label="Heat level legend">
-      <span class="legend-label">Less</span>
-      <span class="heatmap-day heat-0" aria-label="No completions" title="0%"></span>
-      <span class="heatmap-day heat-1" aria-label="1-25% completions" title="1-25%"></span>
-      <span class="heatmap-day heat-2" aria-label="26-50% completions" title="26-50%"></span>
-      <span class="heatmap-day heat-3" aria-label="51-75% completions" title="51-75%"></span>
-      <span class="heatmap-day heat-4" aria-label="76-100% completions" title="76-100%"></span>
-      <span class="legend-label">More</span>
+    <div class="heatmap-legend" aria-label="Completion rate key">
+      <span class="legend-label">0%</span>
+      <span class="heatmap-day heat-0" aria-label="0% – no completions" title="0%"></span>
+      <span class="heatmap-day heat-1" aria-label="1–25% completions" title="1–25%"></span>
+      <span class="heatmap-day heat-2" aria-label="26–50% completions" title="26–50%"></span>
+      <span class="heatmap-day heat-3" aria-label="51–75% completions" title="51–75%"></span>
+      <span class="heatmap-day heat-4" aria-label="76–100% completions" title="76–100%"></span>
+      <span class="legend-label">100%</span>
     </div>
 
-    <!-- Day-of-week labels -->
-    <div class="heatmap-dow-labels" aria-hidden="true">
-      <span>Sun</span>
-      <span>Mon</span>
-      <span>Tue</span>
-      <span>Wed</span>
-      <span>Thu</span>
-      <span>Fri</span>
-      <span>Sat</span>
-    </div>
-
-    <div class="heatmap-grid" role="grid" aria-label="Daily habit completion grid">
-      {% for week in heatmap_weeks %}
-      <div class="heatmap-week" role="row">
-        {% for day in week %}
-        {% if day is none %}
-          <span class="heatmap-day heat-empty" role="gridcell" aria-hidden="true"></span>
-        {% else %}
-          <a
-            href="{{ url_for('habit.index', username=username, date_str=day.date) }}"
-            class="heatmap-day heat-{{ day.level }}"
-            role="gridcell"
-            title="{{ day.date }}: {{ day.completed }}/{{ day.total }} ({{ '%.0f' | format(day.pct * 100) }}%)"
-            aria-label="{{ day.date }}: {{ day.completed }} of {{ day.total }} habits completed">
-          </a>
-        {% endif %}
+    <table aria-label="Daily habit completion">
+      <tbody>
+        {% set dow_labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] %}
+        {% for dow in range(7) %}
+        <tr>
+          <th scope="row">{{ dow_labels[dow] }}</th>
+          {% for week in heatmap_weeks %}
+          {% set day = week[dow] %}
+          <td>
+            {% if day is none %}
+              <span class="heatmap-day heat-empty" aria-hidden="true"></span>
+            {% else %}
+              <a
+                href="{{ url_for('habit.index', username=username, date_str=day.date) }}"
+                class="heatmap-day heat-{{ day.level }}"
+                title="{{ day.date }}: {{ day.completed }}/{{ day.total }} ({{ '%.0f' | format(day.pct * 100) }}%)"
+                aria-label="{{ day.date }}: {{ day.completed }} of {{ day.total }} habits completed">
+              </a>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
         {% endfor %}
-      </div>
-      {% endfor %}
-    </div>
+      </tbody>
+    </table>
 
   </section>
 
@@ -110,7 +103,6 @@
     </dl>
   </section>
 
-</main>
 {% endblock %}
 
 {% block js %}

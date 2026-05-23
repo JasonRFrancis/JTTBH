@@ -7,11 +7,9 @@
 {% endblock %}
 
 {% block content %}
-<main class="habit-settings">
-
-  <header class="habit-header">
+  <header class="page">
     <h1>Manage Habits</h1>
-    <nav class="habit-nav" aria-label="Habit navigation">
+    <nav aria-label="Habit navigation">
       <a href="{{ url_for('habit.index', username=username) }}">Back to Habits</a>
       <a href="{{ url_for('habit.heatmap', username=username) }}">Heat Map</a>
     </nav>
@@ -25,6 +23,8 @@
       action="{{ url_for('habit.create', username=username) }}"
       class="habit-form"
       novalidate>
+
+      <p class="form-note">* Required</p>
 
       <div class="form-row">
         <label for="new-name">Name <span aria-hidden="true">*</span></label>
@@ -146,6 +146,9 @@
             data-habit-id="{{ habit.habitID }}"
             data-position="{{ pos }}"
             draggable="true"
+            tabindex="0"
+            role="button"
+            aria-label="{{ habit.name }}, position {{ pos }}. Press Space or Enter to move."
             title="{{ habit.name }} (pos {{ pos }})"
             {% if habit.color %}style="background-color: {{ habit.color }};"{% endif %}>
             <span class="grid-pos-num">{{ pos }}</span>
@@ -166,6 +169,7 @@
     <button type="button" id="save-positions" class="btn btn-secondary" style="display:none;">
       Save Positions
     </button>
+    <div id="grid-status" class="sr-only" aria-live="polite" aria-atomic="true"></div>
   </section>
 
   <!-- Existing habits -->
@@ -199,6 +203,8 @@
             action="{{ url_for('habit.update', username=username, habit_id=habit.habitID) }}"
             class="habit-form"
             novalidate>
+
+            <p class="form-note">* Required</p>
 
             <div class="form-row">
               <label for="name-{{ habit.habitID }}">Name <span aria-hidden="true">*</span></label>
@@ -341,7 +347,6 @@
 
   </section>
 
-</main>
 {% endblock %}
 
 {% block js %}

@@ -96,6 +96,7 @@
 {% block js %}
 <script>
   const username = {{ username | tojson }};
+  const refDate  = {{ ref_date.isoformat() | tojson }};
 </script>
 <script src="{{ url_for('static', filename='js/habit.js') }}"></script>
 {% endblock %}
