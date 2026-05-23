@@ -25,7 +25,7 @@
 }
 
 
-main.habit {
+main.habit,section.habit {
 
   /* --------- Page header ---------- */
 
@@ -65,7 +65,7 @@ main.habit {
   }
 
   /* --------- Progress bar ---------- */
-  .today {
+  habit-today {
     margin-bottom: 1.5rem;
   
     h2 {

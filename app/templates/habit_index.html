@@ -16,7 +16,7 @@
   </header>
 
   <!-- Today's progress -->
-  <section class="today" aria-label="Today's progress">
+  <habit-today aria-label="Today's progress">
     <h2>
       Today:
       <span class="today-count">{{ today_completed }}/{{ today_total }}</span>
@@ -32,7 +32,7 @@
     {% else %}
     <p class="no-habits">No habits scheduled for today.</p>
     {% endif %}
-  </section>
+  </habit-today>
 
   <!-- 28-day calendar -->
   <habit-calendar aria-label="28-day habit calendar">
