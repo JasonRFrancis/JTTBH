@@ -127,7 +127,8 @@ POST /jason/todo/delete/post/<todoID>
 | | | `POST /create/post`, `POST /read/post/<bookmark_id>` |
 | `fitness_bp` | `/<u>/fitness` | `GET /index`, `GET /log`, `GET /settings`, `GET /settings/<fitness_id>` |
 | | | `POST /program/create/post`, `/program/activate/post/<id>`, `/program/delete/post/<id>` |
-| | | `POST /program/exercise/create/post`, `/program/exercise/delete/post/<program_id>` |
+| | | `POST /program/exercise/create/post`, `/program/exercise/update/post/<program_id>`, `/program/exercise/delete/post/<program_id>` |
+| | | `POST /exercise/create/post` (add new exercise to catalog) |
 | | | `POST /log/set/post` (JSON), `/log/set/delete/post/<log_set_id>` (JSON), `/log/end/post/<log_id>` |
 | | | `POST /weight/post` (JSON) |
 | `triage_bp` | `/<u>/triage` | `GET /index` |

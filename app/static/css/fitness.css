@@ -476,6 +476,18 @@
 
 .add-exercise-form form { margin-top: 0.75rem; }
 
+.edit-exercise-form {
+  width: 100%;
+  margin-top: 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
+.edit-exercise-form summary { cursor: pointer; font-size: 0.875rem; color: var(--color-primary); }
+
+.edit-exercise-form form { margin-top: 0.75rem; }
+
 /* Form fields */
 .field { margin-bottom: 0.6rem; }
 

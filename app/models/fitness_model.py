@@ -177,6 +177,32 @@ class FitnessModel:
         return program_id
 
     @staticmethod
+    def update_program_exercise(
+        program_id: str,
+        sets: int | None,
+        reps: int | None,
+        weight: float | None,
+        notes: str | None,
+        location: str,
+        duration: int | None,
+        speed: float | None,
+        incline: float | None,
+    ) -> None:
+        db_manager.execute_insert("""
+            INSERT INTO fitness_program
+              (programID, fitnessID, day_of_week, exerciseID, order_index,
+               recommended_sets, recommended_reps, recommended_weight,
+               notes, location, recommended_duration, recommended_speed,
+               recommended_incline, created)
+            SELECT programID, fitnessID, day_of_week, exerciseID, order_index,
+                   %s, %s, %s, %s, %s, %s, %s, %s, NOW()
+            FROM fitness_program
+            WHERE programID = %s
+              AND id = (SELECT MAX(id) FROM fitness_program WHERE programID = %s)
+        """, (sets, reps, weight, notes, location, duration, speed, incline,
+              program_id, program_id))
+
+    @staticmethod
     def delete_program_exercise(program_id: str, user_id: str) -> None:
         db_manager.execute_insert("""
             INSERT INTO fitness_program
@@ -194,6 +220,24 @@ class FitnessModel:
     # ------------------------------------------------------------------ #
     # Exercise catalog                                                     #
     # ------------------------------------------------------------------ #
+
+    @staticmethod
+    def create_exercise(
+        name: str,
+        description: str | None,
+        equipment_type: str | None,
+        exercise_type: str,
+        muscle_group: str | None,
+    ) -> str:
+        exercise_id = str(uuid.uuid4())
+        db_manager.execute_insert("""
+            INSERT INTO fitness_exercise
+              (exerciseID, name, description, equipment_type, type, muscle_group,
+               video_url, created, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, NULL, NOW(), NULL)
+        """, (exercise_id, name, description or None, equipment_type or None,
+              exercise_type, muscle_group or None))
+        return exercise_id
 
     @staticmethod
     def get_exercise_catalog() -> list[dict]:

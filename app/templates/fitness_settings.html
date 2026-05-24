@@ -121,6 +121,59 @@
             <input type="hidden" name="fitness_id" value="{{ selected.fitnessID }}">
             <button type="submit" class="btn-sm btn-danger" aria-label="Remove {{ ex.exercise_name }}">×</button>
           </form>
+          <details class="edit-exercise-form">
+            <summary>Edit</summary>
+            <form method="post"
+                  action="{{ url_for('fitness.program_exercise_update', username=username, program_id=ex.programID) }}">
+              <input type="hidden" name="fitness_id" value="{{ selected.fitnessID }}">
+              <div class="field">
+                <label>Location</label>
+                <select name="location">
+                  <option value="gym"{% if ex.location == 'gym' %} selected{% endif %}>Gym</option>
+                  <option value="home"{% if ex.location == 'home' %} selected{% endif %}>Home</option>
+                  <option value="other"{% if ex.location == 'other' %} selected{% endif %}>Other</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Adjustment / notes</label>
+                <input type="text" name="notes" value="{{ ex.notes or '' }}" maxlength="100">
+              </div>
+              {% if ex.exercise_type == 'cardio' %}
+              <div class="field field--inline">
+                <label>Duration (min)</label>
+                <input type="number" name="duration" min="1" step="1" inputmode="numeric"
+                       value="{{ ex.recommended_duration or '' }}">
+              </div>
+              <div class="field field--inline">
+                <label>Speed (mph)</label>
+                <input type="number" name="speed" min="0" step="0.1" inputmode="decimal"
+                       value="{{ ex.recommended_speed or '' }}">
+              </div>
+              <div class="field field--inline">
+                <label>Incline (°)</label>
+                <input type="number" name="incline" min="0" step="0.5" inputmode="decimal"
+                       value="{{ ex.recommended_incline or '' }}">
+              </div>
+              {% else %}
+              <div class="field field--inline">
+                <label>Sets</label>
+                <input type="number" name="sets" min="1" max="99" step="1" inputmode="numeric"
+                       value="{{ ex.recommended_sets or '' }}">
+              </div>
+              <div class="field field--inline">
+                <label>Reps</label>
+                <input type="number" name="reps" min="1" max="99" step="1" inputmode="numeric"
+                       value="{{ ex.recommended_reps or '' }}">
+              </div>
+              <div class="field field--inline">
+                <label>Weight (lbs)</label>
+                <input type="number" name="weight" min="0" step="5" inputmode="decimal"
+                       value="{{ ex.recommended_weight|int if ex.recommended_weight else '' }}">
+              </div>
+              {% endif %}
+              <button type="submit">Save</button>
+            </form>
+          </details>
         </li>
         {% endfor %}
       </ul>
@@ -209,6 +262,43 @@
     {% endfor %}
   </section>
   {% endif %}
+
+  <section aria-labelledby="catalog-heading">
+    <h2 id="catalog-heading">Exercise Catalog</h2>
+    <details class="create-form">
+      <summary>+ New Exercise</summary>
+      <form method="post" action="{{ url_for('fitness.exercise_create', username=username) }}">
+        <div class="field">
+          <label for="new-ex-name">Name</label>
+          <input type="text" id="new-ex-name" name="name" required maxlength="100"
+                 placeholder="e.g. Cable Fly">
+        </div>
+        <div class="field">
+          <label for="new-ex-type">Type</label>
+          <select id="new-ex-type" name="type">
+            <option value="strength">Strength</option>
+            <option value="bodyweight">Bodyweight</option>
+            <option value="cardio">Cardio</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="new-ex-muscle">Muscle group</label>
+          <input type="text" id="new-ex-muscle" name="muscle_group" maxlength="50"
+                 placeholder="e.g. chest">
+        </div>
+        <div class="field">
+          <label for="new-ex-equip">Equipment</label>
+          <input type="text" id="new-ex-equip" name="equipment_type" maxlength="50"
+                 placeholder="e.g. cable, hand_weight, bodyweight">
+        </div>
+        <div class="field">
+          <label for="new-ex-desc">Description</label>
+          <input type="text" id="new-ex-desc" name="description" maxlength="255">
+        </div>
+        <button type="submit">Add to catalog</button>
+      </form>
+    </details>
+  </section>
 
 </main>
 {% endblock %}

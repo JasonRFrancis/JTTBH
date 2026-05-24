@@ -288,6 +288,46 @@ def program_exercise_create(username: str):
                             fitness_id=fitness_id))
 
 
+@fitness_bp.route('/program/exercise/update/post/<program_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def program_exercise_update(username: str, program_id: str):
+    fitness_id = request.form.get('fitness_id', '').strip()
+    f = request.form
+
+    def _int(val):
+        try:
+            v = int(val)
+            return v if v > 0 else None
+        except (TypeError, ValueError):
+            return None
+
+    def _float(val):
+        try:
+            v = float(val)
+            return v if v > 0 else None
+        except (TypeError, ValueError):
+            return None
+
+    FitnessModel.update_program_exercise(
+        program_id=program_id,
+        sets=_int(f.get('sets')),
+        reps=_int(f.get('reps')),
+        weight=_float(f.get('weight')),
+        notes=f.get('notes', '').strip() or None,
+        location=f.get('location', 'gym'),
+        duration=_int(f.get('duration')),
+        speed=_float(f.get('speed')),
+        incline=_float(f.get('incline')),
+    )
+    flash('Exercise updated.', 'success')
+    return redirect(
+        url_for('fitness.settings_program', username=username, fitness_id=fitness_id)
+        if fitness_id else url_for('fitness.settings', username=username)
+    )
+
+
 @fitness_bp.route('/program/exercise/delete/post/<program_id>', methods=['POST'])
 @login_required
 @permission_required_read(PERM_FITNESS)
@@ -299,6 +339,26 @@ def program_exercise_delete(username: str, program_id: str):
     return redirect(url_for('fitness.settings_program', username=username,
                             fitness_id=fitness_id) if fitness_id
                    else url_for('fitness.settings', username=username))
+
+
+@fitness_bp.route('/exercise/create/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def exercise_create(username: str):
+    name = request.form.get('name', '').strip()
+    if not name:
+        flash('Exercise name is required.', 'error')
+        return redirect(url_for('fitness.settings', username=username))
+    FitnessModel.create_exercise(
+        name=name,
+        description=request.form.get('description', '').strip() or None,
+        equipment_type=request.form.get('equipment_type', '').strip() or None,
+        exercise_type=request.form.get('type', 'strength'),
+        muscle_group=request.form.get('muscle_group', '').strip() or None,
+    )
+    flash(f'"{name}" added to catalog.', 'success')
+    return redirect(url_for('fitness.settings', username=username))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
