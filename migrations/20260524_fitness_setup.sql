@@ -15,34 +15,34 @@
 -- ---------------------------------------------------------------------------
 
 ALTER TABLE fitness
-  ADD COLUMN IF NOT EXISTS `created_by` varchar(36) DEFAULT NULL AFTER created;
+  ADD COLUMN `created_by` varchar(36) DEFAULT NULL AFTER created;
 
 -- ---------------------------------------------------------------------------
 -- 2. fitness_exercise: add created_by + type
 -- ---------------------------------------------------------------------------
 
 ALTER TABLE fitness_exercise
-  ADD COLUMN IF NOT EXISTS `created_by` varchar(36) DEFAULT NULL AFTER created,
-  ADD COLUMN IF NOT EXISTS `type` enum('strength','cardio','bodyweight') NOT NULL DEFAULT 'strength' AFTER video_url;
+  ADD COLUMN `created_by` varchar(36) DEFAULT NULL AFTER created,
+  ADD COLUMN `type` enum('strength','cardio','bodyweight') NOT NULL DEFAULT 'strength' AFTER video_url;
 
 -- ---------------------------------------------------------------------------
 -- 3. fitness_program: add location + cardio recommendation columns
 -- ---------------------------------------------------------------------------
 
 ALTER TABLE fitness_program
-  ADD COLUMN IF NOT EXISTS `location`             enum('gym','home','other') NOT NULL DEFAULT 'gym' AFTER notes,
-  ADD COLUMN IF NOT EXISTS `recommended_duration` int DEFAULT NULL AFTER location,
-  ADD COLUMN IF NOT EXISTS `recommended_speed`    decimal(4,2) DEFAULT NULL AFTER recommended_duration,
-  ADD COLUMN IF NOT EXISTS `recommended_incline`  decimal(4,1) DEFAULT NULL AFTER recommended_speed;
+  ADD COLUMN `location`             enum('gym','home','other') NOT NULL DEFAULT 'gym' AFTER notes,
+  ADD COLUMN `recommended_duration` int DEFAULT NULL AFTER location,
+  ADD COLUMN `recommended_speed`    decimal(4,2) DEFAULT NULL AFTER recommended_duration,
+  ADD COLUMN `recommended_incline`  decimal(4,1) DEFAULT NULL AFTER recommended_speed;
 
 -- ---------------------------------------------------------------------------
 -- 4. fitness_logSet: add cardio logging columns
 -- ---------------------------------------------------------------------------
 
 ALTER TABLE fitness_logSet
-  ADD COLUMN IF NOT EXISTS `duration_minutes` int DEFAULT NULL AFTER notes,
-  ADD COLUMN IF NOT EXISTS `speed`            decimal(4,2) DEFAULT NULL AFTER duration_minutes,
-  ADD COLUMN IF NOT EXISTS `incline`          decimal(4,1) DEFAULT NULL AFTER speed;
+  ADD COLUMN `duration_minutes` int DEFAULT NULL AFTER notes,
+  ADD COLUMN `speed`            decimal(4,2) DEFAULT NULL AFTER duration_minutes,
+  ADD COLUMN `incline`          decimal(4,1) DEFAULT NULL AFTER speed;
 
 -- ---------------------------------------------------------------------------
 -- 5. fitness_bodyWeight: new table
