@@ -375,14 +375,34 @@ CREATE TABLE `fitness` (
   `userID` varchar(36) NOT NULL,
   `name` varchar(255) DEFAULT NULL,  -- NULL = soft deleted
   `description` text,
-  `start_date` date DEFAULT NULL,  -- When user started this program
-  `active` tinyint(1) NOT NULL DEFAULT 0,  -- Is this the current active program?
+  `start_date` date DEFAULT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT 0,
   `created` datetime NOT NULL,
+  `created_by` varchar(36) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_id_desc` (`id` DESC),
   KEY `idx_fitnessID` (`fitnessID`),
   KEY `idx_userID` (`userID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='User workout programs';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+DROP TABLE IF EXISTS `fitness_bodyWeight`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fitness_bodyWeight` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `weightID` varchar(36) NOT NULL,
+  `userID` varchar(36) NOT NULL,
+  `weight` decimal(5,1) NOT NULL,
+  `unit` enum('lbs','kg') NOT NULL DEFAULT 'lbs',
+  `recorded` date NOT NULL,
+  `created` datetime NOT NULL,
+  `created_by` varchar(36) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_id_desc` (`id` DESC),
+  KEY `idx_weightID` (`weightID`),
+  KEY `idx_userID_recorded` (`userID`, `recorded`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 DROP TABLE IF EXISTS `fitness_exercise`;
@@ -394,9 +414,11 @@ CREATE TABLE `fitness_exercise` (
   `name` varchar(255) DEFAULT NULL,  -- NULL = soft deleted
   `description` text,
   `equipment_type` enum('weight_machine','hand_weight','bodyweight','cable','other') NOT NULL DEFAULT 'weight_machine',
-  `muscle_group` varchar(100) DEFAULT NULL,  -- 'chest', 'legs', 'back', 'shoulders', 'arms', 'core'
-  `video_url` varchar(512) DEFAULT NULL,  -- Instructional video URL
+  `type` enum('strength','cardio','bodyweight') NOT NULL DEFAULT 'strength',
+  `muscle_group` varchar(100) DEFAULT NULL,
+  `video_url` varchar(512) DEFAULT NULL,
   `created` datetime NOT NULL,
+  `created_by` varchar(36) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_id_desc` (`id` DESC),
   KEY `idx_exerciseID` (`exerciseID`)
@@ -409,22 +431,26 @@ DROP TABLE IF EXISTS `fitness_program`;
 CREATE TABLE `fitness_program` (
   `id` int NOT NULL AUTO_INCREMENT,
   `programID` varchar(36) NOT NULL,
-  `fitnessID` varchar(36) NOT NULL,  -- Which program was followed
+  `fitnessID` varchar(36) NOT NULL,
   `day_of_week` int NOT NULL,  -- 0=Sunday, 1=Monday, ..., 6=Saturday
   `exerciseID` varchar(36) DEFAULT NULL,  -- NULL = soft deleted
-  `order_index` int NOT NULL DEFAULT 0,  -- Order within the day
-  `recommended_weight` decimal(6,2) DEFAULT NULL,  -- In pounds (or kg, user's choice)
-  `recommended_sets` int DEFAULT 3,
-  `recommended_reps` int DEFAULT 10,
-  `rest_seconds` int DEFAULT 60,  -- Rest between sets
-  `notes` text,
+  `order_index` int NOT NULL DEFAULT 0,
+  `recommended_weight` decimal(6,2) DEFAULT NULL,
+  `recommended_sets` int DEFAULT NULL,
+  `recommended_reps` int DEFAULT NULL,
+  `rest_seconds` int DEFAULT 60,
+  `notes` text,  -- machine adjustment notes (e.g. "Seat: 5")
+  `location` enum('gym','home','other') NOT NULL DEFAULT 'gym',
+  `recommended_duration` int DEFAULT NULL,   -- cardio: minutes
+  `recommended_speed` decimal(4,2) DEFAULT NULL,  -- cardio: mph
+  `recommended_incline` decimal(4,1) DEFAULT NULL, -- cardio: degrees
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_id_desc` (`id` DESC),
   KEY `idx_programID` (`programID`),
   KEY `idx_fitnessID` (`fitnessID`),
   KEY `idx_day` (`day_of_week`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Exercises scheduled for each day in a program';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Exercises scheduled per day in a program';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 DROP TABLE IF EXISTS `fitness_log`;
@@ -434,19 +460,19 @@ CREATE TABLE `fitness_log` (
   `id` int NOT NULL AUTO_INCREMENT,
   `logID` varchar(36) NOT NULL,
   `userID` varchar(36) NOT NULL,
-  `fitnessID` varchar(36) DEFAULT NULL,  -- Which program was followed (optional)
+  `fitnessID` varchar(36) DEFAULT NULL,
   `log_date` date DEFAULT NULL,  -- NULL = soft deleted
   `start_time` datetime DEFAULT NULL,
   `end_time` datetime DEFAULT NULL,
   `location` enum('gym','home','other') DEFAULT 'gym',
-  `notes` text,  -- Overall workout notes
+  `notes` text,
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_id_desc` (`id` DESC),
   KEY `idx_logID` (`logID`),
   KEY `idx_userID` (`userID`),
   KEY `idx_date` (`log_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Record of actual workout sessions';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Workout sessions';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 DROP TABLE IF EXISTS `fitness_logSet`;
@@ -457,10 +483,13 @@ CREATE TABLE `fitness_logSet` (
   `logSetID` varchar(36) NOT NULL,
   `logID` varchar(36) NOT NULL,
   `exerciseID` varchar(36) DEFAULT NULL,  -- NULL = soft deleted
-  `set_number` int NOT NULL,  -- 1st set, 2nd set, etc.
+  `set_number` int NOT NULL,
   `actual_weight` decimal(6,2) DEFAULT NULL,
   `actual_reps` int DEFAULT NULL,
-  `notes` text,  -- e.g., "felt easy", "struggled on last rep", "increased weight"
+  `notes` text,
+  `duration_minutes` int DEFAULT NULL,    -- cardio
+  `speed` decimal(4,2) DEFAULT NULL,      -- cardio mph
+  `incline` decimal(4,1) DEFAULT NULL,    -- cardio degrees
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_id_desc` (`id` DESC),
@@ -528,7 +557,11 @@ INSERT INTO `fitness_exercise` (`id`, `exerciseID`, `name`, `description`, `equi
 (37, UUID(), 'Dumbbell Chest Fly', 'Isolation exercise for chest', 'hand_weight', 'chest', NULL, NOW()),
 (38, UUID(), 'Dumbbell Front Raise', 'Isolation exercise for front delts', 'hand_weight', 'shoulders', NULL, NOW()),
 (39, UUID(), 'Dumbbell Shrug', 'Isolation exercise for traps', 'hand_weight', 'back', NULL, NOW()),
-(40, UUID(), 'Dumbbell Hammer Curl', 'Isolation exercise for biceps and forearms', 'hand_weight', 'arms', NULL, NOW());
+(40, UUID(), 'Dumbbell Hammer Curl', 'Isolation exercise for biceps and forearms', 'hand_weight', 'arms', NULL, NOW()),
+(41, UUID(), 'Treadmill', 'Incline treadmill walk', 'other', 'cardio', NULL, NOW());
+
+-- Treadmill is cardio, not strength (type column not in the bulk INSERT column list above)
+UPDATE fitness_exercise SET `type` = 'cardio' WHERE `name` = 'Treadmill';
 
 
 --

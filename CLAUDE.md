@@ -125,7 +125,11 @@ POST /jason/todo/delete/post/<todoID>
 | | | `POST /create/post`, `POST /update/post/<project_id>`, `POST /delete/post/<project_id>`, `POST /resource/create/post/<project_id>`, `POST /resource/delete/post/<resource_id>`, `POST /send_to_todo/post/<project_id>` |
 | `bookmark_bp` | `/<u>/bookmark` | `GET /index`, `GET /read-later` |
 | | | `POST /create/post`, `POST /read/post/<bookmark_id>` |
-| `fitness_bp` | `/<u>/fitness` | `GET /index`, `GET /log` |
+| `fitness_bp` | `/<u>/fitness` | `GET /index`, `GET /log`, `GET /settings`, `GET /settings/<fitness_id>` |
+| | | `POST /program/create/post`, `/program/activate/post/<id>`, `/program/delete/post/<id>` |
+| | | `POST /program/exercise/create/post`, `/program/exercise/delete/post/<program_id>` |
+| | | `POST /log/set/post` (JSON), `/log/set/delete/post/<log_set_id>` (JSON), `/log/end/post/<log_id>` |
+| | | `POST /weight/post` (JSON) |
 | `triage_bp` | `/<u>/triage` | `GET /index` |
 | `vacation_bp` | `/<u>/vacation` | `GET /index`, `POST /create/post`, `POST /delete/post/<vacation_id>` |
 | `appointment_bp` | `/<u>/appointment` | `GET /index` |
@@ -409,7 +413,7 @@ def create(username: str):
 | Book | Implemented | `book_bp` | `book_index.html` |
 | Journal | Implemented | `journal_bp` | `journal_index.html`, `journal_questions.html`, `journal_mood_settings.html` |
 | Bookmark | Implemented | `bookmark_bp` | `bookmark_index.html`, `bookmark_read_later.html` |
-| Fitness | Stubbed | `fitness_bp` | `fitness_index.html`, `fitness_log.html` |
+| Fitness | Implemented | `fitness_bp` | `fitness_index.html`, `fitness_log.html`, `fitness_settings.html` |
 | Triage | Stubbed | `triage_bp` | `triage_index.html` |
 | Vacation | Implemented (read + create) | `vacation_bp` | `vacation_index.html` |
 | Appointment | Stubbed | `appointment_bp` | `appointment_index.html` |
@@ -459,14 +463,17 @@ applies = bool(habit['dayweek'] & day_bit)
 
 ### E5. Habit
 
-- Index shows today's habits in a 5×5 grid layout; each cell is a habit card.
+- Index shows 28 days of habit grids; each day shows today's applicable habits in a 5×5 grid.
 - Toggle marks a habit as done/undone for a specific date.
 - Heatmap shows historical completion data (GitHub-style grid).
 - Settings page lists all habits; clicking one opens edit form for that habit.
 - `vacation_mode` = habit is paused during vacation periods.
+- **Shared positions:** Multiple habits can occupy the same grid position if their `dayweek` bitmasks don't overlap. `get_grid_for_date` picks the applying habit for each position on a given day. Habits that don't apply on a day render as empty cells — they are not shown as inactive.
 - **Position picker:** The settings form uses a 5×5 grid of buttons (not a number input) for selecting a grid position. Positions occupied by another habit with overlapping days are marked `conflicted` (disabled, red). Positions occupied on non-overlapping days are marked `occupied` (yellow, still selectable). The picker updates via AJAX on every dayweek checkbox change using `GET /positions/json`; the `exclude` param omits the habit being edited so its own position is not self-conflicting. **Creating a habit requires an explicit position selection** — the hidden `position` field starts empty and the server rejects empty submissions with a flash error.
+- **Reorder (Settings):** The "Grid Layout" 5×5 drag interface has been replaced with a flat position list. Each row shows position badge, color, name, day schedule, and a **Swap** button. Click Swap on two habits to exchange their position numbers; click Save Positions to batch-POST to `POST /reorder/post` (page reloads after 600 ms).
 - **Toggle AJAX:** Habit cell toggle uses optimistic UI — the checkbox state updates immediately, then a fire-and-forget POST is sent with `X-Requested-With: XMLHttpRequest`, `Content-Type: application/x-www-form-urlencoded`, and `body: change_id=<uuid>`. A 10-second polling loop (`GET /habit/index/json`) reconciles server truth with the DOM. Cells with an in-flight POST are skipped by the reconciler until their `change_id` appears in the poll response, at which point the pending flag is cleared. `change_id` is a client-generated `crypto.randomUUID()` stored in `habit_entry.change_id` (UNIQUE); the model pre-checks for duplicate UUIDs to handle retries without double-toggling.
-- **Drag-to-reorder:** After saving positions via the "Save Positions" button, the page reloads (600 ms delay) so the grid preview and all position pickers reflect the new state.
+- **Dashboard widget:** Today's habit grid (`<habit-grid>`) is embedded in the dashboard using the same markup and JS as the index page. `habit.css` and `habit.js` are loaded on the dashboard when the user has `PERM_HABIT`. The `habit-grid` and `habit-cell` CSS rules are top-level (not scoped to `main.habit`) so they render inside the dashboard's `<section class="habit">` widget.
+- **CSS scoping:** `main.habit, section.habit { … }` — the habit stylesheet applies to both the habit feature's main page and the dashboard widget section.
 
 ---
 

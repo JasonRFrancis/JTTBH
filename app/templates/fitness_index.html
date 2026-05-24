@@ -1,90 +1,199 @@
-{% extends 'base.html' %}
-
-{% block title %}Fitness - jttbh{% endblock %}
-
-{% block css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/fitness.css') }}">
-{% endblock %}
-
-{% set area = 'fitness' %}
+{% extends "base.html" %}
+{% block title %}Fitness — {{ today.strftime('%a %b %-d') }}{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/fitness.css') }}">{% endblock %}
 
 {% block content %}
 <main class="fitness">
-  <header class="fitness-header">
-    <h1>Fitness</h1>
-    <time datetime="{{ today.isoformat() }}">{{ today.strftime('%A, %B %-d') }}</time>
-    <nav class="fitness-nav">
+  <header>
+    <h1>
+      Fitness
+      <span class="day-label">{{ day_name }}</span>
+      {% if location %}
+      <span class="location-badge location-{{ location }}">{{ location }}</span>
+      {% endif %}
+    </h1>
+    <time datetime="{{ today.isoformat() }}">{{ today.strftime('%B %-d, %Y') }}</time>
+    <nav aria-label="Fitness navigation">
       <a href="{{ url_for('fitness.index', username=username) }}" aria-current="page">Today</a>
       <a href="{{ url_for('fitness.log', username=username) }}">Log</a>
+      <a href="{{ url_for('fitness.settings', username=username) }}">Settings</a>
     </nav>
   </header>
 
-  {% if not program %}
-  <section class="fitness-no-program">
-    <p>No active workout program. Set up a program to see today's exercises.</p>
-  </section>
-  {% else %}
-  <section class="fitness-program">
-    <h2>{{ program.name }}</h2>
-    {% if program.description %}
-    <p>{{ program.description }}</p>
+  {# ── Body weight ─────────────────────────────────────────────────────── #}
+  <section class="body-weight" aria-labelledby="bw-heading">
+    <h2 id="bw-heading">Body Weight</h2>
+    <form class="bw-form" id="bw-form" aria-label="Log body weight">
+      <label for="bw-input" class="sr-only">Weight in lbs</label>
+      <input type="number" id="bw-input" name="weight" step="0.1" min="0" max="999"
+             inputmode="decimal"
+             placeholder="lbs"
+             value="{{ body_weight.weight if body_weight else '' }}"
+             aria-label="Body weight in lbs">
+      <button type="submit">Save</button>
+    </form>
+    {% if body_weight %}
+    <p class="bw-saved" id="bw-saved">{{ body_weight.weight }} lbs recorded</p>
+    {% else %}
+    <p class="bw-saved" id="bw-saved" hidden></p>
     {% endif %}
   </section>
 
-  <section class="fitness-today">
-    <h2>Today's Exercises</h2>
-    {% if exercises %}
-    <ol class="exercise-list">
-      {% for exercise in exercises %}
-      <li class="exercise-item">
-        <header class="exercise-header">
-          <strong class="exercise-name">{{ exercise.exercise_name }}</strong>
-          {% if exercise.muscle_group %}
-          <span class="exercise-muscle">{{ exercise.muscle_group }}</span>
+  {# ── No program ──────────────────────────────────────────────────────── #}
+  {% if not program %}
+  <section class="no-program">
+    <p>No active workout program.
+      <a href="{{ url_for('fitness.settings', username=username) }}">Set one up</a>
+      to see today's exercises.
+    </p>
+  </section>
+
+  {# ── Rest day ────────────────────────────────────────────────────────── #}
+  {% elif not exercises %}
+  <section class="rest-day">
+    <p>No exercises scheduled for {{ day_name }}. Enjoy the rest day.</p>
+  </section>
+
+  {# ── Exercises ───────────────────────────────────────────────────────── #}
+  {% else %}
+  <section class="exercises" aria-labelledby="exercises-heading">
+    <h2 id="exercises-heading">{{ program.name }}</h2>
+
+    {% for ex in exercises %}
+    {% set is_cardio = ex.exercise_type == 'cardio' %}
+    <article class="exercise{% if is_cardio %} exercise--cardio{% endif %}"
+             data-exercise-id="{{ ex.exerciseID }}"
+             data-exercise-type="{{ ex.exercise_type }}">
+
+      <header class="exercise-header">
+        <div class="exercise-title">
+          <strong>{{ ex.exercise_name }}</strong>
+          {% if ex.muscle_group %}<span class="badge">{{ ex.muscle_group }}</span>{% endif %}
+        </div>
+        <div class="exercise-meta">
+          {% if ex.notes %}
+          <span class="adj" title="Machine adjustment">adj {{ ex.notes }}</span>
           {% endif %}
-          {% if exercise.equipment_type %}
-          <span class="exercise-equipment">{{ exercise.equipment_type | replace('_', ' ') }}</span>
-          {% endif %}
-        </header>
-        <div class="exercise-prescription">
-          {% if exercise.recommended_sets %}
-          <span>{{ exercise.recommended_sets }} sets</span>
-          {% endif %}
-          {% if exercise.recommended_reps %}
-          <span>&times; {{ exercise.recommended_reps }} reps</span>
-          {% endif %}
-          {% if exercise.recommended_weight %}
-          <span>@ {{ exercise.recommended_weight }} lbs</span>
+          {% if ex.video_url %}
+          <a href="{{ ex.video_url }}" target="_blank" rel="noopener" class="video-link" aria-label="Watch {{ ex.exercise_name }} video">▶</a>
           {% endif %}
         </div>
-        {% if exercise.notes %}
-        <p class="exercise-notes">{{ exercise.notes }}</p>
+      </header>
+
+      {# Prescription ─────────────────────────────────────────────────── #}
+      <p class="prescription">
+        {% if is_cardio %}
+          {% if ex.recommended_duration %}{{ ex.recommended_duration }} min{% endif %}
+          {% if ex.recommended_speed %} · {{ ex.recommended_speed }} mph{% endif %}
+          {% if ex.recommended_incline %} · {{ ex.recommended_incline|int }}° incline{% endif %}
+        {% else %}
+          {% if ex.recommended_sets %}{{ ex.recommended_sets }} sets{% endif %}
+          {% if ex.recommended_reps %} × {{ ex.recommended_reps }} reps{% endif %}
+          {% if ex.recommended_weight %} @ {{ ex.recommended_weight|int }} lbs{% endif %}
         {% endif %}
-        {% if exercise.video_url %}
-        <a href="{{ exercise.video_url }}" target="_blank" rel="noopener noreferrer" class="exercise-video">Watch video</a>
-        {% endif %}
-      </li>
-      {% endfor %}
-    </ol>
-    {% else %}
-    <p class="empty-state">Rest day. No exercises scheduled for {{ day_name }}.</p>
-    {% endif %}
+      </p>
+
+      {# Already-logged sets today ─────────────────────────────────────── #}
+      <ul class="set-list" aria-label="Logged sets">
+        {% for s in ex.today_sets %}
+        <li class="set-row set-row--logged" data-log-set-id="{{ s.logSetID }}">
+          {% if is_cardio %}
+            <span class="set-summary">
+              {% if s.duration_minutes %}{{ s.duration_minutes }} min{% endif %}
+              {% if s.speed %} · {{ s.speed }} mph{% endif %}
+              {% if s.incline %} · {{ s.incline|int }}°{% endif %}
+            </span>
+          {% else %}
+            <span class="set-num">{{ s.set_number }}</span>
+            <span class="set-summary">{{ s.actual_weight|int if s.actual_weight else '—' }} lbs × {{ s.actual_reps if s.actual_reps else '—' }}</span>
+          {% endif %}
+          <button class="btn-delete-set" type="button"
+                  data-log-set-id="{{ s.logSetID }}"
+                  aria-label="Delete set">×</button>
+        </li>
+        {% endfor %}
+      </ul>
+
+      {# Prefill values from previous session ─────────────────────────── #}
+      {% if is_cardio %}
+        {% set prev = ex.prev_sets[0] if ex.prev_sets else None %}
+        <template class="prefill-data"
+          data-duration="{{ prev.duration_minutes if prev and prev.duration_minutes else ex.recommended_duration or '' }}"
+          data-speed="{{ prev.speed if prev and prev.speed else ex.recommended_speed or '' }}"
+          data-incline="{{ prev.incline if prev and prev.incline else ex.recommended_incline or '' }}">
+        </template>
+      {% else %}
+        {% set prev1 = ex.prev_sets[0] if ex.prev_sets else None %}
+        <template class="prefill-data"
+          data-weight="{{ prev1.actual_weight|int if prev1 and prev1.actual_weight else ex.recommended_weight|int if ex.recommended_weight else '' }}"
+          data-reps="{{ prev1.actual_reps if prev1 and prev1.actual_reps else ex.recommended_reps or '' }}">
+        </template>
+      {% endif %}
+
+      {# Add set button ────────────────────────────────────────────────── #}
+      <button class="btn-add-set" type="button"
+              data-exercise-id="{{ ex.exerciseID }}"
+              data-exercise-type="{{ ex.exercise_type }}">
+        + {{ 'Log' if is_cardio else 'Set' }}
+      </button>
+
+    </article>
+    {% endfor %}
   </section>
+
+  {# ── Finish workout button ───────────────────────────────────────────── #}
+  {% if todays_log and not todays_log.end_time %}
+  <form method="post"
+        action="{{ url_for('fitness.log_end', username=username, log_id=todays_log.logID) }}">
+    <button type="submit" class="btn-finish">Finish Workout</button>
+  </form>
+  {% elif todays_log and todays_log.end_time %}
+  <p class="workout-done">
+    Workout complete ·
+    {% if todays_log.start_time and todays_log.end_time %}
+      {{ ((todays_log.end_time - todays_log.start_time).seconds // 60) }} min
+    {% endif %}
+  </p>
+  {% endif %}
   {% endif %}
 
-  {% if todays_log %}
-  <section class="fitness-log-summary">
-    <h2>Today's Workout Log</h2>
-    <p>
-      Logged
-      {% if todays_log.start_time %}from {{ todays_log.start_time.strftime('%H:%M') }}{% endif %}
-      {% if todays_log.end_time %}to {{ todays_log.end_time.strftime('%H:%M') }}{% endif %}
-      at {{ todays_log.location or 'gym' }}.
-    </p>
-    {% if todays_log.notes %}
-    <p>{{ todays_log.notes }}</p>
-    {% endif %}
-  </section>
-  {% endif %}
 </main>
+
+{# Set-entry row template (cloned by JS) ──────────────────────────────────── #}
+<template id="tpl-set-strength">
+  <li class="set-row set-row--new">
+    <span class="set-num"></span>
+    <input type="number" class="inp-weight" step="5" min="0" inputmode="decimal"
+           aria-label="Weight in lbs" placeholder="lbs">
+    <span class="set-sep">×</span>
+    <input type="number" class="inp-reps" step="1" min="0" inputmode="numeric"
+           aria-label="Reps" placeholder="reps">
+    <button class="btn-confirm-set" type="button" aria-label="Save set">✓</button>
+    <button class="btn-cancel-set" type="button" aria-label="Cancel">×</button>
+  </li>
+</template>
+
+<template id="tpl-set-cardio">
+  <li class="set-row set-row--new set-row--cardio">
+    <input type="number" class="inp-duration" step="1" min="0" inputmode="numeric"
+           aria-label="Duration in minutes" placeholder="min">
+    <input type="number" class="inp-speed" step="0.1" min="0" inputmode="decimal"
+           aria-label="Speed mph" placeholder="mph">
+    <input type="number" class="inp-incline" step="0.5" min="0" inputmode="decimal"
+           aria-label="Incline degrees" placeholder="°">
+    <button class="btn-confirm-set" type="button" aria-label="Save">✓</button>
+    <button class="btn-cancel-set" type="button" aria-label="Cancel">×</button>
+  </li>
+</template>
+{% endblock %}
+
+{% block js %}
+<script>
+  window.FITNESS_URLS = {
+    logSet:    "{{ url_for('fitness.log_set', username=username) }}",
+    deleteSet: "{{ url_for('fitness.log_set_delete', username=username, log_set_id='SETID') }}",
+    weight:    "{{ url_for('fitness.weight_post', username=username) }}"
+  };
+</script>
+<script src="{{ url_for('static', filename='js/fitness.js') }}" defer></script>
 {% endblock %}

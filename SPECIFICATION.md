@@ -307,8 +307,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
          2. Top-right (0,4) = 4
          3. Bottom-left (4,0) = 20
          4. Bottom-right (4,4) = 24
-      3. If a habit does not exist at a given position, that square in the grid is left blank and is not toggleable
-      4. Multiple habits can occupy the same position in the grid, just not on the same day
+      3. If a habit does not apply on a given day (dayweek bitmask excludes that day), its grid cell is empty — no "inactive" state is shown
+      4. Multiple habits can occupy the same position; on any given day the one whose `dayweek` includes that day is shown. If none apply, the cell is empty
       5. Position Picker (Settings page)
          1. Grid position is selected via a 5×5 grid of buttons, not a `<input type="number">`
          2. Positions occupied by another habit whose days overlap the currently selected days are marked **conflicted** (disabled, red tint)
@@ -319,10 +319,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
             - `exclude`: habitID of the habit being edited, so its own position is not self-conflicting
             - Response: `{"positions": [{"position": 3, "habitID": "...", "name": "...", "dayweek": 62, "conflicted": true}, ...]}`
          6. **Create form requires explicit selection**: the hidden `position` input starts empty; the server rejects the form with a flash error if no position is clicked
-      6. Drag-to-reorder (Grid Layout section)
-         1. Habits can be dragged to swap positions in the grid preview
-         2. A "Save Positions" button appears after any drag
-         3. On save, positions are batch-POSTed to `POST /reorder/post`; the page reloads after 600 ms to reflect the new layout
+      6. Position swap list (Settings page — "Grid Positions" section)
+         1. Replaces the old 5×5 drag-grid preview
+         2. All habits are listed sorted by current position number
+         3. Each row shows: position badge, color swatch, habit name, day-of-week schedule, and a **Swap** button
+         4. Click **Swap** on habit A → habit A is highlighted; click **Swap** on habit B → their position numbers are exchanged in the DOM
+         5. A **Save Positions** button appears after any swap; clicking it batch-POSTs to `POST /reorder/post`; page reloads after 600 ms
     9. Toggle behavior (client-side)
       1. Clicking a habit cell is an **optimistic UI update**: the checkbox state changes immediately, no waiting for the server
       2. The toggle POST (`POST /toggle/post/<habit_id>/<date_str>`) is fire-and-forget — it sends `change_id=<uuid>` in the form body along with `X-Requested-With: XMLHttpRequest`

@@ -1,49 +1,58 @@
-{% extends 'base.html' %}
-
-{% block title %}Workout Log - Fitness - jttbh{% endblock %}
-
-{% block css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/fitness.css') }}">
-{% endblock %}
-
-{% set area = 'fitness' %}
+{% extends "base.html" %}
+{% block title %}Workout Log — Fitness{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/fitness.css') }}">{% endblock %}
 
 {% block content %}
 <main class="fitness fitness-log-view">
-  <header class="fitness-header">
+  <header>
     <h1>Workout Log</h1>
-    <nav class="fitness-nav">
+    <nav aria-label="Fitness navigation">
       <a href="{{ url_for('fitness.index', username=username) }}">Today</a>
       <a href="{{ url_for('fitness.log', username=username) }}" aria-current="page">Log</a>
+      <a href="{{ url_for('fitness.settings', username=username) }}">Settings</a>
     </nav>
   </header>
 
   {% if logs %}
-  <section class="log-history">
+  <section aria-labelledby="history-heading">
+    <h2 id="history-heading">History</h2>
     <ul class="log-list">
-      {% for log in logs %}
-      <li class="log-item">
-        <header class="log-header">
-          <time class="log-date" datetime="{{ log.log_date.isoformat() if log.log_date else '' }}">
-            {{ log.log_date.strftime('%A, %B %-d, %Y') if log.log_date else 'Unknown date' }}
+      {% for entry in logs %}
+      <li class="log-entry">
+        <header class="log-entry-header">
+          <time class="log-date" datetime="{{ entry.log_date.isoformat() if entry.log_date else '' }}">
+            {{ entry.log_date.strftime('%a %b %-d, %Y') if entry.log_date else '—' }}
           </time>
-          {% if log.program_name %}
-          <span class="log-program">{{ log.program_name }}</span>
+          <span class="badge badge--location badge--{{ entry.location or 'gym' }}">{{ entry.location or 'gym' }}</span>
+          {% if entry.start_time and entry.end_time %}
+          <span class="log-duration">{{ ((entry.end_time - entry.start_time).seconds // 60) }} min</span>
           {% endif %}
-          <span class="log-location">{{ log.location or 'gym' }}</span>
         </header>
-        {% if log.start_time or log.end_time %}
-        <div class="log-times">
-          {% if log.start_time %}
-          <span>{{ log.start_time.strftime('%H:%M') }}</span>
-          {% endif %}
-          {% if log.end_time %}
-          <span>&ndash; {{ log.end_time.strftime('%H:%M') }}</span>
-          {% endif %}
-        </div>
-        {% endif %}
-        {% if log.notes %}
-        <p class="log-notes">{{ log.notes }}</p>
+
+        {% if entry.exercises %}
+        <ul class="log-exercise-list">
+          {% for ex in entry.exercises %}
+          <li class="log-exercise">
+            <strong>{{ ex.name }}</strong>
+            {% if ex.type == 'cardio' %}
+              {% set s = ex.sets[0] %}
+              <span class="log-sets-summary">
+                {% if s.duration_minutes %}{{ s.duration_minutes }} min{% endif %}
+                {% if s.speed %} · {{ s.speed }} mph{% endif %}
+                {% if s.incline %} · {{ s.incline|int }}°{% endif %}
+              </span>
+            {% else %}
+              <span class="log-sets-summary">
+                {% for s in ex.sets %}
+                  <span class="set-chip">{{ s.actual_weight|int if s.actual_weight else '—' }}×{{ s.actual_reps if s.actual_reps else '—' }}</span>
+                {% endfor %}
+              </span>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty-state">No sets recorded.</p>
         {% endif %}
       </li>
       {% endfor %}
@@ -52,5 +61,20 @@
   {% else %}
   <p class="empty-state">No workouts logged yet.</p>
   {% endif %}
+
+  {% if weight_history %}
+  <section aria-labelledby="weight-heading">
+    <h2 id="weight-heading">Body Weight</h2>
+    <ul class="weight-list">
+      {% for w in weight_history %}
+      <li class="weight-entry">
+        <time datetime="{{ w.recorded.isoformat() }}">{{ w.recorded.strftime('%a %b %-d') }}</time>
+        <span class="weight-value">{{ w.weight }} lbs</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
 </main>
 {% endblock %}

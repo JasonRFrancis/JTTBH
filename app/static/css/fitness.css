@@ -1,218 +1,613 @@
-/* fitness.css
-   Styles for fitness index and workout log pages.
-   Mobile-first; no CSS framework dependencies.
-*/
+/* fitness.css — mobile-first, no framework */
 
-/* ---------------------------------------------------------------------------
-   Page layout
-*/
+/* ── Layout ──────────────────────────────────────────────────────────── */
 
-.fitness-header {
-  margin-bottom: 1.5rem;
+.fitness header {
+  margin-bottom: 1.25rem;
 }
 
-.fitness-header h1 {
-  margin: 0 0 0.25rem;
-  font-size: 1.5rem;
+.fitness header h1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.4rem;
+  margin: 0 0 0.2rem;
 }
 
-.fitness-header time {
+.fitness header time {
   display: block;
-  font-size: 0.9rem;
-  color: var(--color-text-secondary, #555);
-  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.6rem;
 }
 
-.fitness-nav {
+.fitness header nav {
   display: flex;
   gap: 1rem;
   font-size: 0.875rem;
 }
 
-.fitness-nav a {
-  color: var(--color-link, #1a73e8);
+.fitness header nav a {
+  color: var(--color-primary);
   text-decoration: none;
 }
 
-.fitness-nav a:hover,
-.fitness-nav a[aria-current="page"] {
-  font-weight: bold;
+.fitness header nav a[aria-current="page"] {
+  font-weight: 600;
   text-decoration: underline;
 }
 
-/* ---------------------------------------------------------------------------
-   Program info
-*/
-
-.fitness-program {
-  background: var(--color-surface-alt, #fafafa);
-  border: 1px solid var(--color-border, #ddd);
-  border-radius: 4px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1.5rem;
+.day-label {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
 }
 
-.fitness-program h2 {
-  margin: 0 0 0.25rem;
+/* ── Badges ──────────────────────────────────────────────────────────── */
+
+.badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.badge--active  { background: var(--color-success); border-color: var(--color-success); color: #fff; }
+.badge--gym     { background: #dbeafe; border-color: #93c5fd; color: #1d4ed8; }
+.badge--home    { background: #dcfce7; border-color: #86efac; color: #15803d; }
+
+.location-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+}
+
+.location-gym  { background: #dbeafe; color: #1d4ed8; }
+.location-home { background: #dcfce7; color: #15803d; }
+
+/* ── Body weight ─────────────────────────────────────────────────────── */
+
+.body-weight {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  background: var(--color-surface);
+}
+
+.body-weight h2 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin: 0 0 0.5rem;
+}
+
+.bw-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.bw-form input {
+  width: 7rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+
+.bw-form input::-webkit-outer-spin-button,
+.bw-form input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+.bw-form button {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.875rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.bw-form button:active { background: var(--color-primary-dk); }
+
+.bw-saved {
+  font-size: 0.8rem;
+  color: var(--color-success);
+  margin: 0.3rem 0 0;
+}
+
+/* ── Exercise cards ──────────────────────────────────────────────────── */
+
+.exercises h2 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin: 0 0 0.75rem;
+}
+
+.exercise {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.75rem;
+  background: var(--color-surface);
+}
+
+.exercise-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.exercise-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.exercise-title strong {
   font-size: 1rem;
 }
 
-.fitness-program p {
-  margin: 0;
-  font-size: 0.875rem;
-  color: var(--color-text-secondary, #555);
+.exercise-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
-/* ---------------------------------------------------------------------------
-   Exercise list
-*/
+.adj {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: #fef9c3;
+  border: 1px solid #fde047;
+  border-radius: 3px;
+  padding: 0.1rem 0.4rem;
+}
 
-.fitness-today h2 {
+.video-link {
+  font-size: 0.85rem;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.prescription {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin: 0 0 0.6rem;
+}
+
+/* ── Set list ────────────────────────────────────────────────────────── */
+
+.set-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+}
+
+.set-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.set-row:last-child { border-bottom: none; }
+
+.set-num {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  min-width: 1.2rem;
+  text-align: right;
+}
+
+.set-summary {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.set-row--new {
+  background: #eff6ff;
+  border-radius: 5px;
+  padding: 0.4rem 0.5rem;
+  margin-bottom: 0.25rem;
+  border: 1px solid #bfdbfe;
+}
+
+.set-row--new input {
+  width: 5.5rem;
   font-size: 1.1rem;
-  margin: 0 0 1rem;
-  border-bottom: 1px solid var(--color-border, #ddd);
-  padding-bottom: 0.5rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  -moz-appearance: textfield;
+  touch-action: manipulation;
 }
 
-.exercise-list {
+.set-row--new input::-webkit-outer-spin-button,
+.set-row--new input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+.set-row--new.set-row--cardio input {
+  width: 4.5rem;
+}
+
+.set-sep {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+
+.btn-add-set {
+  display: block;
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px dashed var(--color-primary);
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 0.35rem;
+  touch-action: manipulation;
+  text-align: center;
+}
+
+.btn-add-set:active { background: #eff6ff; }
+
+.btn-confirm-set {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.9rem;
+  background: var(--color-success);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  touch-action: manipulation;
+  min-width: 2.2rem;
+}
+
+.btn-confirm-set:active { opacity: 0.8; }
+
+.btn-cancel-set,
+.btn-delete-set {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+  background: transparent;
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  touch-action: manipulation;
+  min-width: 2rem;
+}
+
+.btn-finish {
+  display: block;
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.8rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.btn-finish:active { background: var(--color-primary-dk); }
+
+.workout-done {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--color-success);
+  margin-top: 1.25rem;
+  font-weight: 600;
+}
+
+.btn-sm {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.btn-danger { border-color: var(--color-error); color: var(--color-error); }
+
+/* ── No program / rest day ───────────────────────────────────────────── */
+
+.no-program, .rest-day { color: var(--color-text-muted); }
+
+.empty-state { color: var(--color-text-muted); font-style: italic; font-size: 0.875rem; }
+
+/* Saving indicator */
+.set-row--saving { opacity: 0.6; }
+
+/* ── Settings ────────────────────────────────────────────────────────── */
+
+.fitness-settings section { margin-bottom: 2rem; }
+
+.fitness-settings h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.4rem;
+  margin: 0 0 0.75rem;
+}
+
+.program-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+}
+
+.program-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.program-item--selected .program-name { font-weight: 700; }
+
+.program-name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  color: var(--color-text);
+  flex: 1;
+}
+
+.program-actions { display: flex; gap: 0.4rem; }
+
+.create-form {
+  margin-top: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
+.create-form summary { cursor: pointer; font-size: 0.875rem; color: var(--color-primary); }
+
+.create-form form { margin-top: 0.75rem; }
+
+/* Day tabs */
+.day-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.day-tab {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.day-tab--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.day-panel--hidden { display: none; }
+
+.day-panel h3 { font-size: 0.95rem; margin: 0 0 0.6rem; }
+
+.program-exercise-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+}
+
+.program-exercise-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+}
+
+.program-exercise-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.program-exercise-prescription {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.add-exercise-form {
+  margin-top: 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
+.add-exercise-form summary { cursor: pointer; font-size: 0.875rem; color: var(--color-primary); }
+
+.add-exercise-form form { margin-top: 0.75rem; }
+
+/* Form fields */
+.field { margin-bottom: 0.6rem; }
+
+.field label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  box-sizing: border-box;
+}
+
+.field--inline { display: inline-block; width: auto; margin-right: 0.5rem; }
+.field--inline input { width: 5rem; }
+
+/* ── Log view ────────────────────────────────────────────────────────── */
+
+.log-list {
   list-style: none;
   padding: 0;
   margin: 0 0 2rem;
 }
 
-.exercise-item {
-  border: 1px solid var(--color-border, #ddd);
-  border-radius: 4px;
+.log-entry {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
   padding: 0.75rem 1rem;
-  margin-bottom: 0.5rem;
-  background: var(--color-surface, #fff);
+  margin-bottom: 0.6rem;
+  background: var(--color-surface);
 }
 
-.exercise-header {
+.log-entry-header {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
   align-items: center;
-  margin-bottom: 0.4rem;
-}
-
-.exercise-name {
-  font-size: 1rem;
-  font-weight: bold;
-}
-
-.exercise-muscle,
-.exercise-equipment {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary, #888);
-  background: var(--color-surface-alt, #f5f5f5);
-  border-radius: 3px;
-  padding: 0.1rem 0.4rem;
-}
-
-.exercise-prescription {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary, #444);
-  display: flex;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
 }
 
-.exercise-notes {
-  font-size: 0.8rem;
-  font-style: italic;
-  color: var(--color-text-secondary, #888);
-  margin: 0.4rem 0 0;
-}
+.log-date { font-weight: 600; font-size: 0.9rem; }
 
-.exercise-video {
-  display: inline-block;
-  font-size: 0.8rem;
-  color: var(--color-link, #1a73e8);
-  text-decoration: none;
-  margin-top: 0.4rem;
-}
+.log-duration { font-size: 0.75rem; color: var(--color-text-muted); }
 
-.exercise-video:hover {
-  text-decoration: underline;
-}
-
-/* ---------------------------------------------------------------------------
-   Today's log summary
-*/
-
-.fitness-log-summary {
-  border-top: 1px solid var(--color-border, #ddd);
-  padding-top: 1rem;
-  margin-top: 1rem;
-}
-
-.fitness-log-summary h2 {
-  font-size: 1rem;
-  margin: 0 0 0.5rem;
-}
-
-/* ---------------------------------------------------------------------------
-   Log history
-*/
-
-.log-list {
+.log-exercise-list {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.log-item {
-  border: 1px solid var(--color-border, #ddd);
-  border-radius: 4px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 0.5rem;
-  background: var(--color-surface, #fff);
+.log-exercise {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.log-header {
+.log-exercise:last-child { border-bottom: none; }
+
+.log-exercise strong { min-width: 12rem; }
+
+.log-sets-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  color: var(--color-text-muted);
+}
+
+.set-chip {
+  font-size: 0.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  padding: 0.1rem 0.35rem;
+}
+
+/* Weight history */
+.weight-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  align-items: center;
-  margin-bottom: 0.35rem;
 }
 
-.log-date {
-  font-weight: bold;
-  font-size: 0.95rem;
+.weight-entry {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 5rem;
+  text-align: center;
 }
 
-.log-program,
-.log-location {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary, #888);
-  background: var(--color-surface-alt, #f5f5f5);
-  border-radius: 3px;
-  padding: 0.1rem 0.4rem;
+.weight-entry time { color: var(--color-text-muted); font-size: 0.7rem; }
+
+.weight-value { font-weight: 700; font-size: 0.95rem; }
+
+/* Accessibility helper */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
 }
 
-.log-times {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary, #666);
-}
+/* ── Desktop enhancements ────────────────────────────────────────────── */
 
-.log-notes {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary, #555);
-  margin: 0.35rem 0 0;
-  font-style: italic;
-}
-
-/* ---------------------------------------------------------------------------
-   No-program / no-content state
-*/
-
-.fitness-no-program {
-  padding: 1rem 0;
-}
-
-.empty-state {
-  color: var(--color-text-secondary, #888);
-  font-style: italic;
+@media (min-width: 600px) {
+  .exercise { padding: 1rem 1.25rem; }
+  .set-row--new input { font-size: 1rem; }
+  .log-exercise strong { min-width: 14rem; }
+  .weight-list { gap: 0.75rem; }
 }

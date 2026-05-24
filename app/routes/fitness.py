@@ -1,15 +1,24 @@
 """
 Fitness Routes
 ==============
-Flask blueprint for the fitness / workout tracking feature.
-
 URL patterns
 ------------
-GET  /<username>/fitness/index     -> today's scheduled exercises
-GET  /<username>/fitness/log       -> workout log history
+GET  /<u>/fitness/index                  — today's workout + body-weight entry
+GET  /<u>/fitness/log                    — workout history
+GET  /<u>/fitness/settings               — list / create programs
+GET  /<u>/fitness/settings/<fitness_id>  — edit a program's day schedule
 
-All write routes (log a workout, add a set, etc.) are stubs pending full
-implementation of the fitness program builder.
+POST /<u>/fitness/program/create/post
+POST /<u>/fitness/program/activate/post/<fitness_id>
+POST /<u>/fitness/program/delete/post/<fitness_id>
+POST /<u>/fitness/program/exercise/create/post
+POST /<u>/fitness/program/exercise/delete/post/<program_id>
+
+POST /<u>/fitness/log/set/post                     → JSON
+POST /<u>/fitness/log/set/delete/post/<log_set_id> → JSON
+POST /<u>/fitness/log/end/post/<log_id>
+
+POST /<u>/fitness/weight/post  → JSON
 """
 
 from datetime import date, datetime
@@ -17,6 +26,7 @@ from datetime import date, datetime
 from flask import (
     Blueprint,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -24,7 +34,7 @@ from flask import (
     url_for,
 )
 
-from app.services.database import db_manager
+from app.models.fitness_model import FitnessModel, DAY_NAMES
 from app.services.decorators import (
     PERM_FITNESS,
     login_required,
@@ -34,114 +44,60 @@ from app.services.decorators import (
 
 fitness_bp = Blueprint('fitness', __name__)
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _get_active_program(user_id: str) -> dict | None:
-    """Return the user's current active fitness program, if any."""
-    return db_manager.execute_one(
-        """
-        SELECT f.fitnessID, f.name, f.description, f.start_date
-        FROM fitness f
-        WHERE f.userID = %s
-          AND f.active = 1
-          AND f.name IS NOT NULL
-        ORDER BY f.id DESC
-        LIMIT 1
-        """,
-        (user_id,),
-    )
+_DOW_ORDER = [1, 2, 3, 4, 5, 6]  # Mon–Sat (no Sunday)
 
 
-def _get_todays_exercises(fitness_id: str, day_of_week: int) -> list[dict]:
-    """Return scheduled exercises for the given day of week in a program."""
-    return db_manager.execute_query(
-        """
-        SELECT fp.programID, fp.exerciseID, fp.order_index,
-               fp.recommended_sets, fp.recommended_reps, fp.recommended_weight,
-               fp.rest_seconds, fp.notes,
-               fe.name AS exercise_name, fe.equipment_type, fe.muscle_group, fe.video_url
-        FROM fitness_program fp
-        JOIN fitness_exercise fe ON fe.exerciseID = fp.exerciseID
-        WHERE fp.fitnessID = %s
-          AND fp.day_of_week = %s
-          AND fp.exerciseID IS NOT NULL
-        ORDER BY fp.order_index
-        """,
-        (fitness_id, day_of_week),
-    )
-
-
-def _get_todays_log(user_id: str, log_date: date) -> dict | None:
-    """Return the most recent workout log entry for today."""
-    return db_manager.execute_one(
-        """
-        SELECT fl.logID, fl.fitnessID, fl.log_date, fl.start_time, fl.end_time,
-               fl.location, fl.notes
-        FROM fitness_log fl
-        WHERE fl.userID = %s
-          AND fl.log_date = %s
-          AND fl.log_date IS NOT NULL
-        ORDER BY fl.id DESC
-        LIMIT 1
-        """,
-        (user_id, log_date),
-    )
-
-
-def _get_recent_logs(user_id: str, limit: int = 30) -> list[dict]:
-    """Return the N most recent workout log entries."""
-    return db_manager.execute_query(
-        """
-        SELECT fl.logID, fl.log_date, fl.start_time, fl.end_time,
-               fl.location, fl.notes, f.name AS program_name
-        FROM fitness_log fl
-        LEFT JOIN fitness f ON f.fitnessID = fl.fitnessID
-        WHERE fl.userID = %s
-          AND fl.log_date IS NOT NULL
-        ORDER BY fl.log_date DESC
-        LIMIT %s
-        """,
-        (user_id, limit),
-    )
-
-
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 # GET routes
-# ---------------------------------------------------------------------------
+# ─────────────────────────────────────────────────────────────────────────────
 
 @fitness_bp.route('/index')
 @login_required
 @permission_required_read(PERM_FITNESS)
 def index(username: str):
-    """
-    Display today's scheduled workout based on the active program.
-
-    Shows scheduled exercises for today's day of week, plus today's log
-    entry if a workout has already been recorded.
-    """
     user_id = session['user_id']
     today = date.today()
-    # Python weekday(): Monday=0, Sunday=6. Fitness schema: 0=Sunday, 1=Monday, ..., 6=Saturday.
+    # Python weekday(): Mon=0 → day_of_week: Sun=0, Mon=1, ..., Sat=6
     day_of_week = (today.weekday() + 1) % 7
 
-    program = _get_active_program(user_id)
+    program = FitnessModel.get_active_program(user_id)
     exercises = []
-    if program:
-        exercises = _get_todays_exercises(program['fitnessID'], day_of_week)
+    todays_log = None
+    location = None
 
-    todays_log = _get_todays_log(user_id, today)
+    if program:
+        exercises = FitnessModel.get_day_exercises(program['fitnessID'], day_of_week)
+        todays_log = FitnessModel.get_todays_log(user_id, today)
+
+        # Attach previous-session sets and today's sets to each exercise
+        today_sets_map: dict[str, list] = {}
+        if todays_log:
+            for s in FitnessModel.get_log_sets(todays_log['logID']):
+                today_sets_map.setdefault(s['exerciseID'], []).append(s)
+
+        for ex in exercises:
+            ex_id = ex['exerciseID']
+            ex['today_sets'] = today_sets_map.get(ex_id, [])
+            ex['prev_sets'] = FitnessModel.get_last_sets_for_exercise(
+                user_id, ex_id, today
+            )
+
+        if exercises:
+            location = exercises[0].get('location', 'gym')
+
+    body_weight = FitnessModel.get_todays_body_weight(user_id, today)
 
     return render_template(
         'fitness_index.html',
+        username=username,
+        area='fitness',
         program=program,
         exercises=exercises,
         todays_log=todays_log,
+        body_weight=body_weight,
         today=today,
-        day_of_week=day_of_week,
-        username=username,
+        day_name=DAY_NAMES.get(day_of_week, ''),
+        location=location,
     )
 
 
@@ -149,14 +105,291 @@ def index(username: str):
 @login_required
 @permission_required_read(PERM_FITNESS)
 def log(username: str):
-    """
-    Display the workout log history.
-    """
     user_id = session['user_id']
-    logs = _get_recent_logs(user_id)
+    logs = FitnessModel.get_recent_logs(user_id)
+
+    # Attach sets to each log entry
+    for entry in logs:
+        sets = FitnessModel.get_log_sets(entry['logID'])
+        # Group by exercise
+        by_exercise: dict[str, dict] = {}
+        for s in sets:
+            eid = s['exerciseID']
+            if eid not in by_exercise:
+                by_exercise[eid] = {'name': s['exercise_name'],
+                                    'type': s['exercise_type'], 'sets': []}
+            by_exercise[eid]['sets'].append(s)
+        entry['exercises'] = list(by_exercise.values())
+
+    weight_history = FitnessModel.get_weight_history(user_id)
 
     return render_template(
         'fitness_log.html',
-        logs=logs,
         username=username,
+        area='fitness',
+        logs=logs,
+        weight_history=weight_history,
     )
+
+
+@fitness_bp.route('/settings')
+@login_required
+@permission_required_read(PERM_FITNESS)
+def settings(username: str):
+    user_id = session['user_id']
+    programs = FitnessModel.get_programs(user_id)
+    return render_template(
+        'fitness_settings.html',
+        username=username,
+        area='fitness',
+        programs=programs,
+        selected=None,
+        schedule=None,
+        catalog=None,
+        dow_order=_DOW_ORDER,
+        day_names=DAY_NAMES,
+    )
+
+
+@fitness_bp.route('/settings/<fitness_id>')
+@login_required
+@permission_required_read(PERM_FITNESS)
+def settings_program(username: str, fitness_id: str):
+    user_id = session['user_id']
+    programs = FitnessModel.get_programs(user_id)
+
+    # Verify ownership
+    selected = next((p for p in programs if p['fitnessID'] == fitness_id), None)
+    if not selected:
+        flash('Program not found.', 'error')
+        return redirect(url_for('fitness.settings', username=username))
+
+    schedule = FitnessModel.get_program_schedule(fitness_id)
+    catalog = FitnessModel.get_exercise_catalog()
+
+    return render_template(
+        'fitness_settings.html',
+        username=username,
+        area='fitness',
+        programs=programs,
+        selected=selected,
+        schedule=schedule,
+        catalog=catalog,
+        dow_order=_DOW_ORDER,
+        day_names=DAY_NAMES,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST — program management
+# ─────────────────────────────────────────────────────────────────────────────
+
+@fitness_bp.route('/program/create/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def program_create(username: str):
+    name = request.form.get('name', '').strip()
+    if not name:
+        flash('Program name is required.', 'error')
+        return redirect(url_for('fitness.settings', username=username))
+    description = request.form.get('description', '').strip()
+    fitness_id = FitnessModel.create_program(session['user_id'], name, description)
+    flash(f'"{name}" created.', 'success')
+    return redirect(url_for('fitness.settings_program', username=username,
+                            fitness_id=fitness_id))
+
+
+@fitness_bp.route('/program/activate/post/<fitness_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def program_activate(username: str, fitness_id: str):
+    FitnessModel.activate_program(session['user_id'], fitness_id)
+    flash('Program activated.', 'success')
+    return redirect(url_for('fitness.settings', username=username))
+
+
+@fitness_bp.route('/program/delete/post/<fitness_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def program_delete(username: str, fitness_id: str):
+    FitnessModel.delete_program(fitness_id, session['user_id'])
+    flash('Program deleted.', 'success')
+    return redirect(url_for('fitness.settings', username=username))
+
+
+@fitness_bp.route('/program/exercise/create/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def program_exercise_create(username: str):
+    f = request.form
+    fitness_id = f.get('fitness_id', '').strip()
+    if not fitness_id:
+        flash('Missing program.', 'error')
+        return redirect(url_for('fitness.settings', username=username))
+
+    # Verify ownership
+    programs = FitnessModel.get_programs(session['user_id'])
+    if not any(p['fitnessID'] == fitness_id for p in programs):
+        flash('Program not found.', 'error')
+        return redirect(url_for('fitness.settings', username=username))
+
+    exercise_id = f.get('exercise_id', '').strip()
+    if not exercise_id:
+        flash('Exercise is required.', 'error')
+        return redirect(url_for('fitness.settings_program', username=username,
+                                fitness_id=fitness_id))
+
+    try:
+        day_of_week = int(f.get('day_of_week', 1))
+    except (TypeError, ValueError):
+        day_of_week = 1
+
+    location = f.get('location', 'gym')
+    notes = f.get('notes', '').strip() or None
+
+    def _int(val):
+        try:
+            v = int(val)
+            return v if v > 0 else None
+        except (TypeError, ValueError):
+            return None
+
+    def _float(val):
+        try:
+            v = float(val)
+            return v if v > 0 else None
+        except (TypeError, ValueError):
+            return None
+
+    # Determine order_index = max + 1 for this day
+    existing = FitnessModel.get_day_exercises(fitness_id, day_of_week)
+    order_index = (max((e['order_index'] for e in existing), default=0) + 1)
+
+    FitnessModel.add_program_exercise(
+        fitness_id=fitness_id,
+        day_of_week=day_of_week,
+        exercise_id=exercise_id,
+        location=location,
+        sets=_int(f.get('sets')),
+        reps=_int(f.get('reps')),
+        weight=_float(f.get('weight')),
+        notes=notes,
+        order_index=order_index,
+        duration=_int(f.get('duration')),
+        speed=_float(f.get('speed')),
+        incline=_float(f.get('incline')),
+    )
+    flash('Exercise added.', 'success')
+    return redirect(url_for('fitness.settings_program', username=username,
+                            fitness_id=fitness_id))
+
+
+@fitness_bp.route('/program/exercise/delete/post/<program_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def program_exercise_delete(username: str, program_id: str):
+    fitness_id = request.form.get('fitness_id', '').strip()
+    FitnessModel.delete_program_exercise(program_id, session['user_id'])
+    flash('Exercise removed.', 'success')
+    return redirect(url_for('fitness.settings_program', username=username,
+                            fitness_id=fitness_id) if fitness_id
+                   else url_for('fitness.settings', username=username))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST — workout logging (JSON responses for AJAX)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@fitness_bp.route('/log/set/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def log_set(username: str):
+    user_id = session['user_id']
+    f = request.form
+
+    exercise_id = f.get('exercise_id', '').strip()
+    if not exercise_id:
+        return jsonify({'status': 'error', 'message': 'Missing exercise_id'}), 400
+
+    def _int(v):
+        try:
+            return int(v) if v else None
+        except (TypeError, ValueError):
+            return None
+
+    def _float(v):
+        try:
+            return float(v) if v else None
+        except (TypeError, ValueError):
+            return None
+
+    set_number = _int(f.get('set_number')) or 1
+    weight = _float(f.get('weight'))
+    reps = _int(f.get('reps'))
+    duration = _int(f.get('duration'))
+    speed = _float(f.get('speed'))
+    incline = _float(f.get('incline'))
+
+    # Auto-create today's log if needed
+    program = FitnessModel.get_active_program(user_id)
+    fitness_id = program['fitnessID'] if program else None
+    log_id = FitnessModel.get_or_create_log(user_id, fitness_id, date.today())
+
+    log_set_id = FitnessModel.log_set(
+        log_id=log_id,
+        exercise_id=exercise_id,
+        set_number=set_number,
+        weight=weight,
+        reps=reps,
+        notes=f.get('notes', '').strip() or None,
+        duration=duration,
+        speed=speed,
+        incline=incline,
+    )
+    return jsonify({'status': 'ok', 'logSetID': log_set_id, 'logID': log_id})
+
+
+@fitness_bp.route('/log/set/delete/post/<log_set_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def log_set_delete(username: str, log_set_id: str):
+    FitnessModel.delete_log_set(log_set_id)
+    return jsonify({'status': 'ok'})
+
+
+@fitness_bp.route('/log/end/post/<log_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def log_end(username: str, log_id: str):
+    FitnessModel.end_workout(log_id)
+    flash('Workout finished.', 'success')
+    return redirect(url_for('fitness.index', username=username))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST — body weight (JSON)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@fitness_bp.route('/weight/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def weight_post(username: str):
+    user_id = session['user_id']
+    try:
+        weight = float(request.form.get('weight', ''))
+        if weight <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return jsonify({'status': 'error', 'message': 'Invalid weight'}), 400
+
+    weight_id = FitnessModel.log_body_weight(user_id, weight, date.today())
+    return jsonify({'status': 'ok', 'weightID': weight_id, 'weight': weight})
