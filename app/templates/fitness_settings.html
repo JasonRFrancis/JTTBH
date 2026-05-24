@@ -126,6 +126,7 @@
             <form method="post"
                   action="{{ url_for('fitness.program_exercise_update', username=username, program_id=ex.programID) }}">
               <input type="hidden" name="fitness_id" value="{{ selected.fitnessID }}">
+              <input type="hidden" name="exercise_id" value="{{ ex.exerciseID }}">
               <div class="field">
                 <label>Location</label>
                 <select name="location">
@@ -171,6 +172,11 @@
                        value="{{ ex.recommended_weight|int if ex.recommended_weight else '' }}">
               </div>
               {% endif %}
+              <div class="field">
+                <label>Video URL</label>
+                <input type="url" name="video_url" value="{{ ex.video_url or '' }}"
+                       maxlength="500" placeholder="https://…">
+              </div>
               <button type="submit">Save</button>
             </form>
           </details>
@@ -294,6 +300,11 @@
         <div class="field">
           <label for="new-ex-desc">Description</label>
           <input type="text" id="new-ex-desc" name="description" maxlength="255">
+        </div>
+        <div class="field">
+          <label for="new-ex-video">Video URL</label>
+          <input type="url" id="new-ex-video" name="video_url" maxlength="500"
+                 placeholder="https://…">
         </div>
         <button type="submit">Add to catalog</button>
       </form>

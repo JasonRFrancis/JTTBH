@@ -321,6 +321,11 @@ def program_exercise_update(username: str, program_id: str):
         speed=_float(f.get('speed')),
         incline=_float(f.get('incline')),
     )
+    exercise_id = f.get('exercise_id', '').strip()
+    if exercise_id:
+        FitnessModel.update_exercise_video(
+            exercise_id, f.get('video_url', '').strip() or None
+        )
     flash('Exercise updated.', 'success')
     return redirect(
         url_for('fitness.settings_program', username=username, fitness_id=fitness_id)
@@ -356,6 +361,7 @@ def exercise_create(username: str):
         equipment_type=request.form.get('equipment_type', '').strip() or None,
         exercise_type=request.form.get('type', 'strength'),
         muscle_group=request.form.get('muscle_group', '').strip() or None,
+        video_url=request.form.get('video_url', '').strip() or None,
     )
     flash(f'"{name}" added to catalog.', 'success')
     return redirect(url_for('fitness.settings', username=username))

@@ -228,16 +228,24 @@ class FitnessModel:
         equipment_type: str | None,
         exercise_type: str,
         muscle_group: str | None,
+        video_url: str | None,
     ) -> str:
         exercise_id = str(uuid.uuid4())
         db_manager.execute_insert("""
             INSERT INTO fitness_exercise
               (exerciseID, name, description, equipment_type, type, muscle_group,
                video_url, created, created_by)
-            VALUES (%s, %s, %s, %s, %s, %s, NULL, NOW(), NULL)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NULL)
         """, (exercise_id, name, description or None, equipment_type or None,
-              exercise_type, muscle_group or None))
+              exercise_type, muscle_group or None, video_url or None))
         return exercise_id
+
+    @staticmethod
+    def update_exercise_video(exercise_id: str, video_url: str | None) -> None:
+        db_manager.execute_update(
+            "UPDATE fitness_exercise SET video_url = %s WHERE exerciseID = %s",
+            (video_url or None, exercise_id),
+        )
 
     @staticmethod
     def get_exercise_catalog() -> list[dict]:
