@@ -294,8 +294,13 @@
         </div>
         <div class="field">
           <label for="new-ex-equip">Equipment</label>
-          <input type="text" id="new-ex-equip" name="equipment_type" maxlength="50"
-                 placeholder="e.g. cable, hand_weight, bodyweight">
+          <select id="new-ex-equip" name="equipment_type">
+            <option value="weight_machine">Weight machine</option>
+            <option value="hand_weight">Hand weight / dumbbell</option>
+            <option value="bodyweight">Bodyweight</option>
+            <option value="cable">Cable</option>
+            <option value="other">Other</option>
+          </select>
         </div>
         <div class="field">
           <label for="new-ex-desc">Description</label>

@@ -236,7 +236,7 @@ class FitnessModel:
               (exerciseID, name, description, equipment_type, type, muscle_group,
                video_url, created, created_by)
             VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NULL)
-        """, (exercise_id, name, description or None, equipment_type or None,
+        """, (exercise_id, name, description or None, equipment_type or 'other',
               exercise_type, muscle_group or None, video_url or None))
         return exercise_id
 
