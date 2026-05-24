@@ -268,6 +268,16 @@ Current row = highest `id` per `userID`.
 **`book`**  
 `id`, `bookID`, `userID`, `title` (NULL = soft-deleted), `author`, `status` ENUM('reading','finished','abandoned'), `started` (date), `finished` (date), `notes` (TEXT), `created`, `created_by`
 
+**`fitness_bodyWeight`**  
+`id`, `weightID` (UUID), `userID`, `weight` DECIMAL(5,1), `unit` ENUM('lbs','kg') DEFAULT 'lbs', `recorded` (date), `created`, `created_by`  
+One entry per date per user; latest `id` wins for same `(userID, recorded)`.
+
+**`fitness_program`**  
+`id`, `programID`, `fitnessID` (FK), `day_of_week` (0=Sun…6=Sat), `exerciseID` (FK, NULL = soft-deleted), `order_index`, `recommended_sets`, `recommended_reps`, `recommended_weight`, `notes` (setup/adjustment notes), `location` ENUM('gym','home','other'), `recommended_duration` INT (minutes, cardio), `recommended_speed` DECIMAL(4,2) (mph, cardio), `recommended_incline` DECIMAL(4,1) (degrees, cardio), `created`
+
+**`fitness_logSet`**  
+`id`, `logSetID` (UUID), `logID` (FK), `exerciseID` (FK, NULL = soft-deleted), `set_number`, `actual_weight` DECIMAL(6,1), `actual_reps` INT, `notes`, `duration_minutes` INT (cardio), `speed` DECIMAL(4,2) (cardio), `incline` DECIMAL(4,1) (cardio), `created`, `created_by`
+
 ---
 
 ## Part D — Application Layer

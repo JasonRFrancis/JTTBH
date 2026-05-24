@@ -198,7 +198,7 @@ class FitnessModel:
     @staticmethod
     def get_exercise_catalog() -> list[dict]:
         return db_manager.execute_query("""
-            SELECT exerciseID, name, type, equipment_type, muscle_group, video_url
+            SELECT exerciseID, name, type AS exercise_type, equipment_type, muscle_group, video_url
             FROM fitness_exercise
             WHERE name IS NOT NULL
             ORDER BY muscle_group, name
