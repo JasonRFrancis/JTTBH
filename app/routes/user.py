@@ -56,6 +56,7 @@ ALLOWED_PREF_KEYS = {
     'todo_list2_name',
     'todo_list3_name',
     'todo_list4_name',
+    'timezone',
 }
 
 
@@ -160,6 +161,8 @@ def save_setting(username: str):
         return redirect(url_for('user.settings', username=username))
 
     _upsert_preference(user_id, key, value)
+    if key == 'timezone':
+        session['timezone'] = value
     flash('Setting saved.', 'success')
     return redirect(url_for('user.settings', username=username))
 

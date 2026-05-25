@@ -32,6 +32,8 @@ instead of a redirect.
 import json
 from datetime import date, timedelta
 
+from app.services.timezone_utils import user_today
+
 from flask import (
     Blueprint,
     render_template,
@@ -88,7 +90,7 @@ def format_day_short_filter(d):
 def _parse_date(date_str: str | None, default: date = None) -> date:
     """Parse a YYYY-MM-DD string; return default (or today) on failure."""
     if default is None:
-        default = date.today()
+        default = user_today()
     if not date_str:
         return default
     try:
@@ -105,7 +107,7 @@ def _today_stats(user_id: str) -> tuple[int, int]:
     """
     Return (completed_count, total_count) for today's applicable habits.
     """
-    today   = date.today()
+    today   = user_today()
     grid    = HabitModel.get_grid_for_date(user_id, today)
     total     = sum(1 for cell in grid if cell['habitID'] and cell['applies'])
     completed = sum(1 for cell in grid if cell['habitID'] and cell['applies'] and cell['completed'] == 1)
@@ -221,7 +223,7 @@ def index_json(username: str):
     user_id  = session['user_id']
     ref_date = _parse_date(request.args.get('ref'))
 
-    today      = date.today()
+    today      = user_today()
     sdays      = today.weekday() + 1
     start_date = ref_date - (timedelta(days=7) + timedelta(days=sdays))
     end_date   = ref_date + timedelta(days=13) - timedelta(days=sdays)

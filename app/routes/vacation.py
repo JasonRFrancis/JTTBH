@@ -13,6 +13,8 @@ POST /<username>/vacation/delete/post/<vacationID>  -> delete a vacation period
 import uuid
 from datetime import date, datetime
 
+from app.services.timezone_utils import user_today
+
 from flask import (
     Blueprint,
     flash,
@@ -78,7 +80,7 @@ def index(username: str):
     return render_template(
         'vacation_index.html',
         vacations=vacations,
-        today=date.today(),
+        today=user_today(),
         username=username,
     )
 

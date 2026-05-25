@@ -31,6 +31,8 @@ Each journal entry records one value per category per day.
 import uuid
 from datetime import date, datetime
 
+from app.services.timezone_utils import user_today
+
 from flask import (
     Blueprint,
     flash,
@@ -171,7 +173,7 @@ def _build_context(user_id: str, username: str, entry_date: date) -> dict:
         'username': username,
         'entry_date': entry_date.isoformat(),
         'entry_date_obj': entry_date,
-        'today': date.today().isoformat(),
+        'today': user_today().isoformat(),
         'questions': questions,
         'answers': answers,
         'categories': categories,
@@ -190,7 +192,7 @@ def _build_context(user_id: str, username: str, entry_date: date) -> dict:
 def index(username: str):
     """Redirect to today's dated journal URL."""
     return redirect(url_for(
-        'journal.index_date', username=username, date_str=date.today().isoformat()
+        'journal.index_date', username=username, date_str=user_today().isoformat()
     ))
 
 
@@ -203,7 +205,7 @@ def index_date(username: str, date_str: str):
 
     Shows daily questions with existing answers, and the mood tracker.
     """
-    entry_date = _parse_date(date_str) or date.today()
+    entry_date = _parse_date(date_str) or user_today()
     user_id = session['user_id']
     context = _build_context(user_id, username, entry_date)
     return render_template('journal_index.html', **context)
@@ -272,7 +274,7 @@ def save_answer(username: str, question_id: str):
     user_id = session['user_id']
     answer_text = request.form.get('answer', '').strip()
     answered_str = request.form.get('answered', '').strip()
-    answered = _parse_date(answered_str) or date.today()
+    answered = _parse_date(answered_str) or user_today()
 
     if not answer_text:
         flash('Answer cannot be empty.', 'error')
@@ -309,7 +311,7 @@ def save_mood(username: str):
     """
     user_id = session['user_id']
     answered_str = request.form.get('answered', '').strip()
-    answered = _parse_date(answered_str) or date.today()
+    answered = _parse_date(answered_str) or user_today()
 
     saved_count = 0
     for key, value in request.form.items():

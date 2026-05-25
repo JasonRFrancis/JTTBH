@@ -23,6 +23,8 @@ with a flash message indicating success or failure.
 
 from datetime import date, datetime, timedelta
 
+from app.services.timezone_utils import user_today
+
 from flask import (
     Blueprint,
     flash,
@@ -104,7 +106,7 @@ def _build_index_context(user_id: str, username: str, current_date: date) -> dic
     dict
         Complete context dict ready for render_template.
     """
-    today = date.today()
+    today = user_today()
 
     # --- Push-forward: run once per day on first page load ----------------
     push_count = 0
@@ -173,7 +175,7 @@ def index(username: str):
     return redirect(url_for(
         'todo.index_date',
         username=username,
-        date_str=date.today().isoformat(),
+        date_str=user_today().isoformat(),
     ))
 
 
@@ -188,7 +190,7 @@ def index_jump(username: str):
     dated index URL.  With JavaScript, todo.js handles navigation directly.
     """
     date_str = request.args.get('date_str', '').strip()
-    target = _parse_date(date_str) or date.today()
+    target = _parse_date(date_str) or user_today()
     return redirect(url_for('todo.index_date', username=username, date_str=target.isoformat()))
 
 
@@ -208,7 +210,7 @@ def index_date(username: str, date_str: str):
     date_str : str
         ISO date string (YYYY-MM-DD).  Defaults to today if invalid.
     """
-    current_date = _parse_date(date_str) or date.today()
+    current_date = _parse_date(date_str) or user_today()
     user_id = session['user_id']
 
     context = _build_index_context(user_id, username, current_date)
@@ -291,12 +293,12 @@ def create(username: str):
     # Validate title
     if not title:
         flash('Title is required.', 'error')
-        return _redirect_to_index(username, date.today())
+        return _redirect_to_index(username, user_today())
 
     # Parse due date for daily todos
     due = _parse_date(due_str) if due_str else None
     if list_type == 'daily' and due is None:
-        due = date.today()
+        due = user_today()
 
     # Determine position: max existing position + 1
     if list_type == 'daily' and due:
@@ -326,7 +328,7 @@ def create(username: str):
     if list_type == 'daily' and due:
         return _redirect_to_index(username, due)
 
-    return _redirect_to_index(username, date.today())
+    return _redirect_to_index(username, user_today())
 
 
 @todo_bp.route('/toggle/post/<todo_id>', methods=['POST'])
@@ -346,7 +348,7 @@ def toggle(username: str, todo_id: str):
 
     if todo is None:
         flash('Item not found.', 'error')
-        return _redirect_to_index(username, date.today())
+        return _redirect_to_index(username, user_today())
 
     TodoModel.toggle_complete(todo_id, user_id)
 
@@ -355,8 +357,8 @@ def toggle(username: str, todo_id: str):
     if referrer:
         return redirect(referrer)
 
-    due = todo.get('due') or date.today()
-    return _redirect_to_index(username, due if isinstance(due, date) else date.today())
+    due = todo.get('due') or user_today()
+    return _redirect_to_index(username, due if isinstance(due, date) else user_today())
 
 
 @todo_bp.route('/update/post/<todo_id>', methods=['POST'])
@@ -377,7 +379,7 @@ def update(username: str, todo_id: str):
 
     if todo is None:
         flash('Item not found.', 'error')
-        return _redirect_to_index(username, date.today())
+        return _redirect_to_index(username, user_today())
 
     new_title   = request.form.get('title', '').strip() or None
     new_content = request.form.get('content', '').strip() or None
@@ -399,8 +401,8 @@ def update(username: str, todo_id: str):
     if referrer:
         return redirect(referrer)
 
-    due = todo.get('due') or date.today()
-    return _redirect_to_index(username, due if isinstance(due, date) else date.today())
+    due = todo.get('due') or user_today()
+    return _redirect_to_index(username, due if isinstance(due, date) else user_today())
 
 
 @todo_bp.route('/delete/post/<todo_id>', methods=['POST'])
@@ -420,9 +422,9 @@ def delete(username: str, todo_id: str):
 
     if todo is None:
         flash('Item not found.', 'error')
-        return _redirect_to_index(username, date.today())
+        return _redirect_to_index(username, user_today())
 
-    due = todo.get('due') or date.today()
+    due = todo.get('due') or user_today()
     TodoModel.delete(todo_id, user_id)
 
     flash('Item deleted.', 'success')
@@ -433,7 +435,7 @@ def delete(username: str, todo_id: str):
 
     return _redirect_to_index(
         username,
-        due if isinstance(due, date) else date.today(),
+        due if isinstance(due, date) else user_today(),
     )
 
 
@@ -456,7 +458,7 @@ def move(username: str, todo_id: str):
 
     if todo is None:
         flash('Item not found.', 'error')
-        return _redirect_to_index(username, date.today())
+        return _redirect_to_index(username, user_today())
 
     new_due_str    = request.form.get('new_due', '').strip()
     new_list_type  = request.form.get('new_list_type', '').strip() or None
@@ -475,7 +477,7 @@ def move(username: str, todo_id: str):
     flash('Item moved.', 'success')
 
     # Redirect to destination date if moving to daily
-    dest_date = new_due or (todo.get('due') if isinstance(todo.get('due'), date) else None) or date.today()
+    dest_date = new_due or (todo.get('due') if isinstance(todo.get('due'), date) else None) or user_today()
     return _redirect_to_index(username, dest_date)
 
 

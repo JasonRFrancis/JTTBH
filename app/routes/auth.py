@@ -173,6 +173,14 @@ def _load_permissions(user_id: str) -> tuple[int, int]:
     return int(row['read'] or 0), int(row['write'] or 0)
 
 
+def _load_timezone(user_id: str) -> str:
+    row = db_manager.execute_one(
+        "SELECT value FROM user_preference WHERE userID = %s AND preference = 'timezone' ORDER BY id DESC LIMIT 1",
+        (user_id,),
+    )
+    return (row['value'] or 'UTC') if row else 'UTC'
+
+
 def _set_session(user: dict) -> None:
     """Populate Flask session from *user* dict and permission table."""
     perm_read, perm_write = _load_permissions(user['userID'])
@@ -181,6 +189,7 @@ def _set_session(user: dict) -> None:
     session['username']   = user['username']
     session['perm_read']  = perm_read
     session['perm_write'] = perm_write
+    session['timezone']   = _load_timezone(user['userID'])
 
 
 # ---------------------------------------------------------------------------

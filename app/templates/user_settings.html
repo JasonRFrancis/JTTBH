@@ -66,6 +66,50 @@
 
 <hr>
 
+<section class="settings-section" aria-labelledby="timezone-heading">
+  <h2 id="timezone-heading">Time Zone</h2>
+  <p>Dates throughout the site (habits, todos, fitness, etc.) are calculated using this time zone.</p>
+  <form method="post"
+        action="{{ url_for('user.save_setting', username=username) }}"
+        class="settings-form">
+    <div class="form-field">
+      <label for="field-timezone">Time zone</label>
+      <select id="field-timezone" name="value">
+        {% set tz = prefs.get('timezone', 'UTC') %}
+        <optgroup label="US &amp; Canada">
+          <option value="America/New_York"{% if tz == 'America/New_York' %} selected{% endif %}>Eastern (New York)</option>
+          <option value="America/Chicago"{% if tz == 'America/Chicago' %} selected{% endif %}>Central (Chicago)</option>
+          <option value="America/Denver"{% if tz == 'America/Denver' %} selected{% endif %}>Mountain (Denver)</option>
+          <option value="America/Phoenix"{% if tz == 'America/Phoenix' %} selected{% endif %}>Mountain, no DST (Phoenix)</option>
+          <option value="America/Los_Angeles"{% if tz == 'America/Los_Angeles' %} selected{% endif %}>Pacific (Los Angeles)</option>
+          <option value="America/Anchorage"{% if tz == 'America/Anchorage' %} selected{% endif %}>Alaska (Anchorage)</option>
+          <option value="Pacific/Honolulu"{% if tz == 'Pacific/Honolulu' %} selected{% endif %}>Hawaii (Honolulu)</option>
+        </optgroup>
+        <optgroup label="Europe">
+          <option value="Europe/London"{% if tz == 'Europe/London' %} selected{% endif %}>London</option>
+          <option value="Europe/Paris"{% if tz == 'Europe/Paris' %} selected{% endif %}>Paris / Berlin / Rome</option>
+          <option value="Europe/Helsinki"{% if tz == 'Europe/Helsinki' %} selected{% endif %}>Helsinki / Athens</option>
+        </optgroup>
+        <optgroup label="Asia &amp; Pacific">
+          <option value="Asia/Dubai"{% if tz == 'Asia/Dubai' %} selected{% endif %}>Dubai</option>
+          <option value="Asia/Kolkata"{% if tz == 'Asia/Kolkata' %} selected{% endif %}>India (Kolkata)</option>
+          <option value="Asia/Bangkok"{% if tz == 'Asia/Bangkok' %} selected{% endif %}>Bangkok / Jakarta</option>
+          <option value="Asia/Shanghai"{% if tz == 'Asia/Shanghai' %} selected{% endif %}>China (Shanghai)</option>
+          <option value="Asia/Tokyo"{% if tz == 'Asia/Tokyo' %} selected{% endif %}>Japan (Tokyo)</option>
+          <option value="Australia/Sydney"{% if tz == 'Australia/Sydney' %} selected{% endif %}>Australia (Sydney)</option>
+        </optgroup>
+        <optgroup label="Other">
+          <option value="UTC"{% if tz == 'UTC' %} selected{% endif %}>UTC</option>
+        </optgroup>
+      </select>
+    </div>
+    <input type="hidden" name="key" value="timezone">
+    <button type="submit" class="btn btn--primary">Save Time Zone</button>
+  </form>
+</section>
+
+<hr>
+
 <section class="settings-section" aria-labelledby="vacations-heading">
   <h2 id="vacations-heading">Vacation Periods</h2>
   <p>Mark date ranges as vacation so scheduled habits and todos are suppressed.</p>

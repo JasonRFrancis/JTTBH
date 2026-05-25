@@ -23,6 +23,8 @@ POST /<u>/fitness/weight/post  → JSON
 
 from datetime import date, datetime
 
+from app.services.timezone_utils import user_today
+
 from flask import (
     Blueprint,
     flash,
@@ -56,7 +58,7 @@ _DOW_ORDER = [1, 2, 3, 4, 5, 6]  # Mon–Sat (no Sunday)
 @permission_required_read(PERM_FITNESS)
 def index(username: str):
     user_id = session['user_id']
-    today = date.today()
+    today = user_today()
     # Python weekday(): Mon=0 → day_of_week: Sun=0, Mon=1, ..., Sat=6
     day_of_week = (today.weekday() + 1) % 7
 
@@ -405,7 +407,7 @@ def log_set(username: str):
     # Auto-create today's log if needed
     program = FitnessModel.get_active_program(user_id)
     fitness_id = program['fitnessID'] if program else None
-    log_id = FitnessModel.get_or_create_log(user_id, fitness_id, date.today())
+    log_id = FitnessModel.get_or_create_log(user_id, fitness_id, user_today())
 
     log_set_id = FitnessModel.log_set(
         log_id=log_id,
@@ -457,5 +459,5 @@ def weight_post(username: str):
     except (TypeError, ValueError):
         return jsonify({'status': 'error', 'message': 'Invalid weight'}), 400
 
-    weight_id = FitnessModel.log_body_weight(user_id, weight, date.today())
+    weight_id = FitnessModel.log_body_weight(user_id, weight, user_today())
     return jsonify({'status': 'ok', 'weightID': weight_id, 'weight': weight})

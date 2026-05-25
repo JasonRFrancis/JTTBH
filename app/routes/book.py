@@ -25,6 +25,8 @@ import uuid
 from collections import defaultdict
 from datetime import date, datetime
 
+from app.services.timezone_utils import user_today
+
 from flask import (
     Blueprint,
     flash,
@@ -178,8 +180,8 @@ def create(username: str):
     if status not in VALID_STATUSES:
         status = 'want_to_read'
 
-    started = date.today() if status == 'reading' else None
-    finished = date.today() if status == 'completed' else None
+    started = user_today() if status == 'reading' else None
+    finished = user_today() if status == 'completed' else None
 
     book_id = str(uuid.uuid4())
 
@@ -304,7 +306,7 @@ def finish(username: str, book_id: str):
         review=book['review'],
         notes=book['notes'],
         started=book['started'],
-        finished=date.today(),
+        finished=user_today(),
     )
 
     flash(f'"{book["title"]}" marked as finished.', 'success')

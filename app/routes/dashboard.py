@@ -21,6 +21,8 @@ Requires ``PERM_DASHBOARD`` read access.
 
 from datetime import date
 
+from app.services.timezone_utils import user_today
+
 from flask import (
     Blueprint,
     render_template,
@@ -57,7 +59,7 @@ def _get_today_habit_grid(user_id: str) -> tuple[list[dict], int, int]:
     grid is the 25-element list from HabitModel.get_grid_for_date, with
     streak attached to each cell that has a habit.
     """
-    today   = date.today()
+    today   = user_today()
     grid    = HabitModel.get_grid_for_date(user_id, today)
     streaks = HabitModel.calculate_streaks(user_id)
     for cell in grid:
@@ -72,7 +74,7 @@ def _get_today_todos(user_id: str) -> list[dict]:
     """
     Return today's daily todos for *user_id*.
     """
-    today = date.today().isoformat()
+    today = user_today().isoformat()
 
     rows = db_manager.execute_query(
         """
@@ -108,7 +110,7 @@ def _gather_dashboard_data(user_id: str, perm_read: int) -> dict:
     users who lack certain feature access.
     """
     data: dict = {
-        'today':           date.today().isoformat(),
+        'today':           user_today().isoformat(),
         'habit_grid':      [],
         'habit_completed': 0,
         'habit_total':     0,

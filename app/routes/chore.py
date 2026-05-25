@@ -25,6 +25,8 @@ This means the household lookup is required before querying chores.
 
 from datetime import date
 
+from app.services.timezone_utils import user_today
+
 from flask import (
     Blueprint,
     render_template,
@@ -132,7 +134,7 @@ def index(username: str):
     username       : str
     """
     user_id = session['user_id']
-    today = date.today()
+    today = user_today()
     day_of_week_bit = _DAY_BITMASK[today.weekday()]
 
     household = _get_user_household(user_id)

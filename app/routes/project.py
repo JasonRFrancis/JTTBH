@@ -27,6 +27,8 @@ Current state is determined by MAX(id) per projectID.
 import uuid
 from datetime import datetime
 
+from app.services.timezone_utils import user_today
+
 from flask import (
     Blueprint,
     flash,
@@ -365,8 +367,7 @@ def send_to_todo(username: str, project_id: str):
         flash('This project has no next step to send.', 'error')
         return _redirect_to_view(username, project_id)
 
-    from datetime import date as _date  # noqa: PLC0415
-    today = _date.today()
+    today = user_today()
 
     existing = TodoModel.get_daily_todos(user_id, today)
     position = max((t['position'] for t in existing), default=-1) + 1
