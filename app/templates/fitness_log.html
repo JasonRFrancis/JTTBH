@@ -40,11 +40,14 @@
                 {% if s.duration_minutes %}{{ s.duration_minutes }} min{% endif %}
                 {% if s.speed %} · {{ s.speed }} mph{% endif %}
                 {% if s.incline %} · {{ s.incline|int }}°{% endif %}
+                {% if s.notes %} · {{ s.notes }}{% endif %}
               </span>
+            {% elif ex.type == 'done' %}
+              <span class="log-sets-summary">Done{% if ex.sets|length > 1 %} × {{ ex.sets|length }}{% endif %}</span>
             {% else %}
               <span class="log-sets-summary">
                 {% for s in ex.sets %}
-                  <span class="set-chip">{{ s.actual_weight|int if s.actual_weight else '—' }}×{{ s.actual_reps if s.actual_reps else '—' }}</span>
+                  <span class="set-chip">{{ s.actual_weight|int if s.actual_weight else '—' }}×{{ s.actual_reps if s.actual_reps else '—' }}{% if s.notes %}<span class="set-chip-adj"> {{ s.notes }}</span>{% endif %}</span>
                 {% endfor %}
               </span>
             {% endif %}

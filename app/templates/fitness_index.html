@@ -61,7 +61,8 @@
 
     {% for ex in exercises %}
     {% set is_cardio = ex.exercise_type == 'cardio' %}
-    <article class="exercise{% if is_cardio %} exercise--cardio{% endif %}"
+    {% set is_done   = ex.exercise_type == 'done' %}
+    <article class="exercise{% if is_cardio %} exercise--cardio{% elif is_done %} exercise--done{% endif %}"
              data-exercise-id="{{ ex.exerciseID }}"
              data-exercise-type="{{ ex.exercise_type }}">
 
@@ -71,7 +72,7 @@
           {% if ex.muscle_group %}<span class="badge">{{ ex.muscle_group }}</span>{% endif %}
         </div>
         <div class="exercise-meta">
-          {% if ex.notes %}
+          {% if ex.notes and not is_done %}
           <span class="adj" title="Machine adjustment">adj {{ ex.notes }}</span>
           {% endif %}
           {% if ex.video_url %}
@@ -81,6 +82,7 @@
       </header>
 
       {# Prescription ─────────────────────────────────────────────────── #}
+      {% if not is_done %}
       <p class="prescription">
         {% if is_cardio %}
           {% if ex.recommended_duration %}{{ ex.recommended_duration }} min{% endif %}
@@ -92,16 +94,20 @@
           {% if ex.recommended_weight %} @ {{ ex.recommended_weight|int }} lbs{% endif %}
         {% endif %}
       </p>
+      {% endif %}
 
       {# Already-logged sets today ─────────────────────────────────────── #}
       <ul class="set-list" aria-label="Logged sets">
         {% for s in ex.today_sets %}
         <li class="set-row set-row--logged" data-log-set-id="{{ s.logSetID }}">
-          {% if is_cardio %}
+          {% if is_done %}
+            <span class="set-summary">Done</span>
+          {% elif is_cardio %}
             <span class="set-summary">
               {% if s.duration_minutes %}{{ s.duration_minutes }} min{% endif %}
               {% if s.speed %} · {{ s.speed }} mph{% endif %}
               {% if s.incline %} · {{ s.incline|int }}°{% endif %}
+              {% if s.notes %} · <span class="set-adj">{{ s.notes }}</span>{% endif %}
             </span>
           {% else %}
             <span class="set-num">{{ s.set_number }}</span>
@@ -120,9 +126,10 @@
         <template class="prefill-data"
           data-duration="{{ prev.duration_minutes if prev and prev.duration_minutes else ex.recommended_duration or '' }}"
           data-speed="{{ prev.speed if prev and prev.speed else ex.recommended_speed or '' }}"
-          data-incline="{{ prev.incline if prev and prev.incline else ex.recommended_incline or '' }}">
+          data-incline="{{ prev.incline if prev and prev.incline else ex.recommended_incline or '' }}"
+          data-notes="{{ prev.notes if prev and prev.notes else ex.notes or '' }}">
         </template>
-      {% else %}
+      {% elif not is_done %}
         {% set prev1 = ex.prev_sets[0] if ex.prev_sets else None %}
         <template class="prefill-data"
           data-weight="{{ prev1.actual_weight|int if prev1 and prev1.actual_weight else ex.recommended_weight|int if ex.recommended_weight else '' }}"
@@ -131,12 +138,20 @@
         </template>
       {% endif %}
 
-      {# Add set button ────────────────────────────────────────────────── #}
+      {# Add set / Mark Done button ────────────────────────────────────── #}
+      {% if is_done %}
+      <button class="btn-mark-done" type="button"
+              data-exercise-id="{{ ex.exerciseID }}"
+              data-exercise-type="done">
+        {% if ex.today_sets %}✓ Done again{% else %}✓ Mark Done{% endif %}
+      </button>
+      {% else %}
       <button class="btn-add-set" type="button"
               data-exercise-id="{{ ex.exerciseID }}"
               data-exercise-type="{{ ex.exercise_type }}">
         + {{ 'Log' if is_cardio else 'Set' }}
       </button>
+      {% endif %}
 
     </article>
     {% endfor %}
@@ -184,6 +199,8 @@
            aria-label="Speed mph" placeholder="mph">
     <input type="number" class="inp-incline" step="0.5" min="0" inputmode="decimal"
            aria-label="Incline degrees" placeholder="°">
+    <input type="text" class="inp-notes" inputmode="text"
+           aria-label="Adjustment" placeholder="adj">
     <button class="btn-confirm-set" type="button" aria-label="Save">✓</button>
     <button class="btn-cancel-set" type="button" aria-label="Cancel">×</button>
   </li>

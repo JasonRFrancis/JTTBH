@@ -102,6 +102,35 @@ function post(url, data) {
     return li;
   }
 
+  /* Build a logged (read-only) done row */
+  function buildLoggedDoneRow(logSetID) {
+    var li = document.createElement('li');
+    li.className = 'set-row set-row--logged';
+    li.dataset.logSetId = logSetID;
+    li.innerHTML =
+      '<span class="set-summary">Done</span>' +
+      '<button class="btn-delete-set" type="button" data-log-set-id="' + logSetID + '" aria-label="Delete">×</button>';
+    return li;
+  }
+
+  /* Handle "Mark Done" button clicks (done-type exercises) */
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btn-mark-done');
+    if (!btn) return;
+    var article = btn.closest('.exercise');
+    var exId    = btn.dataset.exerciseId;
+    btn.disabled = true;
+    post(window.FITNESS_URLS.logSet, { exercise_id: exId })
+      .then(function (res) {
+        if (res.status === 'ok') {
+          article.querySelector('.set-list').appendChild(buildLoggedDoneRow(res.logSetID));
+          btn.textContent = '✓ Done again';
+        }
+        btn.disabled = false;
+      })
+      .catch(function () { btn.disabled = false; });
+  });
+
   /* Handle "+ Set" / "+ Log" button clicks */
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('.btn-add-set');
@@ -121,6 +150,7 @@ function post(url, data) {
       li.querySelector('.inp-duration').value = prefill.duration;
       li.querySelector('.inp-speed').value    = prefill.speed;
       li.querySelector('.inp-incline').value  = prefill.incline;
+      li.querySelector('.inp-notes').value    = prefill.notes;
       li.querySelector('.inp-duration').focus();
     } else {
       var setNum = setCount(article) + 1;
@@ -153,6 +183,7 @@ function post(url, data) {
       data.duration = li.querySelector('.inp-duration').value || '';
       data.speed    = li.querySelector('.inp-speed').value    || '';
       data.incline  = li.querySelector('.inp-incline').value  || '';
+      data.notes    = li.querySelector('.inp-notes').value    || '';
     } else {
       data.set_number = article.querySelectorAll('.set-row--logged').length + 1;
       data.weight     = li.querySelector('.inp-weight').value || '';
@@ -258,10 +289,11 @@ function post(url, data) {
       var opt = sel.options[sel.selectedIndex];
       var type = opt ? (opt.dataset.type || 'strength') : 'strength';
       var isCardio = type === 'cardio';
+      var isDone   = type === 'done';
       var sf = form.querySelector('.strength-fields');
       var cf = form.querySelector('.cardio-fields');
-      if (sf) sf.hidden = isCardio;
-      if (cf) cf.hidden = !isCardio;
+      if (sf) sf.hidden = isCardio || isDone;
+      if (cf) cf.hidden = !isCardio || isDone;
     }
 
     sel.addEventListener('change', update);
