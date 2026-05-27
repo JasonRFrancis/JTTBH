@@ -61,6 +61,7 @@ function post(url, data) {
     return {
       weight:   d.weight   || '',
       reps:     d.reps     || '',
+      notes:    d.notes    || '',
       duration: d.duration || '',
       speed:    d.speed    || '',
       incline:  d.incline  || '',
@@ -73,15 +74,15 @@ function post(url, data) {
   }
 
   /* Build a logged (read-only) strength set row */
-  function buildLoggedStrengthRow(logSetID, setNum, weight, reps) {
+  function buildLoggedStrengthRow(logSetID, setNum, weight, reps, notes) {
+    var summary = (weight ? Math.round(weight) : '—') + ' lbs × ' + (reps || '—');
+    if (notes) summary += ' · <span class="set-adj">' + notes + '</span>';
     var li = document.createElement('li');
     li.className = 'set-row set-row--logged';
     li.dataset.logSetId = logSetID;
     li.innerHTML =
       '<span class="set-num">' + setNum + '</span>' +
-      '<span class="set-summary">' +
-        (weight ? Math.round(weight) : '—') + ' lbs × ' + (reps || '—') +
-      '</span>' +
+      '<span class="set-summary">' + summary + '</span>' +
       '<button class="btn-delete-set" type="button" data-log-set-id="' + logSetID + '" aria-label="Delete set">×</button>';
     return li;
   }
@@ -126,6 +127,7 @@ function post(url, data) {
       li.querySelector('.set-num').textContent = setNum;
       li.querySelector('.inp-weight').value = prefill.weight;
       li.querySelector('.inp-reps').value   = prefill.reps;
+      li.querySelector('.inp-notes').value  = prefill.notes;
       li.querySelector('.inp-weight').focus();
     }
 
@@ -155,6 +157,7 @@ function post(url, data) {
       data.set_number = article.querySelectorAll('.set-row--logged').length + 1;
       data.weight     = li.querySelector('.inp-weight').value || '';
       data.reps       = li.querySelector('.inp-reps').value   || '';
+      data.notes      = li.querySelector('.inp-notes').value  || '';
     }
 
     li.classList.add('set-row--saving');
@@ -172,12 +175,13 @@ function post(url, data) {
           logged = buildLoggedCardioRow(logSetID,
             data.duration, data.speed, data.incline);
         } else {
-          logged = buildLoggedStrengthRow(logSetID, setNum, data.weight, data.reps);
+          logged = buildLoggedStrengthRow(logSetID, setNum, data.weight, data.reps, data.notes);
           // Update prefill template with just-logged values
           var t = article.querySelector('template.prefill-data');
           if (t) {
             t.dataset.weight = data.weight;
             t.dataset.reps   = data.reps;
+            t.dataset.notes  = data.notes;
           }
         }
 

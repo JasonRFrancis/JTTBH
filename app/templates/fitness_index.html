@@ -105,7 +105,7 @@
             </span>
           {% else %}
             <span class="set-num">{{ s.set_number }}</span>
-            <span class="set-summary">{{ s.actual_weight|int if s.actual_weight else '—' }} lbs × {{ s.actual_reps if s.actual_reps else '—' }}</span>
+            <span class="set-summary">{{ s.actual_weight|int if s.actual_weight else '—' }} lbs × {{ s.actual_reps if s.actual_reps else '—' }}{% if s.notes %} · <span class="set-adj">{{ s.notes }}</span>{% endif %}</span>
           {% endif %}
           <button class="btn-delete-set" type="button"
                   data-log-set-id="{{ s.logSetID }}"
@@ -126,7 +126,8 @@
         {% set prev1 = ex.prev_sets[0] if ex.prev_sets else None %}
         <template class="prefill-data"
           data-weight="{{ prev1.actual_weight|int if prev1 and prev1.actual_weight else ex.recommended_weight|int if ex.recommended_weight else '' }}"
-          data-reps="{{ prev1.actual_reps if prev1 and prev1.actual_reps else ex.recommended_reps or '' }}">
+          data-reps="{{ prev1.actual_reps if prev1 and prev1.actual_reps else ex.recommended_reps or '' }}"
+          data-notes="{{ prev1.notes if prev1 and prev1.notes else ex.notes or '' }}">
         </template>
       {% endif %}
 
@@ -168,6 +169,8 @@
     <span class="set-sep">×</span>
     <input type="number" class="inp-reps" step="1" min="0" inputmode="numeric"
            aria-label="Reps" placeholder="reps">
+    <input type="text" class="inp-notes" inputmode="text"
+           aria-label="Machine adjustment" placeholder="adj">
     <button class="btn-confirm-set" type="button" aria-label="Save set">✓</button>
     <button class="btn-cancel-set" type="button" aria-label="Cancel">×</button>
   </li>

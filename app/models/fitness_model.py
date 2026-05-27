@@ -375,7 +375,7 @@ class FitnessModel:
     def get_last_sets_for_exercise(user_id: str, exercise_id: str, before_date: date) -> list[dict]:
         """All sets from the most recent session for this exercise, before today."""
         return db_manager.execute_query("""
-            SELECT ls.set_number, ls.actual_weight, ls.actual_reps,
+            SELECT ls.set_number, ls.actual_weight, ls.actual_reps, ls.notes,
                    ls.duration_minutes, ls.speed, ls.incline
             FROM fitness_logSet ls
             JOIN fitness_log fl ON fl.logID = ls.logID
