@@ -185,6 +185,7 @@ def _set_session(user: dict) -> None:
     """Populate Flask session from *user* dict and permission table."""
     perm_read, perm_write = _load_permissions(user['userID'])
     session.clear()
+    session.permanent     = True
     session['user_id']    = user['userID']
     session['username']   = user['username']
     session['perm_read']  = perm_read
