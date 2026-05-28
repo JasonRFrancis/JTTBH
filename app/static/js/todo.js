@@ -146,7 +146,7 @@ function initInlineEditing() {
   document.querySelectorAll('.todo-item__title').forEach((titleEl) => {
     const item = titleEl.closest('todo-item');
     if (!item) return;
-    const updateForm = item.querySelector('.todo-item__update-form');
+    const updateForm = item.querySelector('.todo-item__form');
     if (!updateForm) return;
 
     titleEl.addEventListener('click', () => {
@@ -451,7 +451,9 @@ function initCheckboxToggle() {
   document.addEventListener('change', (e) => {
     if (!e.target.matches('.todo-item__checkbox')) return;
     const form = e.target.closest('form');
-    if (form) form.submit();
+    if (!form) return;
+    const toggleBtn = form.querySelector('.todo-item__toggle-btn');
+    if (toggleBtn) toggleBtn.click();
   });
 }
 

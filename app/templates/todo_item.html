@@ -19,66 +19,59 @@
   draggable="true"
   role="listitem">
 
-  {# --- Completion toggle -------------------------------------------- #}
-  <form class="todo-item__toggle"
+  <form class="todo-item__form"
         method="post"
-        action="{{ url_for('todo.toggle', username=username, todo_id=item.todoID) }}">
+        action="{{ url_for('todo.update', username=username, todo_id=item.todoID) }}">
+
+    {# Hidden submit used by JS when the checkbox changes — routes to toggle endpoint #}
+    <button type="submit"
+            class="todo-item__toggle-btn"
+            formaction="{{ url_for('todo.toggle', username=username, todo_id=item.todoID) }}"
+            hidden>Toggle</button>
+
+    {# --- Completion checkbox ------------------------------------------ #}
     <input type="checkbox"
            class="todo-item__checkbox"
            {% if item.completed %}checked{% endif %}
            aria-label="{{ 'Mark incomplete' if item.completed else 'Mark complete' }}: {{ item.title }}">
-  </form>
 
-  {# --- Inline edit title -------------------------------------------- #}
-  <span class="todo-item__title"
-        data-raw="{{ item.title | e }}"
-        contenteditable="false"
-        aria-label="Todo: {{ item.title }}">
-    {{- item.title -}}
-  </span>
-
-  {# Hidden update form (submitted by JS on blur/enter) #}
-  <form class="todo-item__update-form"
-        method="post"
-        action="{{ url_for('todo.update', username=username, todo_id=item.todoID) }}"
-        aria-hidden="true">
+    {# Hidden title input kept in sync by inline-editing JS #}
     <input type="hidden" name="title" value="{{ item.title | e }}">
-    <input type="hidden" name="content" value="{{ item.content | e if item.content else '' }}">
-  </form>
 
-  {# --- Detail / options menu ---------------------------------------- #}
-  <details class="todo-item__details">
-    <summary class="todo-item__details-toggle" aria-label="Options for {{ item.title }}">
-      <span aria-hidden="true">&#8943;</span>
-    </summary>
+    {# --- Inline edit title -------------------------------------------- #}
+    <span class="todo-item__title"
+          data-raw="{{ item.title | e }}"
+          contenteditable="false"
+          aria-label="Todo: {{ item.title }}">
+      {{- item.title -}}
+    </span>
 
-    <div class="todo-item__detail-panel">
+    {# --- Detail / options menu ---------------------------------------- #}
+    <details class="todo-item__details">
+      <summary class="todo-item__details-toggle" aria-label="Options for {{ item.title }}">
+        <span aria-hidden="true">&#8943;</span>
+      </summary>
 
-      {# Content (Markdown, server-rendered on initial load) #}
-      {% if item.content %}
-      <div class="todo-item__content">
-        {{ item.content }}
-      </div>
-      {% endif %}
+      <div class="todo-item__detail-panel">
 
-      {# Edit content form #}
-      <form class="todo-item__edit-form"
-            method="post"
-            action="{{ url_for('todo.update', username=username, todo_id=item.todoID) }}">
+        {# Content (Markdown, server-rendered on initial load) #}
+        {% if item.content %}
+        <div class="todo-item__content">
+          {{ item.content }}
+        </div>
+        {% endif %}
+
+        {# Notes textarea — submitted with title hidden input via default form action #}
         <label for="content-{{ item.todoID }}" class="sr-only">Notes</label>
         <textarea id="content-{{ item.todoID }}"
                   name="content"
                   rows="3"
                   placeholder="Add notes (Markdown supported)…">{{ item.content or '' }}</textarea>
-        <input type="hidden" name="title" value="{{ item.title | e }}">
-        <button type="submit">Save notes</button>
-      </form>
+        <button type="submit" class="todo-item__save-btn">Save notes</button>
 
-      {# Move form #}
-      <details class="todo-item__move">
-        <summary>Move to…</summary>
-        <form method="post"
-              action="{{ url_for('todo.move', username=username, todo_id=item.todoID) }}">
+        {# Move fields — Move button uses formaction to route to move endpoint #}
+        <details class="todo-item__move">
+          <summary>Move to…</summary>
           <label for="move-due-{{ item.todoID }}">Date
             <input type="date" id="move-due-{{ item.todoID }}"
                    name="new_due"
@@ -97,20 +90,19 @@
                    value="{{ item.list_name or '' }}"
                    placeholder="e.g. next_week">
           </label>
-          <button type="submit">Move</button>
-        </form>
-      </details>
+          <button type="submit"
+                  formaction="{{ url_for('todo.move', username=username, todo_id=item.todoID) }}">Move</button>
+        </details>
 
-      {# Delete form #}
-      <form class="todo-item__delete-form"
-            method="post"
-            action="{{ url_for('todo.delete', username=username, todo_id=item.todoID) }}">
+        {# Delete button routes to delete endpoint via formaction #}
         <button type="submit"
                 class="todo-item__delete-btn"
+                formaction="{{ url_for('todo.delete', username=username, todo_id=item.todoID) }}"
                 aria-label="Delete: {{ item.title }}">Delete</button>
-      </form>
 
-    </div>{# /.detail-panel #}
-  </details>
+      </div>{# /.detail-panel #}
+    </details>
+
+  </form>
 
 </todo-item>
