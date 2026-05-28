@@ -61,7 +61,7 @@
 
     <todo-list data-date="{{ day.date_str }}" data-type="daily" role="list">
       {% for item in day.todos %}
-      {% include '_todo_item.html' %}
+      {% include 'todo_item.html' %}
       {% endfor %}
 
       {# Blank input slots — minimum DAILY_BLANK_SLOTS, grow as needed #}
@@ -100,7 +100,7 @@
           {% for item in plist.todos %}
           {% set list_type = 'planning' %}
           {% set list_name = plist.name %}
-          {% include '_todo_item.html' %}
+          {% include 'todo_item.html' %}
           {% endfor %}
 
           {% for i in range(plist.blank_slots) %}
@@ -135,7 +135,7 @@
           {% for item in clist.todos %}
           {% set list_type = 'custom' %}
           {% set list_name = clist.name %}
-          {% include '_todo_item.html' %}
+          {% include 'todo_item.html' %}
           {% endfor %}
 
           {% for i in range(clist.blank_slots) %}

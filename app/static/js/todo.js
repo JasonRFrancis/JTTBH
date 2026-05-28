@@ -440,7 +440,24 @@ function initDatePicker() {
 
 
 /* =========================================================================
-   9. Detail panel: close when clicking outside
+   9. Checkbox toggle: auto-submit on change
+   ========================================================================= */
+
+/**
+ * Submit the toggle form when a completion checkbox changes state.
+ * Uses event delegation so it works for dynamically-added items.
+ */
+function initCheckboxToggle() {
+  document.addEventListener('change', (e) => {
+    if (!e.target.matches('.todo-item__checkbox')) return;
+    const form = e.target.closest('form');
+    if (form) form.submit();
+  });
+}
+
+
+/* =========================================================================
+   10. Detail panel: close when clicking outside
    ========================================================================= */
 
 /**
@@ -474,6 +491,7 @@ function init() {
     initAutoGrow,
     initDragDrop,
     initDatePicker,
+    initCheckboxToggle,
     initDetailPanels,
   ];
 

@@ -233,9 +233,7 @@ todo-item.todo-item--completed {
 .todo-item__checkbox {
   appearance: none;
   -webkit-appearance: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
   width: 1.1rem;
   height: 1.1rem;
   border: 1.5px solid #aaa;
@@ -243,15 +241,24 @@ todo-item.todo-item--completed {
   background: #fff;
   cursor: pointer;
   flex-shrink: 0;
-  font-size: 0.75rem;
-  color: var(--color-success);
   margin-top: 0.55rem;
   transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 
-.todo-item__checkbox--checked {
+.todo-item__checkbox:checked {
   border-color: var(--color-success);
   background: #e8f5e8;
+}
+
+.todo-item__checkbox:checked::before {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.7rem;
+  line-height: 1;
+  color: var(--color-success);
 }
 
 .todo-item__checkbox:hover {

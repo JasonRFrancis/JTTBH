@@ -1,5 +1,5 @@
 {#
-  Partial: _todo_item.html
+  Partial: todo_item.html
   ========================
   Renders a single todo item for use inside any todo-list.
 
@@ -23,12 +23,10 @@
   <form class="todo-item__toggle"
         method="post"
         action="{{ url_for('todo.toggle', username=username, todo_id=item.todoID) }}">
-    <button type="submit"
-            class="todo-item__checkbox{% if item.completed %} todo-item__checkbox--checked{% endif %}"
-            aria-label="{{ 'Mark incomplete' if item.completed else 'Mark complete' }}: {{ item.title }}"
-            aria-pressed="{{ 'true' if item.completed else 'false' }}">
-      <span aria-hidden="true">{% if item.completed %}&#10003;{% endif %}</span>
-    </button>
+    <input type="checkbox"
+           class="todo-item__checkbox"
+           {% if item.completed %}checked{% endif %}
+           aria-label="{{ 'Mark incomplete' if item.completed else 'Mark complete' }}: {{ item.title }}">
   </form>
 
   {# --- Inline edit title -------------------------------------------- #}
