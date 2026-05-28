@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Fitness — {{ today.strftime('%a %b %-d') }}{% endblock %}
+{% block title %}Fitness — {{ viewed_date.strftime('%a %b %-d') }}{% endblock %}
 {% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/fitness.css') }}">{% endblock %}
 
 {% block content %}
@@ -12,9 +12,13 @@
       <span class="location-badge location-{{ location }}">{{ location }}</span>
       {% endif %}
     </h1>
-    <time datetime="{{ today.isoformat() }}">{{ today.strftime('%B %-d, %Y') }}</time>
+    <div class="date-nav">
+      <a href="{{ url_for('fitness.index', username=username, date_str=prev_date.isoformat()) }}" class="date-nav-btn" aria-label="Previous day">←</a>
+      <time datetime="{{ viewed_date.isoformat() }}">{{ viewed_date.strftime('%B %-d, %Y') }}</time>
+      <a href="{{ url_for('fitness.index', username=username, date_str=next_date.isoformat()) }}" class="date-nav-btn" aria-label="Next day">→</a>
+    </div>
     <nav aria-label="Fitness navigation">
-      <a href="{{ url_for('fitness.index', username=username) }}" aria-current="page">Today</a>
+      <a href="{{ url_for('fitness.index', username=username) }}" {% if viewed_date == today %}aria-current="page"{% endif %}>Today</a>
       <a href="{{ url_for('fitness.log', username=username) }}">Log</a>
       <a href="{{ url_for('fitness.settings', username=username) }}">Settings</a>
     </nav>
@@ -161,6 +165,7 @@
   {% if todays_log and not todays_log.end_time %}
   <form method="post"
         action="{{ url_for('fitness.log_end', username=username, log_id=todays_log.logID) }}">
+    <input type="hidden" name="log_date" value="{{ viewed_date.isoformat() }}">
     <button type="submit" class="btn-finish">Finish Workout</button>
   </form>
   {% elif todays_log and todays_log.end_time %}
@@ -212,7 +217,8 @@
   window.FITNESS_URLS = {
     logSet:    "{{ url_for('fitness.log_set', username=username) }}",
     deleteSet: "{{ url_for('fitness.log_set_delete', username=username, log_set_id='SETID') }}",
-    weight:    "{{ url_for('fitness.weight_post', username=username) }}"
+    weight:    "{{ url_for('fitness.weight_post', username=username) }}",
+    logDate:   "{{ viewed_date.isoformat() }}"
   };
 </script>
 <script src="{{ url_for('static', filename='js/fitness.js') }}" defer></script>

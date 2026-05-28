@@ -21,7 +21,7 @@ POST /<u>/fitness/log/end/post/<log_id>
 POST /<u>/fitness/weight/post  → JSON
 """
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from app.services.timezone_utils import user_today
 
@@ -54,13 +54,25 @@ _DOW_ORDER = [1, 2, 3, 4, 5, 6]  # Mon–Sat (no Sunday)
 # ─────────────────────────────────────────────────────────────────────────────
 
 @fitness_bp.route('/index')
+@fitness_bp.route('/index/<date_str>')
 @login_required
 @permission_required_read(PERM_FITNESS)
-def index(username: str):
+def index(username: str, date_str: str = None):
     user_id = session['user_id']
     today = user_today()
+
+    if date_str:
+        try:
+            viewed_date = date.fromisoformat(date_str)
+        except ValueError:
+            return redirect(url_for('fitness.index', username=username))
+    else:
+        viewed_date = today
+
     # Python weekday(): Mon=0 → day_of_week: Sun=0, Mon=1, ..., Sat=6
-    day_of_week = (today.weekday() + 1) % 7
+    day_of_week = (viewed_date.weekday() + 1) % 7
+    prev_date = viewed_date - timedelta(days=1)
+    next_date = viewed_date + timedelta(days=1)
 
     program = FitnessModel.get_active_program(user_id)
     exercises = []
@@ -69,7 +81,7 @@ def index(username: str):
 
     if program:
         exercises = FitnessModel.get_day_exercises(program['fitnessID'], day_of_week)
-        todays_log = FitnessModel.get_todays_log(user_id, today)
+        todays_log = FitnessModel.get_todays_log(user_id, viewed_date)
 
         # Attach previous-session sets and today's sets to each exercise
         today_sets_map: dict[str, list] = {}
@@ -81,13 +93,13 @@ def index(username: str):
             ex_id = ex['exerciseID']
             ex['today_sets'] = today_sets_map.get(ex_id, [])
             ex['prev_sets'] = FitnessModel.get_last_sets_for_exercise(
-                user_id, ex_id, today
+                user_id, ex_id, viewed_date
             )
 
         if exercises:
             location = exercises[0].get('location', 'gym')
 
-    body_weight = FitnessModel.get_todays_body_weight(user_id, today)
+    body_weight = FitnessModel.get_todays_body_weight(user_id, viewed_date)
 
     return render_template(
         'fitness_index.html',
@@ -98,6 +110,9 @@ def index(username: str):
         todays_log=todays_log,
         body_weight=body_weight,
         today=today,
+        viewed_date=viewed_date,
+        prev_date=prev_date,
+        next_date=next_date,
         day_name=DAY_NAMES.get(day_of_week, ''),
         location=location,
     )
@@ -404,10 +419,16 @@ def log_set(username: str):
     speed = _float(f.get('speed'))
     incline = _float(f.get('incline'))
 
-    # Auto-create today's log if needed
+    log_date_str = f.get('log_date', '')
+    try:
+        log_date = date.fromisoformat(log_date_str)
+    except (ValueError, AttributeError):
+        log_date = user_today()
+
+    # Auto-create the log entry for the target date if needed
     program = FitnessModel.get_active_program(user_id)
     fitness_id = program['fitnessID'] if program else None
-    log_id = FitnessModel.get_or_create_log(user_id, fitness_id, user_today())
+    log_id = FitnessModel.get_or_create_log(user_id, fitness_id, log_date)
 
     log_set_id = FitnessModel.log_set(
         log_id=log_id,
@@ -439,7 +460,15 @@ def log_set_delete(username: str, log_set_id: str):
 def log_end(username: str, log_id: str):
     FitnessModel.end_workout(log_id)
     flash('Workout finished.', 'success')
-    return redirect(url_for('fitness.index', username=username))
+    log_date_str = request.form.get('log_date', '')
+    try:
+        log_date = date.fromisoformat(log_date_str)
+    except (ValueError, AttributeError):
+        log_date = user_today()
+    if log_date == user_today():
+        return redirect(url_for('fitness.index', username=username))
+    return redirect(url_for('fitness.index', username=username,
+                            date_str=log_date.isoformat()))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -459,5 +488,11 @@ def weight_post(username: str):
     except (TypeError, ValueError):
         return jsonify({'status': 'error', 'message': 'Invalid weight'}), 400
 
-    weight_id = FitnessModel.log_body_weight(user_id, weight, user_today())
+    log_date_str = request.form.get('log_date', '')
+    try:
+        log_date = date.fromisoformat(log_date_str)
+    except (ValueError, AttributeError):
+        log_date = user_today()
+
+    weight_id = FitnessModel.log_body_weight(user_id, weight, log_date)
     return jsonify({'status': 'ok', 'weightID': weight_id, 'weight': weight})

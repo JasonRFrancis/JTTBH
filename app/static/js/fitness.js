@@ -34,7 +34,7 @@ function post(url, data) {
     var val = parseFloat(input.value);
     if (!val || val <= 0) return;
 
-    post(window.FITNESS_URLS.weight, { weight: val })
+    post(window.FITNESS_URLS.weight, { weight: val, log_date: window.FITNESS_URLS.logDate })
       .then(function (res) {
         if (res.status === 'ok') {
           var saved = document.getElementById('bw-saved');
@@ -120,7 +120,7 @@ function post(url, data) {
     var article = btn.closest('.exercise');
     var exId    = btn.dataset.exerciseId;
     btn.disabled = true;
-    post(window.FITNESS_URLS.logSet, { exercise_id: exId })
+    post(window.FITNESS_URLS.logSet, { exercise_id: exId, log_date: window.FITNESS_URLS.logDate })
       .then(function (res) {
         if (res.status === 'ok') {
           article.querySelector('.set-list').appendChild(buildLoggedDoneRow(res.logSetID));
@@ -177,7 +177,7 @@ function post(url, data) {
     var type    = article.dataset.exerciseType || 'strength';
     var isCardio = type === 'cardio';
 
-    var data = { exercise_id: exId };
+    var data = { exercise_id: exId, log_date: window.FITNESS_URLS.logDate };
 
     if (isCardio) {
       data.duration = li.querySelector('.inp-duration').value || '';
