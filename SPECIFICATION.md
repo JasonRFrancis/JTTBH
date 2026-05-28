@@ -16,20 +16,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    3. [Habit Tracker](#43-habit-tracker)
    4. [Todo List](#44-todo-list)
    5. [Admin](#45-admin)
+   6. [Fitness Program](#46-fitness-program)
 5. [Future Features](#5-future-features)
    1. [Show Tracker](#51-show-tracker)
    2. [Movie Tracker](#52-movie-tracker)
    3. [Project List](#53-project-list)
    4. [Bookmarks](#54-bookmarks)
-   5. [Fitness Program](#55-fitness-program)
-   6. [Triage](#56-triage)
-   7. [Vacation Mode](#57-vacation-mode)
-   8. [Appointments](#58-appointments)
-   9. [Podcast Feed](#59-podcast-feed)
-   10. [Household Chores](#510-household-chores)
-   11. [Book Tracker](#511-book-tracker)
-   12. [Daily Questions](#512-daily-questions)
-   13. [Mood Tracker](#513-mood-tracker)
+   5. [Triage](#55-triage)
+   6. [Vacation Mode](#56-vacation-mode)
+   7. [Appointments](#57-appointments)
+   8. [Podcast Feed](#58-podcast-feed)
+   9. [Household Chores](#59-household-chores)
+   10. [Book Tracker](#510-book-tracker)
+   11. [Daily Questions](#511-daily-questions)
+   12. [Mood Tracker](#512-mood-tracker)
 6. [Site Details](#6-site-details)
    1. [Habit Tracker Details](#61-habit-tracker-details)
    2. [Todo List Details](#62-todo-list-details)
@@ -176,6 +176,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     1. Designated under `user` and tracked in the `user_preference` database table
     2. The user can set default and behavioral values for the various features of the site
     3. What preferences they can set will be determined by their permissions
+    4. Preference keys:
+       1. `todo_list1_name` through `todo_list4_name` — custom todo list names
+       2. `timezone` — IANA timezone string (e.g. `America/Chicago`); defaults to `UTC`; used by `timezone_utils.user_today()` to calculate "today" for all features
   3. Habit Tracker
     1. Designated under the `habit` area using the `habit` database tables
     2. Allows the user to track daily habits
@@ -228,6 +231,44 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
       1. Shows the 200 most recent rows from the `log` table
       2. Columns displayed: id, username, resource (URL path), GET params, POST data, IP, timestamp
       3. The `log` table schema uses: `userid`, `username`, `resource`, `get`, `post`, `ip`, `user_agent`, `created`
+  6. Fitness Program
+    1. Designated under the `fitness` area using the `fitness_*` database tables; requires `PERM_FITNESS`
+    2. Exercise Types
+       1. **Strength** — tracks machine adjustment (notes), weight (lbs), sets, and reps per set
+       2. **Cardio** — tracks machine adjustment (notes), speed (mph), duration (minutes), and incline (degrees) per session
+       3. **Done** — completion only; records that the exercise was performed (used for video tutorials and bodyweight routines)
+    3. Programs
+       1. A user can create multiple programs (`fitness` table); one program is marked `active` at a time
+       2. Each program has a weekly schedule: exercises assigned per day of week (0=Sun … 6=Sat) in `fitness_program`
+       3. Each scheduled exercise stores: location (gym/home/other), machine adjustment notes, and recommended values (sets/reps/weight or duration/speed/incline)
+       4. Program management routes:
+          - `POST /program/create/post` — create new program
+          - `POST /program/activate/post/<id>` — set as active program
+          - `POST /program/delete/post/<id>` — delete program
+          - `POST /program/exercise/create/post` — add exercise to a day
+          - `POST /program/exercise/update/post/<program_id>` — edit exercise prescription
+          - `POST /program/exercise/delete/post/<program_id>` — remove exercise from day
+    4. Index Page (`GET /index`)
+       1. Shows today's exercises for the active program, based on the user's timezone
+       2. Body weight form at top: saves to `fitness_bodyWeight` via `POST /weight/post` (JSON)
+       3. Each exercise shows its prescription (recommended values) and already-logged sets
+       4. Strength/cardio: "+ Set" / "+ Log" button opens an inline entry row; confirm (✓) logs it via `POST /log/set/post` (JSON)
+       5. Done: "✓ Mark Done" button directly POSTs without showing a form row
+       6. Logged sets show read-only with a delete (×) button
+       7. Entry rows pre-fill from the previous session's logged values (falling back to recommended values)
+       8. Machine adjustment note is pre-filled from the previous session's logged note (falling back to the program's notes)
+       9. "Finish Workout" button sets `end_time` via `POST /log/end/post/<log_id>`
+    5. Log Page (`GET /log`)
+       1. Shows workout history grouped by session date
+       2. Each session shows exercises with their logged sets (weight × reps for strength; duration/speed/incline for cardio; "Done" for done-type)
+       3. Body weight history listed separately
+    6. Settings Page (`GET /settings`)
+       1. Program list with activate/delete actions; form to create a new program
+       2. Day-tab editor (Sun–Sat): each tab lists scheduled exercises with edit and remove options
+       3. Edit form per exercise: location, notes, recommended values, video URL (inline `<details>`)
+       4. "+ Add exercise" form per day: selects from the exercise catalog; shows strength or cardio fields based on exercise type
+       5. Exercise catalog section: "+ New Exercise" form with name, type, muscle group, equipment type, description, and video URL
+       6. `fitness_exercise` (the catalog) uses direct `UPDATE` — it is reference data shared across all users, not insert-only
 5. Future Features
   1. Show Tracker
     1. Tracks the shows the user would like to watch
@@ -250,48 +291,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     4. Bookmarks can be designated `read later`, added to a reference list, or tagged
     5. Each bookmark link in the list should also be accompanied by an option to open the link in a tab and remove it from the list
     6. A separate reference page lists any links added to the reference list. It should be possible to rearrange them, add a short description, and group them under headings
-  5. Fitness Program
-    1. The fitness program has a different set of exercises per day (weight machines at the gym and hand-weights at home)
-    2. Some exercises should refer to an instructional video
-    3. On any given day, the user should see the exercises with the recommended weight, sets, and reps, and be able to record progress
-    4. Populate the list of exercises with the weight machines present in a typical gym
-    5. Dashboard widget: Today's exercises
-    6. Vacation mode: Option to skip workouts during vacation
-  6. Triage
+  5. Triage
     1. Designated under `triage`; uses Google APIs to pull in the user's current gmail inbox and calendar items and allows the user to convert those to todo items
     2. API connections and permissions with Google will be set up separately; the Python code to connect to Google's APIs is needed
     3. The page lists the last three days of emails in the inbox, and allows conversion to todos. A button should populate a field with the subject line and content of the email for editing before adding as a todo to today's list
     4. The user should see a list of the next week's calendar events and push a button to convert them into todos
-  7. Vacation Mode
+  6. Vacation Mode
     1. The user is presented with a simple calendar on which they can mark individual days when they will be on vacation
     2. This triggers vacation mode for those days
     3. If the days are marked retroactively, the page will perform any necessary recalculations
-  8. Appointments
+  7. Appointments
     1. Designated by `appointment`; based on the functionality of calendly.com
     2. Appointments can be blocked out (recurring or one-off) and then email invitations can be sent with a link to view the blocks and select an appointment
     3. The appointment selection page (used by someone accepting a proposed appointment) should not require authentication except for a key in the URL
     4. For now, compose the email and stub in sending it. Create the public booking page and the ability to create recurring blocks
-  9. Podcast Feed
+  8. Podcast Feed
     1. Designated by `podcast`; a custom podcast XML feed subscribable by a podcast player
     2. The feed page needs to be accessible (no authentication required) by all popular podcast players
     3. Every user can create multiple feeds, kept in the `podcast` table and listed at `/[username]/podcast/subscription`
     4. A podcast is made up of subscriptions to "podcast lists" (groups of podcast episodes), stored in the `podcast_list` table and created at `/[username]/podcast/list`
     5. Rather than a recorded podcast, it is a collection of audio files from around the web that are linked to
-  10. Household Chores
+  9. Household Chores
     1. Designated by `chore`; manages household chores with optional user assignment, scheduling, and completion reporting
     2. Users can be grouped into a household, stored in the `household` and `household_member` tables
     3. Chores (in the `chore` table) are organized into lists, associated with a household (stored in the `chore_list` table)
     4. Frequency is designated in the `chore_listItemDay` and `chore_listItemMonth` tables
     5. Chores become available to perform when they enter the `chore_assigned` table. They can be assigned by household members, or completed by the user (whether or not it was assigned)
-  11. Book Tracker
+  10. Book Tracker
     1. Designated by `book` and stored in the `book` table
     2. For now: a form to add a new book and a list of books with a way to indicate the user has finished reading it
-  12. Daily Questions
+  11. Daily Questions
     1. Part of the `journal` designation, stored in the `journal_answer` and `journal_question` tables
     2. Provides a prompt per day and allows the user to input a response
     3. Questions are provided in the `journal_question` table, indexed per day
     4. If the table has more than one question for the day, serve them all up with corresponding textarea boxes
-  13. Mood Tracker
+  12. Mood Tracker
     1. Part of the `journal` designation, stored in the `journal_mood`, `journal_moodCategory`, and `journal_moodValue` tables
     2. Allows the user to capture their current mood across several categories
     3. If no categories exist, the user tracks their general mood. If no values exist, they track `happy` or `sad`
@@ -531,6 +565,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     3. Unapproved users redirected to `/pending-approval` page
     4. Admin approval via `/[username]/admin/users` interface
     5. Approved users get default feature permissions
+    6. Sessions are permanent (`session.permanent = True`) with a lifetime of 7 days (`PERMANENT_SESSION_LIFETIME = 604800` seconds in `config/dev.py` and `config/prod.py`)
+    7. Session stores: `user_id`, `username`, `perm_read`, `perm_write`, `timezone`
+    8. `timezone` is loaded from `user_preference` at login and refreshed immediately when the user saves their timezone setting
     6. OAuth Token Management
       1. Store `access_token`, `refresh_token`, and `token_expires` in user table
       2. Before making Google API calls, check token expiration

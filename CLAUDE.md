@@ -66,6 +66,7 @@ app/
     decorators.py      # login_required, permission_required_read/write, PERM_* constants
     email_service.py
     google_services.py
+    timezone_utils.py  # user_today() → date in user's IANA timezone; today_for_tz(tz_name)
   static/
     css/               # base.css + one per feature (habit.css, admin.css …)
     js/                # base.js + one per feature
@@ -222,6 +223,7 @@ INSERT INTO thing (thingID, userID, name, ...) VALUES (%s, %s, NULL, ...)
 |-------|---------|--------|
 | `user` | Direct `UPDATE` | `userID` is UUID PK (stable); `approval_status`, `active`, tokens must be updated in-place |
 | `svg` | Direct `UPDATE`/`DELETE` | Reference data, not user data; `imageID` has `UNIQUE KEY` constraint |
+| `fitness_exercise` | Direct `UPDATE` | Reference/catalog data (not user data); shared across all users |
 
 #### `db_manager` API
 
@@ -391,7 +393,9 @@ def create(username: str):
   - `pending` → redirect to `/auth/pending-approval`
   - `rejected` → flash error, redirect to `/auth/login`
   - `approved` → populate session, redirect to `/<username>/dashboard/index`
-- Session keys set on login: `user_id`, `username`, `perm_read`, `perm_write`
+- Session keys set on login: `user_id`, `username`, `perm_read`, `perm_write`, `timezone`
+- `session.permanent = True` is set at login; `PERMANENT_SESSION_LIFETIME = 604800` (7 days) in both `config/dev.py` and `config/prod.py`
+- `timezone` is loaded from `user_preference` table (key `'timezone'`); defaults to `'UTC'` if absent; refreshed immediately in session when user saves timezone preference
 - Redirect URI (production): `https://jttbh.com/auth/oauth2callback` — must match Google Cloud Console **exactly**
 - Dev: set `OAUTHLIB_INSECURE_TRANSPORT=1` in `.env`
 - Requires `cryptography` package (PyMySQL + MySQL 8+ `caching_sha2_password`)
@@ -485,6 +489,53 @@ applies = bool(habit['dayweek'] & day_bit)
 - **Toggle AJAX:** Habit cell toggle uses optimistic UI — the checkbox state updates immediately, then a fire-and-forget POST is sent with `X-Requested-With: XMLHttpRequest`, `Content-Type: application/x-www-form-urlencoded`, and `body: change_id=<uuid>`. A 10-second polling loop (`GET /habit/index/json`) reconciles server truth with the DOM. Cells with an in-flight POST are skipped by the reconciler until their `change_id` appears in the poll response, at which point the pending flag is cleared. `change_id` is a client-generated `crypto.randomUUID()` stored in `habit_entry.change_id` (UNIQUE); the model pre-checks for duplicate UUIDs to handle retries without double-toggling.
 - **Dashboard widget:** Today's habit grid (`<habit-grid>`) is embedded in the dashboard using the same markup and JS as the index page. `habit.css` and `habit.js` are loaded on the dashboard when the user has `PERM_HABIT`. The `habit-grid` and `habit-cell` CSS rules are top-level (not scoped to `main.habit`) so they render inside the dashboard's `<section class="habit">` widget.
 - **CSS scoping:** `main.habit, section.habit { … }` — the habit stylesheet applies to both the habit feature's main page and the dashboard widget section.
+
+### E6. Fitness
+
+**Three exercise types** — stored in `fitness_exercise.type` ENUM(`'strength'`, `'cardio'`, `'done'`):
+
+| Type | Tracks | Log form |
+|------|--------|----------|
+| `strength` | weight (lbs), reps, machine adjustment (notes) | Inline entry row: lbs × reps + adj field |
+| `cardio` | duration (min), speed (mph), incline (°), adjustment (notes) | Inline entry row: 4 inputs |
+| `done` | completion only (no numeric data) | Direct POST on button press — no form row |
+
+**Programs:**
+- A user can have multiple fitness programs (`fitness` table); only one is `active` at a time.
+- Each program has a weekly schedule: exercises assigned per `day_of_week` (0=Sun … 6=Sat) in `fitness_program`.
+- `fitness_program.notes` = machine setup/adjustment note (pre-populated into the log entry row).
+- `fitness_program` is insert-only (update = select + insert new row, same `programID`).
+
+**Index page (`fitness_index.html`):**
+- Shows today's exercises for the active program and today's location.
+- Each exercise article has a `<template class="prefill-data">` with last session's values; JS reads these for pre-filling entry rows.
+- Strength/cardio: "+ Set" / "+ Log" button clones a `<template>` row; confirm (✓) POSTs to `POST /log/set/post` (JSON), cancel (×) removes the row.
+- Done: "✓ Mark Done" button directly POSTs to `POST /log/set/post` (JSON); no form row shown.
+- Logged sets are shown read-only with a delete (×) button per row.
+- Body weight form at top of page; saves to `fitness_bodyWeight` via `POST /weight/post` (JSON).
+
+**Prefill behavior (strength):** Pre-fills weight/reps/notes from previous session's first set for that exercise; falls back to program's recommended values. After confirming a set, the prefill template is updated with just-logged values so the next set inherits them.
+
+**Set logging routes (all return JSON `{"status": "ok", "logSetID": "..."}`):**
+- `POST /log/set/post` — creates a `fitness_logSet` row; also creates a `fitness_log` row for today if none exists.
+- `POST /log/set/delete/post/<log_set_id>` — deletes `fitness_logSet` row.
+- `POST /log/end/post/<log_id>` — sets `fitness_log.end_time = NOW()`.
+
+**Settings page (`fitness_settings.html`):**
+- Program list with activate/delete; "+ New Program" form.
+- Day-tab schedule editor: 7 tabs (Sun–Sat), each showing exercises for that day with edit (inline `<details>`) and remove buttons.
+- Edit form pre-fills location, notes, sets/reps/weight (strength) or duration/speed/incline (cardio), video URL.
+- "+ Add exercise" form per day; exercise `<select>` uses `data-type` to show/hide strength vs cardio fields via JS.
+- Exercise catalog section at bottom: "+ New Exercise" form (name, type select, muscle group, equipment select, description, video URL).
+
+**`fitness_exercise` table** (direct UPDATE, not insert-only — reference/catalog data):
+`exerciseID` (UUID), `name`, `type` ENUM(`'strength'`,`'cardio'`,`'done'`) DEFAULT `'strength'`, `muscle_group`, `equipment_type` ENUM(`'weight_machine'`,`'hand_weight'`,`'bodyweight'`,`'cable'`,`'other'`), `description`, `video_url`, `created`, `created_by`
+
+**`fitness` table** (user's fitness profile):
+`id`, `fitnessID` (UUID), `userID`, `name`, `description`, `active` TINYINT, `created`, `created_by`
+
+**`fitness_log` table** (one row per workout session):
+`id`, `logID` (UUID), `fitnessID` (FK), `userID`, `log_date` (date), `location` ENUM(`'gym'`,`'home'`,`'other'`), `start_time` (datetime), `end_time` (datetime or NULL), `created`, `created_by`
 
 ---
 
