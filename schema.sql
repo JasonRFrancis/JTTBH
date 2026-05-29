@@ -414,7 +414,7 @@ CREATE TABLE `fitness_exercise` (
   `name` varchar(255) DEFAULT NULL,  -- NULL = soft deleted
   `description` text,
   `equipment_type` enum('weight_machine','hand_weight','bodyweight','cable','other') NOT NULL DEFAULT 'weight_machine',
-  `type` enum('strength','cardio','done') NOT NULL DEFAULT 'strength',
+  `type` enum('machine','hand_weight','bodyweight','cardio','video') NOT NULL DEFAULT 'machine',
   `muscle_group` varchar(100) DEFAULT NULL,
   `video_url` varchar(512) DEFAULT NULL,
   `created` datetime NOT NULL,
@@ -487,9 +487,10 @@ CREATE TABLE `fitness_logSet` (
   `actual_weight` decimal(6,2) DEFAULT NULL,
   `actual_reps` int DEFAULT NULL,
   `notes` text,
-  `duration_minutes` int DEFAULT NULL,    -- cardio
+  `setup` varchar(255) DEFAULT NULL,      -- machine/cardio: session setup notes
+  `duration_minutes` int DEFAULT NULL,    -- cardio: minutes; bodyweight: seconds
   `speed` decimal(4,2) DEFAULT NULL,      -- cardio mph
-  `incline` decimal(4,1) DEFAULT NULL,    -- cardio degrees
+  `incline` decimal(4,1) DEFAULT NULL,    -- cardio degrees (legacy, preserved)
   `created` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_id_desc` (`id` DESC),
@@ -560,8 +561,10 @@ INSERT INTO `fitness_exercise` (`id`, `exerciseID`, `name`, `description`, `equi
 (40, UUID(), 'Dumbbell Hammer Curl', 'Isolation exercise for biceps and forearms', 'hand_weight', 'arms', NULL, NOW()),
 (41, UUID(), 'Treadmill', 'Incline treadmill walk', 'other', 'cardio', NULL, NOW());
 
--- Treadmill is cardio, not strength (type column not in the bulk INSERT column list above)
-UPDATE fitness_exercise SET `type` = 'cardio' WHERE `name` = 'Treadmill';
+-- Fix types: bulk INSERT defaults to 'machine'; correct hand_weight and bodyweight rows
+UPDATE fitness_exercise SET `type` = 'hand_weight' WHERE equipment_type = 'hand_weight';
+UPDATE fitness_exercise SET `type` = 'bodyweight'  WHERE equipment_type = 'bodyweight';
+UPDATE fitness_exercise SET `type` = 'cardio'      WHERE `name` = 'Treadmill';
 
 -- Bodyweight + forearm exercises added in goals migration
 INSERT INTO `fitness_exercise` (`exerciseID`, `name`, `description`, `equipment_type`, `muscle_group`, `created`) VALUES

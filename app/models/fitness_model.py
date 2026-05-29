@@ -321,7 +321,7 @@ class FitnessModel:
         """Current (non-deleted) sets for a workout session, grouped by exercise."""
         return db_manager.execute_query("""
             SELECT ls.logSetID, ls.exerciseID, ls.set_number,
-                   ls.actual_weight, ls.actual_reps, ls.notes,
+                   ls.actual_weight, ls.actual_reps, ls.notes, ls.setup,
                    ls.duration_minutes, ls.speed, ls.incline,
                    fe.name AS exercise_name, fe.type AS exercise_type
             FROM fitness_logSet ls
@@ -341,6 +341,7 @@ class FitnessModel:
         weight: float | None,
         reps: int | None,
         notes: str | None,
+        setup: str | None,
         duration: int | None,
         speed: float | None,
         incline: float | None,
@@ -349,11 +350,11 @@ class FitnessModel:
         db_manager.execute_insert("""
             INSERT INTO fitness_logSet
               (logSetID, logID, exerciseID, set_number,
-               actual_weight, actual_reps, notes,
+               actual_weight, actual_reps, notes, setup,
                duration_minutes, speed, incline, created)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
         """, (log_set_id, log_id, exercise_id, set_number,
-              weight, reps, notes or None, duration, speed, incline))
+              weight, reps, notes or None, setup or None, duration, speed, incline))
         return log_set_id
 
     @staticmethod
@@ -361,10 +362,10 @@ class FitnessModel:
         db_manager.execute_insert("""
             INSERT INTO fitness_logSet
               (logSetID, logID, exerciseID, set_number,
-               actual_weight, actual_reps, notes,
+               actual_weight, actual_reps, notes, setup,
                duration_minutes, speed, incline, created)
             SELECT logSetID, logID, NULL, set_number,
-                   actual_weight, actual_reps, notes,
+                   actual_weight, actual_reps, notes, setup,
                    duration_minutes, speed, incline, NOW()
             FROM fitness_logSet
             WHERE logSetID = %s
@@ -375,8 +376,8 @@ class FitnessModel:
     def get_last_sets_for_exercise(user_id: str, exercise_id: str, before_date: date) -> list[dict]:
         """All sets from the most recent session for this exercise, before today."""
         return db_manager.execute_query("""
-            SELECT ls.set_number, ls.actual_weight, ls.actual_reps, ls.notes,
-                   ls.duration_minutes, ls.speed, ls.incline
+            SELECT ls.set_number, ls.actual_weight, ls.actual_reps,
+                   ls.notes, ls.setup, ls.duration_minutes, ls.speed, ls.incline
             FROM fitness_logSet ls
             JOIN fitness_log fl ON fl.logID = ls.logID
             WHERE fl.userID = %s

@@ -64,11 +64,17 @@
     <h2 id="exercises-heading">{{ program.name }}</h2>
 
     {% for ex in exercises %}
-    {% set is_cardio = ex.exercise_type == 'cardio' %}
-    {% set is_done   = ex.exercise_type == 'done' %}
-    <article class="exercise{% if is_cardio %} exercise--cardio{% elif is_done %} exercise--done{% endif %}"
+    {% set t = ex.exercise_type %}
+    {% set is_machine     = t == 'machine' %}
+    {% set is_hand_weight = t == 'hand_weight' %}
+    {% set is_bodyweight  = t == 'bodyweight' %}
+    {% set is_cardio      = t == 'cardio' %}
+    {% set is_video       = t == 'video' %}
+    {% set has_set_entry  = not is_video %}
+
+    <article class="exercise exercise--{{ t | replace('_', '-') }}"
              data-exercise-id="{{ ex.exerciseID }}"
-             data-exercise-type="{{ ex.exercise_type }}">
+             data-exercise-type="{{ t }}">
 
       <header class="exercise-header">
         <div class="exercise-title">
@@ -76,8 +82,8 @@
           {% if ex.muscle_group %}<span class="badge">{{ ex.muscle_group }}</span>{% endif %}
         </div>
         <div class="exercise-meta">
-          {% if ex.notes and not is_done %}
-          <span class="adj" title="Machine adjustment">adj {{ ex.notes }}</span>
+          {% if ex.notes and (is_machine or is_cardio) %}
+          <span class="adj" title="Setup">adj {{ ex.notes }}</span>
           {% endif %}
           {% if ex.video_url %}
           <a href="{{ ex.video_url }}" target="_blank" rel="noopener" class="video-link" aria-label="Watch {{ ex.exercise_name }} video">▶</a>
@@ -86,17 +92,21 @@
       </header>
 
       {# Prescription ─────────────────────────────────────────────────── #}
-      {% if not is_done %}
+      {% if is_cardio %}
       <p class="prescription">
-        {% if is_cardio %}
-          {% if ex.recommended_duration %}{{ ex.recommended_duration }} min{% endif %}
-          {% if ex.recommended_speed %} · {{ ex.recommended_speed }} mph{% endif %}
-          {% if ex.recommended_incline %} · {{ ex.recommended_incline|int }}° incline{% endif %}
-        {% else %}
-          {% if ex.recommended_sets %}{{ ex.recommended_sets }} sets{% endif %}
-          {% if ex.recommended_reps %} × {{ ex.recommended_reps }} reps{% endif %}
-          {% if ex.recommended_weight %} @ {{ ex.recommended_weight|int }} lbs{% endif %}
-        {% endif %}
+        {% if ex.recommended_duration %}{{ ex.recommended_duration }} min{% endif %}
+        {% if ex.recommended_speed %} · {{ ex.recommended_speed }} mph{% endif %}
+      </p>
+      {% elif is_bodyweight %}
+      <p class="prescription">
+        {% if ex.recommended_sets %}{{ ex.recommended_sets }} sets{% endif %}
+        {% if ex.recommended_reps %} × {{ ex.recommended_reps }} reps{% endif %}
+      </p>
+      {% elif is_machine or is_hand_weight %}
+      <p class="prescription">
+        {% if ex.recommended_sets %}{{ ex.recommended_sets }} sets{% endif %}
+        {% if ex.recommended_reps %} × {{ ex.recommended_reps }} reps{% endif %}
+        {% if ex.recommended_weight %} @ {{ ex.recommended_weight|int }} lbs{% endif %}
       </p>
       {% endif %}
 
@@ -104,18 +114,35 @@
       <ul class="set-list" aria-label="Logged sets">
         {% for s in ex.today_sets %}
         <li class="set-row set-row--logged" data-log-set-id="{{ s.logSetID }}">
-          {% if is_done %}
+          {% if is_video %}
             <span class="set-summary">Done</span>
           {% elif is_cardio %}
             <span class="set-summary">
               {% if s.duration_minutes %}{{ s.duration_minutes }} min{% endif %}
               {% if s.speed %} · {{ s.speed }} mph{% endif %}
-              {% if s.incline %} · {{ s.incline|int }}°{% endif %}
-              {% if s.notes %} · <span class="set-adj">{{ s.notes }}</span>{% endif %}
+              {% if s.setup %} · <span class="set-adj">{{ s.setup }}</span>{% endif %}
+              {% if s.notes %} · <span class="set-notes">{{ s.notes }}</span>{% endif %}
             </span>
-          {% else %}
+          {% elif is_bodyweight %}
             <span class="set-num">{{ s.set_number }}</span>
-            <span class="set-summary">{{ s.actual_weight|int if s.actual_weight else '—' }} lbs × {{ s.actual_reps if s.actual_reps else '—' }}{% if s.notes %} · <span class="set-adj">{{ s.notes }}</span>{% endif %}</span>
+            <span class="set-summary">
+              {% if s.actual_reps %}{{ s.actual_reps }} reps{% endif %}
+              {% if s.duration_minutes %} · {{ s.duration_minutes }}s{% endif %}
+              {% if s.notes %} · <span class="set-notes">{{ s.notes }}</span>{% endif %}
+            </span>
+          {% elif is_machine %}
+            <span class="set-num">{{ s.set_number }}</span>
+            <span class="set-summary">
+              {{ s.actual_weight|int if s.actual_weight else '—' }} lbs × {{ s.actual_reps if s.actual_reps else '—' }}
+              {% if s.setup %}<span class="set-adj"> adj {{ s.setup }}</span>{% endif %}
+              {% if s.notes %} · <span class="set-notes">{{ s.notes }}</span>{% endif %}
+            </span>
+          {% else %}{# hand_weight #}
+            <span class="set-num">{{ s.set_number }}</span>
+            <span class="set-summary">
+              {{ s.actual_weight|int if s.actual_weight else '—' }} lbs × {{ s.actual_reps if s.actual_reps else '—' }}
+              {% if s.notes %} · <span class="set-notes">{{ s.notes }}</span>{% endif %}
+            </span>
           {% endif %}
           <button class="btn-delete-set" type="button"
                   data-log-set-id="{{ s.logSetID }}"
@@ -124,38 +151,45 @@
         {% endfor %}
       </ul>
 
-      {# Prefill values from previous session ─────────────────────────── #}
-      {% if is_cardio %}
+      {# Prefill data from previous session ───────────────────────────── #}
+      {% if is_machine %}
         {% set prev = ex.prev_sets[0] if ex.prev_sets else None %}
         <template class="prefill-data"
+          data-setup="{{ prev.setup if prev and prev.setup else ex.notes or '' }}"
+          data-weight="{{ prev.actual_weight|int if prev and prev.actual_weight else ex.recommended_weight|int if ex.recommended_weight else '' }}"
+          data-reps="{{ prev.actual_reps if prev and prev.actual_reps else ex.recommended_reps or '' }}"
+          data-notes="{{ prev.notes if prev and prev.notes else '' }}">
+        </template>
+      {% elif is_hand_weight %}
+        {% set prev = ex.prev_sets[0] if ex.prev_sets else None %}
+        <template class="prefill-data"
+          data-weight="{{ prev.actual_weight|int if prev and prev.actual_weight else ex.recommended_weight|int if ex.recommended_weight else '' }}"
+          data-reps="{{ prev.actual_reps if prev and prev.actual_reps else ex.recommended_reps or '' }}"
+          data-notes="{{ prev.notes if prev and prev.notes else '' }}">
+        </template>
+      {% elif is_bodyweight %}
+        {% set prev = ex.prev_sets[0] if ex.prev_sets else None %}
+        <template class="prefill-data"
+          data-reps="{{ prev.actual_reps if prev and prev.actual_reps else ex.recommended_reps or '' }}"
+          data-duration="{{ prev.duration_minutes if prev and prev.duration_minutes else '' }}"
+          data-notes="{{ prev.notes if prev and prev.notes else '' }}">
+        </template>
+      {% elif is_cardio %}
+        {% set prev = ex.prev_sets[0] if ex.prev_sets else None %}
+        <template class="prefill-data"
+          data-setup="{{ prev.setup if prev and prev.setup else ex.notes or '' }}"
           data-duration="{{ prev.duration_minutes if prev and prev.duration_minutes else ex.recommended_duration or '' }}"
           data-speed="{{ prev.speed if prev and prev.speed else ex.recommended_speed or '' }}"
-          data-incline="{{ prev.incline if prev and prev.incline else ex.recommended_incline or '' }}"
-          data-notes="{{ prev.notes if prev and prev.notes else ex.notes or '' }}">
-        </template>
-      {% elif not is_done %}
-        {% set prev1 = ex.prev_sets[0] if ex.prev_sets else None %}
-        <template class="prefill-data"
-          data-weight="{{ prev1.actual_weight|int if prev1 and prev1.actual_weight else ex.recommended_weight|int if ex.recommended_weight else '' }}"
-          data-reps="{{ prev1.actual_reps if prev1 and prev1.actual_reps else ex.recommended_reps or '' }}"
-          data-notes="{{ prev1.notes if prev1 and prev1.notes else ex.notes or '' }}">
+          data-notes="{{ prev.notes if prev and prev.notes else '' }}">
         </template>
       {% endif %}
 
-      {# Add set / Mark Done button ────────────────────────────────────── #}
-      {% if is_done %}
-      <button class="btn-mark-done" type="button"
-              data-exercise-id="{{ ex.exerciseID }}"
-              data-exercise-type="done">
-        {% if ex.today_sets %}✓ Done again{% else %}✓ Mark Done{% endif %}
-      </button>
-      {% else %}
+      {# Action button ─────────────────────────────────────────────────── #}
       <button class="btn-add-set" type="button"
               data-exercise-id="{{ ex.exerciseID }}"
-              data-exercise-type="{{ ex.exercise_type }}">
-        + {{ 'Log' if is_cardio else 'Set' }}
+              data-exercise-type="{{ t }}">
+        {% if is_video %}{% if ex.today_sets %}✓ Done again{% else %}✓ Mark Done{% endif %}{% elif is_cardio %}+ Log{% else %}+ Set{% endif %}
       </button>
-      {% endif %}
 
     </article>
     {% endfor %}
@@ -180,34 +214,75 @@
 
 </main>
 
-{# Set-entry row template (cloned by JS) ──────────────────────────────────── #}
-<template id="tpl-set-strength">
+{# ── Set-entry row templates (cloned by JS) ───────────────────────────────── #}
+
+<template id="tpl-set-machine">
+  <li class="set-row set-row--new">
+    <span class="set-num"></span>
+    <input type="text"   class="inp-setup"  inputmode="text"
+           aria-label="Setup / adjustment" placeholder="setup">
+    <input type="number" class="inp-weight" step="5" min="0" inputmode="decimal"
+           aria-label="Weight in lbs" placeholder="lbs">
+    <span class="set-sep">×</span>
+    <input type="number" class="inp-reps"   step="1" min="0" inputmode="numeric"
+           aria-label="Reps" placeholder="reps">
+    <input type="text"   class="inp-notes"  inputmode="text"
+           aria-label="Notes" placeholder="notes">
+    <button class="btn-confirm-set" type="button" aria-label="Save set">✓</button>
+    <button class="btn-cancel-set"  type="button" aria-label="Cancel">×</button>
+  </li>
+</template>
+
+<template id="tpl-set-hand-weight">
   <li class="set-row set-row--new">
     <span class="set-num"></span>
     <input type="number" class="inp-weight" step="5" min="0" inputmode="decimal"
            aria-label="Weight in lbs" placeholder="lbs">
     <span class="set-sep">×</span>
-    <input type="number" class="inp-reps" step="1" min="0" inputmode="numeric"
+    <input type="number" class="inp-reps"   step="1" min="0" inputmode="numeric"
            aria-label="Reps" placeholder="reps">
-    <input type="text" class="inp-notes" inputmode="text"
-           aria-label="Machine adjustment" placeholder="adj">
+    <input type="text"   class="inp-notes"  inputmode="text"
+           aria-label="Notes" placeholder="notes">
     <button class="btn-confirm-set" type="button" aria-label="Save set">✓</button>
-    <button class="btn-cancel-set" type="button" aria-label="Cancel">×</button>
+    <button class="btn-cancel-set"  type="button" aria-label="Cancel">×</button>
+  </li>
+</template>
+
+<template id="tpl-set-bodyweight">
+  <li class="set-row set-row--new">
+    <span class="set-num"></span>
+    <input type="number" class="inp-reps"     step="1"   min="0" inputmode="numeric"
+           aria-label="Reps" placeholder="reps">
+    <input type="number" class="inp-duration" step="1"   min="0" inputmode="numeric"
+           aria-label="Time in seconds" placeholder="sec">
+    <input type="text"   class="inp-notes"    inputmode="text"
+           aria-label="Notes" placeholder="notes">
+    <button class="btn-confirm-set" type="button" aria-label="Save set">✓</button>
+    <button class="btn-cancel-set"  type="button" aria-label="Cancel">×</button>
   </li>
 </template>
 
 <template id="tpl-set-cardio">
   <li class="set-row set-row--new set-row--cardio">
-    <input type="number" class="inp-duration" step="1" min="0" inputmode="numeric"
+    <input type="text"   class="inp-setup"    inputmode="text"
+           aria-label="Setup / adjustment" placeholder="setup">
+    <input type="number" class="inp-duration" step="1"   min="0" inputmode="numeric"
            aria-label="Duration in minutes" placeholder="min">
-    <input type="number" class="inp-speed" step="0.1" min="0" inputmode="decimal"
+    <input type="number" class="inp-speed"    step="0.1" min="0" inputmode="decimal"
            aria-label="Speed mph" placeholder="mph">
-    <input type="number" class="inp-incline" step="0.5" min="0" inputmode="decimal"
-           aria-label="Incline degrees" placeholder="°">
-    <input type="text" class="inp-notes" inputmode="text"
-           aria-label="Adjustment" placeholder="adj">
+    <input type="text"   class="inp-notes"    inputmode="text"
+           aria-label="Notes" placeholder="notes">
     <button class="btn-confirm-set" type="button" aria-label="Save">✓</button>
-    <button class="btn-cancel-set" type="button" aria-label="Cancel">×</button>
+    <button class="btn-cancel-set"  type="button" aria-label="Cancel">×</button>
+  </li>
+</template>
+
+<template id="tpl-set-video">
+  <li class="set-row set-row--new">
+    <input type="text"   class="inp-notes"  inputmode="text"
+           aria-label="Notes" placeholder="notes">
+    <button class="btn-confirm-set" type="button" aria-label="Mark done">✓</button>
+    <button class="btn-cancel-set"  type="button" aria-label="Cancel">×</button>
   </li>
 </template>
 {% endblock %}

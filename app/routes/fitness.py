@@ -376,7 +376,7 @@ def exercise_create(username: str):
         name=name,
         description=request.form.get('description', '').strip() or None,
         equipment_type=request.form.get('equipment_type', '').strip() or None,
-        exercise_type=request.form.get('type', 'strength'),
+        exercise_type=request.form.get('type', 'machine'),
         muscle_group=request.form.get('muscle_group', '').strip() or None,
         video_url=request.form.get('video_url', '').strip() or None,
     )
@@ -437,6 +437,7 @@ def log_set(username: str):
         weight=weight,
         reps=reps,
         notes=f.get('notes', '').strip() or None,
+        setup=f.get('setup', '').strip() or None,
         duration=duration,
         speed=speed,
         incline=incline,
