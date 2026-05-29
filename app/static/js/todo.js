@@ -453,7 +453,16 @@ function initCheckboxToggle() {
     const form = e.target.closest('form');
     if (!form) return;
     const toggleBtn = form.querySelector('.todo-item__toggle-btn');
-    if (toggleBtn) toggleBtn.click();
+    if (!toggleBtn) return;
+    // requestSubmit(submitter) respects the button's formaction attribute
+    if (form.requestSubmit) {
+      form.requestSubmit(toggleBtn);
+    } else {
+      const orig = form.action;
+      form.action = toggleBtn.getAttribute('formaction') || orig;
+      form.submit();
+      form.action = orig;
+    }
   });
 }
 

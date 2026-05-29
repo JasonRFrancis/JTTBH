@@ -17,7 +17,10 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(mysql *)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5001/auth/login)",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(python ./app/main.py)",
+      "Bash(echo \"PID=$!\")",
+      "Bash(MYSQL_PWD='$unburn N1mbly m3tallic T3dious' mysql *)"
     ],
     "deny": [],
     "ask": []

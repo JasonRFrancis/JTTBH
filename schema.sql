@@ -414,7 +414,7 @@ CREATE TABLE `fitness_exercise` (
   `name` varchar(255) DEFAULT NULL,  -- NULL = soft deleted
   `description` text,
   `equipment_type` enum('weight_machine','hand_weight','bodyweight','cable','other') NOT NULL DEFAULT 'weight_machine',
-  `type` enum('strength','cardio','bodyweight') NOT NULL DEFAULT 'strength',
+  `type` enum('strength','cardio','done') NOT NULL DEFAULT 'strength',
   `muscle_group` varchar(100) DEFAULT NULL,
   `video_url` varchar(512) DEFAULT NULL,
   `created` datetime NOT NULL,
@@ -562,6 +562,17 @@ INSERT INTO `fitness_exercise` (`id`, `exerciseID`, `name`, `description`, `equi
 
 -- Treadmill is cardio, not strength (type column not in the bulk INSERT column list above)
 UPDATE fitness_exercise SET `type` = 'cardio' WHERE `name` = 'Treadmill';
+
+-- Bodyweight + forearm exercises added in goals migration
+INSERT INTO `fitness_exercise` (`exerciseID`, `name`, `description`, `equipment_type`, `muscle_group`, `created`) VALUES
+(UUID(), 'Push-up', 'Standard push-up targeting chest, shoulders, and triceps', 'bodyweight', 'chest', NOW()),
+(UUID(), 'Pike Push-up', 'Inverted V push-up that loads the shoulders like an overhead press', 'bodyweight', 'shoulders', NOW()),
+(UUID(), 'Plank', 'Isometric core hold — builds deep stabilizer strength', 'bodyweight', 'core', NOW()),
+(UUID(), 'Bicycle Crunch', 'Alternating elbow-to-knee crunch targeting abs and obliques', 'bodyweight', 'core', NOW()),
+(UUID(), 'Russian Twist', 'Seated trunk rotation — primary oblique builder', 'bodyweight', 'core', NOW()),
+(UUID(), 'Leg Raise', 'Lying leg raise targeting lower abs', 'bodyweight', 'core', NOW()),
+(UUID(), 'Dumbbell Reverse Curl', 'Overhand-grip curl — builds brachioradialis and forearm extensors', 'hand_weight', 'forearms', NOW()),
+(UUID(), 'Dumbbell Wrist Curl', 'Palm-up wrist flexion — targets forearm flexors', 'hand_weight', 'forearms', NOW());
 
 
 --
