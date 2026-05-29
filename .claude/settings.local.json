@@ -20,7 +20,13 @@
       "Bash(curl *)",
       "Bash(python ./app/main.py)",
       "Bash(echo \"PID=$!\")",
-      "Bash(MYSQL_PWD='$unburn N1mbly m3tallic T3dious' mysql *)"
+      "Bash(MYSQL_PWD='$unburn N1mbly m3tallic T3dious' mysql *)",
+      "Bash(/usr/bin/curl -4 -s -o /dev/null -w 'index: %{http_code}\\\\n' -H 'Cookie: session=.eJw1jEEKwjAQAP-y5wYTq3HjzQ949xTW7QpRkpRtpdDi362oxxmYWaAXzVGFOjiiC7b5iknTKH8zpixzLSvDKYsmps1Zpnip-oAGnoNoTGsOexRGds6I9dbsWn8woeWbCY488xa7K_IvKJQ_uzsNtcDrDT04Kdg.ahnfLA.FCmFr7ZS_CsSGR_hvqyL2zekPFM' http://127.0.0.1:5000/jason/bookmark/index)",
+      "Bash(/usr/bin/curl -4 -s -o /dev/null -w 'settings: %{http_code}\\\\n' -H 'Cookie: session=.eJw1jEEKwjAQAP-y5wYTq3HjzQ949xTW7QpRkpRtpdDi362oxxmYWaAXzVGFOjiiC7b5iknTKH8zpixzLSvDKYsmps1Zpnip-oAGnoNoTGsOexRGds6I9dbsWn8woeWbCY488xa7K_IvKJQ_uzsNtcDrDT04Kdg.ahnfLA.FCmFr7ZS_CsSGR_hvqyL2zekPFM' http://127.0.0.1:5000/jason/bookmark/settings)",
+      "Bash(/usr/bin/curl -4 -s -o /dev/null -w 'add popup: %{http_code}\\\\n' -H 'Cookie: session=.eJw1jEEKwjAQAP-y5wYTq3HjzQ949xTW7QpRkpRtpdDi362oxxmYWaAXzVGFOjiiC7b5iknTKH8zpixzLSvDKYsmps1Zpnip-oAGnoNoTGsOexRGds6I9dbsWn8woeWbCY488xa7K_IvKJQ_uzsNtcDrDT04Kdg.ahnfLA.FCmFr7ZS_CsSGR_hvqyL2zekPFM' 'http://127.0.0.1:5000/jason/bookmark/add?url=https%3A%2F%2Fexample.com&title=Example')",
+      "Bash(/usr/bin/curl -4 -s -o /dev/null -w 'regen: %{http_code}\\\\n' -X POST -H 'Cookie: session=.eJw1jEEKwjAQAP-y5wYTq3HjzQ949xTW7QpRkpRtpdDi362oxxmYWaAXzVGFOjiiC7b5iknTKH8zpixzLSvDKYsmps1Zpnip-oAGnoNoTGsOexRGds6I9dbsWn8woeWbCY488xa7K_IvKJQ_uzsNtcDrDT04Kdg.ahnfLA.FCmFr7ZS_CsSGR_hvqyL2zekPFM' http://127.0.0.1:5000/jason/bookmark/token/regenerate/post)",
+      "Bash(/usr/bin/curl -4 -s -X POST http://127.0.0.1:5000/jason/bookmark/api/create -F token=ece9ae0f7564bfa3052ada187bc692eb6576b8090e250c3ab45fdb6a97d90a38 -F url=https://example.com -F 'title=Example Site' -F tags=test)",
+      "Bash(/usr/bin/curl -4 -s -X POST http://127.0.0.1:5000/jason/bookmark/api/create -F url=https://example.com)"
     ],
     "deny": [],
     "ask": []

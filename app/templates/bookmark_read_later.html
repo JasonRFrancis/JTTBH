@@ -13,6 +13,7 @@
   <header class="bookmark-header">
     <h1>Read Later</h1>
     <a href="{{ url_for('bookmark.index', username=username) }}">&larr; All Bookmarks</a>
+    <a href="{{ url_for('bookmark.settings', username=username) }}">Tools</a>
   </header>
 
   {% if bookmarks %}

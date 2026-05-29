@@ -24,6 +24,7 @@ column, bookmarks are not soft-deleted via the insert-only sentinel.  Instead,
 marking as read (read=1) is the primary state transition.
 """
 
+import secrets
 import uuid
 from collections import defaultdict
 from datetime import datetime
@@ -31,6 +32,7 @@ from datetime import datetime
 from flask import (
     Blueprint,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -85,6 +87,23 @@ _BOOKMARK_BY_ID_SQL = """
 def _redirect_to_index(username: str):
     """Redirect to the bookmark index."""
     return redirect(url_for('bookmark.index', username=username))
+
+
+def _get_api_token(user_id: str) -> str | None:
+    row = db_manager.execute_one(
+        "SELECT value FROM user_preference WHERE userID = %s AND preference = 'api_token' ORDER BY id DESC LIMIT 1",
+        (user_id,),
+    )
+    return row['value'] if row else None
+
+
+def _create_api_token(user_id: str) -> str:
+    token = secrets.token_hex(32)
+    db_manager.execute_insert(
+        "INSERT INTO user_preference (userID, preference, value, created, created_by) VALUES (%s, 'api_token', %s, NOW(), %s)",
+        (user_id, token, user_id),
+    )
+    return token
 
 
 def _get_bookmark(bookmark_id: str, user_id: str) -> dict | None:
@@ -196,7 +215,101 @@ def create(username: str):
     )
 
     flash('Bookmark added.', 'success')
+    if request.form.get('popup') == '1':
+        return redirect(url_for('bookmark.added', username=username))
     return _redirect_to_index(username)
+
+
+@bookmark_bp.route('/add')
+@login_required
+@permission_required_read(PERM_BOOKMARK)
+def add(username: str):
+    """Popup form pre-filled from URL query params (used by bookmarklet)."""
+    return render_template(
+        'bookmark_add.html',
+        username=username,
+        url=request.args.get('url', ''),
+        title=request.args.get('title', ''),
+    )
+
+
+@bookmark_bp.route('/added')
+@login_required
+def added(username: str):
+    """Shown after a bookmarklet save — tells the popup to close itself."""
+    return render_template('bookmark_added.html', username=username)
+
+
+@bookmark_bp.route('/settings')
+@login_required
+@permission_required_read(PERM_BOOKMARK)
+def settings(username: str):
+    user_id = session['user_id']
+    token = _get_api_token(user_id)
+    bookmarklet = (
+        "javascript:(function(){{"
+        "var u=encodeURIComponent(location.href);"
+        "var t=encodeURIComponent(document.title);"
+        "window.open('https://jttbh.com/{username}/bookmark/add?url='+u+'&title='+t,"
+        "'jttbh_bm','width=620,height=480,menubar=no,toolbar=no,scrollbars=yes');"
+        "}})();"
+    ).format(username=username)
+    return render_template(
+        'bookmark_settings.html',
+        username=username,
+        token=token,
+        bookmarklet=bookmarklet,
+    )
+
+
+@bookmark_bp.route('/token/regenerate/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_BOOKMARK)
+@permission_required_write(PERM_BOOKMARK)
+def token_regenerate(username: str):
+    _create_api_token(session['user_id'])
+    flash('API token regenerated.', 'success')
+    return redirect(url_for('bookmark.settings', username=username))
+
+
+@bookmark_bp.route('/api/create', methods=['POST'])
+def api_create(username: str):
+    """Token-authenticated JSON endpoint — no session required."""
+    token = request.form.get('token', '').strip()
+    if not token:
+        return jsonify({'status': 'error', 'message': 'Missing token'}), 401
+
+    user = db_manager.execute_one(
+        "SELECT userID FROM user WHERE username = %s AND active = 1 AND approval_status = 'approved'",
+        (username,),
+    )
+    if not user:
+        return jsonify({'status': 'error', 'message': 'User not found'}), 404
+
+    stored = _get_api_token(user['userID'])
+    if not stored or stored != token:
+        return jsonify({'status': 'error', 'message': 'Invalid token'}), 401
+
+    url = request.form.get('url', '').strip()
+    if not url:
+        return jsonify({'status': 'error', 'message': 'url is required'}), 400
+
+    title       = request.form.get('title', '').strip() or None
+    description = request.form.get('description', '').strip() or None
+    tags        = request.form.get('tags', '').strip() or None
+    notes       = request.form.get('notes', '').strip() or None
+    read_later  = 1 if request.form.get('read_later') in ('1', 'true') else 0
+
+    bookmark_id = str(uuid.uuid4())
+    db_manager.execute_insert(
+        """INSERT INTO bookmark
+               (bookmarkID, userID, url, title, description, tags,
+                read_later, `read`, notes, favicon, created, created_by)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, 0, %s, NULL, %s, %s)""",
+        (bookmark_id, user['userID'], url, title, description, tags,
+         read_later, notes, datetime.now(), user['userID']),
+    )
+    return jsonify({'status': 'ok', 'bookmarkID': bookmark_id})
 
 
 @bookmark_bp.route('/read/post/<bookmark_id>', methods=['POST'])

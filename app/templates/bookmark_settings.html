@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Bookmark Tools{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/bookmark.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="bookmark">
+  <header class="bookmark-header">
+    <h1>Bookmark Tools</h1>
+    <nav>
+      <a href="{{ url_for('bookmark.index', username=username) }}">All</a>
+      <a href="{{ url_for('bookmark.read_later', username=username) }}">Read Later</a>
+    </nav>
+  </header>
+
+  <section aria-labelledby="bookmarklet-heading">
+    <h2 id="bookmarklet-heading">Bookmarklet</h2>
+    <p>Drag this link to your bookmarks bar. Click it on any page to save it to jttbh.</p>
+    <a class="bookmarklet-link" href="{{ bookmarklet }}">+ jttbh</a>
+  </section>
+
+  <section aria-labelledby="token-heading">
+    <h2 id="token-heading">API Token</h2>
+    <p>Used by scripts to add bookmarks without a browser session.</p>
+
+    {% if token %}
+    <pre class="api-token">{{ token }}</pre>
+    {% else %}
+    <p class="empty-state">No token yet.</p>
+    {% endif %}
+
+    <form method="post"
+          action="{{ url_for('bookmark.token_regenerate', username=username) }}"
+          onsubmit="return {% if token %}confirm('Regenerate? Your existing token will stop working.'){% else %}true{% endif %}">
+      <button type="submit">{{ 'Regenerate token' if token else 'Generate token' }}</button>
+    </form>
+  </section>
+
+  <section aria-labelledby="api-heading">
+    <h2 id="api-heading">API</h2>
+    <p>POST to <code>https://jttbh.com/{{ username }}/bookmark/api/create</code></p>
+    <table class="api-table">
+      <thead><tr><th>Field</th><th>Required</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>token</code></td><td>Yes</td><td>Your API token above</td></tr>
+        <tr><td><code>url</code></td><td>Yes</td><td>Page URL</td></tr>
+        <tr><td><code>title</code></td><td>No</td><td>Page title</td></tr>
+        <tr><td><code>tags</code></td><td>No</td><td>Comma-separated</td></tr>
+        <tr><td><code>description</code></td><td>No</td><td></td></tr>
+        <tr><td><code>notes</code></td><td>No</td><td></td></tr>
+        <tr><td><code>read_later</code></td><td>No</td><td><code>1</code> to add to Read Later</td></tr>
+      </tbody>
+    </table>
+    <p>Returns <code>{"status": "ok", "bookmarkID": "..."}</code></p>
+  </section>
+
+</main>
+{% endblock %}
