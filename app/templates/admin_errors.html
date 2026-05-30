@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Error Log — Admin{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="admin-header">
+  <h1>Error Log</h1>
+  <nav aria-label="Admin navigation">
+    <a href="{{ url_for('admin.dashboard', username=username) }}">Dashboard</a>
+    <a href="{{ url_for('admin.users',     username=username) }}">Users</a>
+    <a href="{{ url_for('admin.icons',     username=username) }}">Icons</a>
+    <a href="{{ url_for('admin.log',       username=username) }}">Log</a>
+    <a href="{{ url_for('admin.errors',    username=username) }}" aria-current="page">Errors</a>
+  </nav>
+</header>
+
+<section aria-labelledby="errlog-heading">
+  <h2 id="errlog-heading">journalctl — priority err and above <small>(last 500)</small></h2>
+  {% if error_msg %}
+  <p class="muted-text">{{ error_msg }}</p>
+  {% endif %}
+  {% if error_log %}
+  <pre class="server-log server-log--error">{{ error_log }}</pre>
+  {% endif %}
+</section>
+{% endblock %}

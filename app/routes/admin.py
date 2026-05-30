@@ -302,6 +302,42 @@ def users(username: str):
     )
 
 
+@admin_bp.route('/errors')
+@login_required
+@permission_required_read(PERM_ADMIN)
+def errors(username: str):
+    """Render the error log page — journalctl priority err and above."""
+    error_log  = None
+    error_msg  = None
+
+    if platform.system() != 'Linux':
+        error_msg = 'Error logs are only available on the Linux production host (journalctl).'
+    else:
+        try:
+            r = subprocess.run(
+                ['journalctl', '-u', 'jttbh', '-p', 'err', '-n', '500', '--no-pager'],
+                capture_output=True, text=True, timeout=10,
+            )
+            if r.returncode == 0:
+                error_log = r.stdout or None
+                if not error_log:
+                    error_msg = 'No error-level log entries found.'
+            else:
+                error_msg = f'journalctl exited {r.returncode}: {r.stderr.strip()}'
+        except FileNotFoundError:
+            error_msg = 'journalctl not found on this host.'
+        except Exception as exc:
+            error_msg = f'Could not read error log: {exc}'
+
+    return render_template(
+        'admin_errors.html',
+        username=username,
+        area='admin',
+        error_log=error_log,
+        error_msg=error_msg,
+    )
+
+
 @admin_bp.route('/dashboard')
 @login_required
 @permission_required_read(PERM_ADMIN)
