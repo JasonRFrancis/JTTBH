@@ -4,6 +4,7 @@ Media Tracker Routes
 
 GET  /<username>/media/index
 GET  /<username>/media/detail/<media_id>
+GET  /<username>/media/settings
 GET  /<username>/media/search/json?q=<query>&kind=<show|movie|any>
 
 POST /<username>/media/create/post
@@ -11,6 +12,7 @@ POST /<username>/media/update/post/<media_id>
 POST /<username>/media/delete/post/<media_id>
 POST /<username>/media/sync/post/<media_id>
 POST /<username>/media/episode/seen/post/<episode_id>
+POST /<username>/media/steam/sync/post
 """
 
 import xml.etree.ElementTree as ET
@@ -33,23 +35,26 @@ from app.models.media_model import (
     get_episodes, upsert_episode, set_seen,
 )
 import app.services.tmdb as tmdb
+import app.services.steam as steam
 
 media_bp = Blueprint('media', __name__)
 
-VALID_KINDS    = ('book', 'movie', 'show', 'podcast')
+VALID_KINDS    = ('book', 'movie', 'show', 'podcast', 'videogame', 'boardgame')
 VALID_STATUSES = ('want', 'in_progress', 'done', 'dismiss')
 
 KIND_LABELS = {
-    'show':    'Shows',
-    'movie':   'Movies',
-    'podcast': 'Podcasts',
-    'book':    'Books',
+    'show':      'Shows',
+    'movie':     'Movies',
+    'podcast':   'Podcasts',
+    'book':      'Books',
+    'videogame': 'Video Games',
+    'boardgame': 'Board Games',
 }
-KIND_ORDER   = ['show', 'movie', 'podcast', 'book']
+KIND_ORDER   = ['show', 'movie', 'podcast', 'book', 'videogame', 'boardgame']
 STATUS_ORDER = ['in_progress', 'want', 'done', 'dismiss']
 STATUS_LABELS = {
     'in_progress': 'In Progress',
-    'want':        'Want to Watch / Read',
+    'want':        'Want',
     'done':        'Done',
     'dismiss':     'Dismissed',
 }
@@ -432,7 +437,91 @@ def episode_seen(username: str, episode_id: str):
 
 
 # ---------------------------------------------------------------------------
-# Compat redirect from old /book/index
+# Settings + Steam sync
+# ---------------------------------------------------------------------------
+
+def _get_pref(user_id: str, key: str) -> str:
+    row = db_manager.execute_one(
+        "SELECT value FROM user_preference WHERE userID = %s AND preference = %s ORDER BY id DESC LIMIT 1",
+        (user_id, key),
+    )
+    return row['value'] if row else ''
+
+
+def _set_pref(user_id: str, key: str, value: str) -> None:
+    db_manager.execute_insert(
+        "INSERT INTO user_preference (userID, preference, value, created, created_by) VALUES (%s, %s, %s, NOW(), %s)",
+        (user_id, key, value, user_id),
+    )
+
+
+@media_bp.route('/settings')
+@login_required
+@permission_required_read(PERM_BOOK)
+def settings(username: str):
+    user_id = session['user_id']
+    return render_template('media_settings.html',
+                           username=username,
+                           area='book',
+                           steam_id=_get_pref(user_id, 'steam_id'),
+                           steam_api_key=_get_pref(user_id, 'steam_api_key'))
+
+
+@media_bp.route('/steam/sync/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_BOOK)
+@permission_required_write(PERM_BOOK)
+def steam_sync(username: str):
+    user_id = session['user_id']
+
+    # Save credentials if submitted
+    new_key = request.form.get('steam_api_key', '').strip()
+    new_id  = request.form.get('steam_id',      '').strip()
+    if new_key:
+        _set_pref(user_id, 'steam_api_key', new_key)
+    if new_id:
+        _set_pref(user_id, 'steam_id', new_id)
+
+    api_key  = new_key or _get_pref(user_id, 'steam_api_key')
+    steam_id = new_id  or _get_pref(user_id, 'steam_id')
+
+    if not api_key or not steam_id:
+        flash('Steam API key and Steam ID are both required.', 'error')
+        return redirect(url_for('media.settings', username=username))
+
+    games = steam.get_owned_games(api_key, steam_id)
+    if not games:
+        flash('No games returned — check your API key and Steam ID.', 'error')
+        return redirect(url_for('media.settings', username=username))
+
+    added = skipped = 0
+    for g in games:
+        ext_id = f"steam:{g['appid']}"
+        existing = db_manager.execute_one(
+            """SELECT mediaID FROM media
+               WHERE userID = %s AND external_id = %s AND title IS NOT NULL
+                 AND id = (SELECT MAX(id) FROM media m2 WHERE m2.mediaID = media.mediaID)""",
+            (user_id, ext_id),
+        )
+        if existing:
+            skipped += 1
+            continue
+        status = 'in_progress' if g['playtime_forever'] > 0 else 'want'
+        create(user_id,
+               title=g['name'],
+               kind='videogame',
+               creator=None,
+               status=status,
+               external_id=ext_id,
+               cover_url=g['cover_url'])
+        added += 1
+
+    flash(f'Steam sync complete: {added} imported, {skipped} already present.', 'success')
+    return redirect(url_for('media.settings', username=username))
+
+
+# ---------------------------------------------------------------------------
+# Helpers
 # ---------------------------------------------------------------------------
 
 def user_today_date():

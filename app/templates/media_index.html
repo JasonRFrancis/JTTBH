@@ -10,6 +10,7 @@
 <main class="media">
   <header class="media-header">
     <h1>Media</h1>
+    <a href="{{ url_for('media.settings', username=username) }}">Tools</a>
   </header>
 
   <section class="media-add" aria-labelledby="add-heading">
@@ -25,6 +26,8 @@
             <option value="movie">Movie</option>
             <option value="show">Show</option>
             <option value="podcast">Podcast</option>
+            <option value="videogame">Video Game</option>
+            <option value="boardgame">Board Game</option>
           </select>
         </div>
 
@@ -35,7 +38,7 @@
         </div>
 
         <div class="field">
-          <label for="add-creator">Author / Director / Creator</label>
+          <label for="add-creator">Author / Director / Developer / Creator</label>
           <input type="text" id="add-creator" name="creator" autocomplete="off">
         </div>
 

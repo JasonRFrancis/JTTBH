@@ -29,7 +29,9 @@
       "Bash(/usr/bin/curl -4 -s -X POST http://127.0.0.1:5000/jason/bookmark/api/create -F url=https://example.com)",
       "Bash(sed -n '129,165p' /Users/jason/Documents/JTTBH/schema.sql)",
       "Bash(sed -n '856,970p' /Users/jason/Documents/JTTBH/schema.sql)",
-      "Bash(/usr/bin/curl *)"
+      "Bash(/usr/bin/curl *)",
+      "WebFetch(domain:www.bbc.co.uk)",
+      "WebFetch(domain:en.wikipedia.org)"
     ],
     "deny": [],
     "ask": []

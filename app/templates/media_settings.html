@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Media Tools — jttbh{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/media.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="media">
+  <header class="media-header">
+    <h1>Media Tools</h1>
+    <a href="{{ url_for('media.index', username=username) }}">&larr; Media</a>
+  </header>
+
+  <section aria-labelledby="steam-heading">
+    <h2 id="steam-heading">Steam Library Sync</h2>
+    <p>
+      Import your Steam library as video games.
+      Games you've played appear as <em>In Progress</em>; unplayed games appear as <em>Want</em>.
+      Re-syncing skips games already present.
+    </p>
+    <ol class="setup-steps">
+      <li>Get your API key at <code>steamcommunity.com/dev/apikey</code></li>
+      <li>Find your Steam ID at <code>steamid.io</code> — use the 17-digit number</li>
+    </ol>
+
+    <form method="post" action="{{ url_for('media.steam_sync', username=username) }}" class="steam-form">
+      <div class="field">
+        <label for="steam-api-key">Steam API Key</label>
+        <input type="text" id="steam-api-key" name="steam_api_key"
+               value="{{ steam_api_key }}"
+               placeholder="Leave blank to use saved key"
+               autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="steam-id">Steam ID <small>(17-digit number)</small></label>
+        <input type="text" id="steam-id" name="steam_id"
+               value="{{ steam_id }}"
+               placeholder="76561198012345678"
+               autocomplete="off" inputmode="numeric">
+      </div>
+      <button type="submit">Sync Steam Library</button>
+      {% if steam_id %}
+      <p class="field-hint">Saved Steam ID: <code>{{ steam_id }}</code></p>
+      {% endif %}
+    </form>
+  </section>
+</main>
+{% endblock %}
