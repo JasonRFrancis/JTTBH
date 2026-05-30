@@ -156,3 +156,124 @@
 .btn-danger:hover {
   background: #b91c1c;
 }
+
+/* ── Dashboard ── */
+
+.muted-text { opacity: .6; font-style: italic; }
+
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: .8rem;
+  opacity: .7;
+}
+
+.stat-sub {
+  font-size: .75rem;
+  color: var(--color-accent, #2563eb);
+}
+
+/* Health grid */
+.health-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: .4rem 1.25rem;
+  max-width: 480px;
+  margin-bottom: 2rem;
+  align-items: center;
+}
+
+.health-grid dt { font-weight: 600; font-size: .85rem; }
+.health-grid dd { margin: 0; font-size: .85rem; display: flex; align-items: center; gap: .6rem; }
+
+.health-bar {
+  height: 10px;
+  background: var(--color-border, #e5e7eb);
+  border-radius: 5px;
+  overflow: hidden;
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.health-bar-fill {
+  height: 100%;
+  background: var(--color-accent, #2563eb);
+  border-radius: 5px;
+  transition: width .3s;
+}
+
+.health-bar-fill--warn { background: #dc2626; }
+
+/* Chart */
+.chart-wrap {
+  width: 100%;
+  margin-bottom: 2rem;
+  overflow: hidden;
+}
+
+.chart-wrap canvas { display: block; width: 100%; }
+
+/* Two-column lower section */
+.dash-lower {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .dash-lower { grid-template-columns: 1fr; }
+}
+
+.num-col { text-align: right; }
+
+/* Log filters */
+.log-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.log-filters input { font-size: .85rem; padding: .3rem .5rem; }
+.log-filters input[type="text"] { width: 180px; }
+.log-filters input[type="date"] { width: 140px; }
+
+/* Log table — smaller text, no word wrap on code cells */
+.log-table { font-size: .8rem; }
+.log-table code { white-space: nowrap; font-size: .78rem; }
+
+/* Server log */
+.server-log {
+  background: #111;
+  color: #e5e7eb;
+  font-size: .75rem;
+  line-height: 1.5;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  max-height: 600px;
+  overflow-y: auto;
+  white-space: pre;
+}

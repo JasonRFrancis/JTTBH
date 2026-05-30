@@ -10,8 +10,10 @@
 <header class="admin-header">
   <h1>Icons</h1>
   <nav aria-label="Admin navigation">
-    <a href="{{ url_for('admin.users', username=username) }}">Users</a>
-    <a href="{{ url_for('admin.log',   username=username) }}">Log</a>
+    <a href="{{ url_for('admin.dashboard', username=username) }}">Dashboard</a>
+    <a href="{{ url_for('admin.users',     username=username) }}">Users</a>
+    <a href="{{ url_for('admin.icons',     username=username) }}" aria-current="page">Icons</a>
+    <a href="{{ url_for('admin.log',       username=username) }}">Log</a>
   </nav>
 </header>
 

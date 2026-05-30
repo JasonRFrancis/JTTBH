@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard — Admin{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="admin-header">
+  <h1>Admin Dashboard</h1>
+  <nav aria-label="Admin navigation">
+    <a href="{{ url_for('admin.dashboard', username=username) }}" aria-current="page">Dashboard</a>
+    <a href="{{ url_for('admin.users',     username=username) }}">Users</a>
+    <a href="{{ url_for('admin.icons',     username=username) }}">Icons</a>
+    <a href="{{ url_for('admin.log',       username=username) }}">Log</a>
+  </nav>
+</header>
+
+<section aria-labelledby="stats-heading">
+  <h2 id="stats-heading" class="sr-only">Site Statistics</h2>
+  <div class="stat-cards">
+    <article class="stat-card">
+      <span class="stat-value">{{ stats.total_users }}</span>
+      <span class="stat-label">Total Users</span>
+      {% if stats.pending_users %}<span class="stat-sub">{{ stats.pending_users }} pending</span>{% endif %}
+    </article>
+    <article class="stat-card">
+      <span class="stat-value">{{ stats.req_today }}</span>
+      <span class="stat-label">Requests Today</span>
+    </article>
+    <article class="stat-card">
+      <span class="stat-value">{{ stats.req_week }}</span>
+      <span class="stat-label">Requests (7 days)</span>
+    </article>
+    <article class="stat-card">
+      <span class="stat-value">{{ stats.req_total }}</span>
+      <span class="stat-label">Requests All Time</span>
+    </article>
+  </div>
+</section>
+
+<section aria-labelledby="health-heading">
+  <h2 id="health-heading">Server Health</h2>
+  {% if health.unavailable %}
+  <p class="muted-text">Server metrics are only available on the Linux production host.</p>
+  {% else %}
+  <dl class="health-grid">
+    <dt>Uptime</dt>
+    <dd>{{ health.uptime }}</dd>
+    <dt>Load (1 / 5 / 15 min)</dt>
+    <dd>{{ health.load }}</dd>
+    <dt>Memory used</dt>
+    <dd>
+      <div class="health-bar" role="meter" aria-valuenow="{{ health.mem_pct }}" aria-valuemin="0" aria-valuemax="100">
+        <div class="health-bar-fill{% if health.mem_pct > 85 %} health-bar-fill--warn{% endif %}"
+             style="width: {{ health.mem_pct }}%"></div>
+      </div>
+      {{ health.mem_pct }}%
+    </dd>
+    <dt>Disk used</dt>
+    <dd>
+      <div class="health-bar" role="meter" aria-valuenow="{{ health.disk_pct }}" aria-valuemin="0" aria-valuemax="100">
+        <div class="health-bar-fill{% if health.disk_pct > 85 %} health-bar-fill--warn{% endif %}"
+             style="width: {{ health.disk_pct }}%"></div>
+      </div>
+      {{ health.disk_pct }}%
+    </dd>
+  </dl>
+  {% endif %}
+</section>
+
+<section aria-labelledby="chart-heading">
+  <h2 id="chart-heading">Requests — Last 30 Days</h2>
+  <div class="chart-wrap">
+    <canvas id="req-chart"
+            data-labels='{{ stats.chart_labels | safe }}'
+            data-values='{{ stats.chart_values | safe }}'
+            aria-label="Bar chart of daily request counts over the last 30 days"
+            role="img"
+            height="200"></canvas>
+  </div>
+</section>
+
+<div class="dash-lower">
+  <section aria-labelledby="pages-heading">
+    <h2 id="pages-heading">Top Pages <small>(30 days)</small></h2>
+    {% if stats.top_pages %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th scope="col">Resource</th>
+          <th scope="col" class="num-col">Requests</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in stats.top_pages %}
+        <tr>
+          <td><code>{{ row.resource }}</code></td>
+          <td class="num-col">{{ row.n }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted-text">No data yet.</p>
+    {% endif %}
+  </section>
+
+  <section aria-labelledby="content-heading">
+    <h2 id="content-heading">Content</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th scope="col">Feature</th>
+          <th scope="col" class="num-col">Items</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in stats.media_by_kind %}
+        <tr>
+          <td>Media — {{ row.kind | capitalize }}</td>
+          <td class="num-col">{{ row.n }}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+          <td>Todos</td>
+          <td class="num-col">{{ stats.todo_count }}</td>
+        </tr>
+        <tr>
+          <td>Habits</td>
+          <td class="num-col">{{ stats.habit_count }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+(function () {
+  const canvas = document.getElementById('req-chart');
+  if (!canvas || !canvas.getContext) return;
+
+  const labels = JSON.parse(canvas.dataset.labels);
+  const values = JSON.parse(canvas.dataset.values);
+  const ctx    = canvas.getContext('2d');
+
+  const W = canvas.parentElement.offsetWidth || 600;
+  const H = 200;
+  canvas.width  = W;
+  canvas.height = H;
+
+  const PAD = { l: 36, r: 8, t: 12, b: 36 };
+  const areaW = W - PAD.l - PAD.r;
+  const areaH = H - PAD.t - PAD.b;
+  const maxVal = Math.max(...values, 1);
+  const n      = values.length;
+  const slotW  = areaW / n;
+  const gap    = Math.max(1, slotW * 0.18);
+  const barW   = slotW - gap;
+
+  const accent = getComputedStyle(document.documentElement)
+    .getPropertyValue('--color-accent').trim() || '#2563eb';
+
+  // gridlines + y-axis labels
+  ctx.font      = '10px sans-serif';
+  ctx.textAlign = 'right';
+  for (let t = 0; t <= 4; t++) {
+    const y = H - PAD.b - (t / 4) * areaH;
+    ctx.fillStyle   = '#999';
+    ctx.fillText(Math.round((t / 4) * maxVal), PAD.l - 4, y + 3);
+    ctx.strokeStyle = t === 0 ? '#bbb' : '#eee';
+    ctx.lineWidth   = 1;
+    ctx.beginPath();
+    ctx.moveTo(PAD.l, y);
+    ctx.lineTo(W - PAD.r, y);
+    ctx.stroke();
+  }
+
+  // bars + x-axis labels
+  ctx.textAlign = 'center';
+  for (let i = 0; i < n; i++) {
+    const x  = PAD.l + i * slotW + gap / 2;
+    const bh = (values[i] / maxVal) * areaH;
+    const by = H - PAD.b - bh;
+    ctx.fillStyle = accent;
+    ctx.fillRect(x, by, barW, bh);
+
+    if (i % 5 === 0 || i === n - 1) {
+      ctx.fillStyle = '#666';
+      ctx.fillText(labels[i], x + barW / 2, H - PAD.b + 14);
+    }
+  }
+}());
+</script>
+{% endblock %}

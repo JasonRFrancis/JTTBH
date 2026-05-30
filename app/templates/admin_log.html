@@ -10,18 +10,30 @@
 <header class="admin-header">
   <h1>Access Log</h1>
   <nav aria-label="Admin navigation">
-    <a href="{{ url_for('admin.users', username=username) }}">Users</a>
-    <a href="{{ url_for('admin.icons', username=username) }}">Icons</a>
-    <a href="{{ url_for('admin.log',   username=username) }}" aria-current="page">Log</a>
+    <a href="{{ url_for('admin.dashboard', username=username) }}">Dashboard</a>
+    <a href="{{ url_for('admin.users',     username=username) }}">Users</a>
+    <a href="{{ url_for('admin.icons',     username=username) }}">Icons</a>
+    <a href="{{ url_for('admin.log',       username=username) }}" aria-current="page">Log</a>
   </nav>
 </header>
 
 <section aria-labelledby="log-heading">
-  <h2 id="log-heading">Recent Requests <small>(last 200)</small></h2>
+  <h2 id="log-heading">Request Log <small>(up to 500)</small></h2>
+
+  <form method="get" action="{{ url_for('admin.log', username=username) }}" class="log-filters">
+    <input type="text" name="q"    value="{{ filters.q }}"    placeholder="Resource contains…" aria-label="Filter by resource">
+    <input type="text" name="user" value="{{ filters.user }}" placeholder="Username"            aria-label="Filter by username">
+    <input type="date" name="from" value="{{ filters['from'] }}" aria-label="From date">
+    <input type="date" name="to"   value="{{ filters.to }}"   aria-label="To date">
+    <button type="submit">Filter</button>
+    {% if filters.q or filters.user or filters['from'] or filters.to %}
+    <a href="{{ url_for('admin.log', username=username) }}">Clear</a>
+    {% endif %}
+  </form>
 
   {% if log_rows %}
-  <table class="data-table">
-    <caption class="sr-only">Recent HTTP request log</caption>
+  <table class="data-table log-table">
+    <caption class="sr-only">HTTP request log</caption>
     <thead>
       <tr>
         <th scope="col">ID</th>
@@ -48,7 +60,14 @@
     </tbody>
   </table>
   {% else %}
-  <p>No log entries found.</p>
+  <p class="muted-text">No entries match the current filters.</p>
   {% endif %}
 </section>
+
+{% if server_log %}
+<section aria-labelledby="syslog-heading">
+  <h2 id="syslog-heading">Server Log <small>(journalctl — last 150 lines)</small></h2>
+  <pre class="server-log">{{ server_log }}</pre>
+</section>
+{% endif %}
 {% endblock %}

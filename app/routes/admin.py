@@ -30,7 +30,12 @@ read  = 8190   (2+4+8+16+32+64+128+256+512+1024+2048+4096 – everything except 
 write = 8190
 """
 
+import json
+import os
+import platform
+import subprocess
 import uuid
+from datetime import date, timedelta
 
 from flask import (
     Blueprint,
@@ -152,6 +157,132 @@ def _get_icon_by_id(image_id: str) -> dict | None:
     )
 
 
+def _server_health() -> dict:
+    """Return server metrics from /proc on Linux; empty dict with unavailable=True elsewhere."""
+    info: dict = {}
+    try:
+        if platform.system() != 'Linux':
+            info['unavailable'] = True
+            return info
+
+        with open('/proc/uptime') as f:
+            secs = float(f.read().split()[0])
+        days, rem = divmod(int(secs), 86400)
+        hours, rem = divmod(rem, 3600)
+        info['uptime'] = f"{days}d {hours}h {rem // 60}m"
+
+        with open('/proc/loadavg') as f:
+            parts = f.read().split()
+        info['load'] = f"{parts[0]}, {parts[1]}, {parts[2]}"
+
+        with open('/proc/meminfo') as f:
+            mem: dict = {}
+            for line in f:
+                if ':' in line:
+                    k, v = line.split(':', 1)
+                    mem[k.strip()] = int(v.split()[0])
+        total = mem.get('MemTotal', 1)
+        avail = mem.get('MemAvailable', mem.get('MemFree', 0))
+        info['mem_pct'] = round((total - avail) / total * 100, 1)
+
+        st = os.statvfs('/')
+        disk_total = st.f_blocks * st.f_frsize
+        disk_free  = st.f_bfree  * st.f_frsize
+        info['disk_pct'] = round((disk_total - disk_free) / disk_total * 100, 1)
+    except Exception:
+        info['unavailable'] = True
+    return info
+
+
+def _get_dashboard_stats() -> dict:
+    """Aggregate stats for the admin dashboard."""
+    user_row = db_manager.execute_one(
+        "SELECT COUNT(*) as total, SUM(approval_status = 'pending') as pending FROM `user`"
+    ) or {}
+
+    req_today = (db_manager.execute_one(
+        "SELECT COUNT(*) as n FROM log WHERE DATE(created) = CURDATE()"
+    ) or {}).get('n', 0)
+    req_week = (db_manager.execute_one(
+        "SELECT COUNT(*) as n FROM log WHERE created >= DATE_SUB(NOW(), INTERVAL 7 DAY)"
+    ) or {}).get('n', 0)
+    req_total = (db_manager.execute_one(
+        "SELECT COUNT(*) as n FROM log"
+    ) or {}).get('n', 0)
+
+    daily_rows = db_manager.execute_query(
+        """
+        SELECT DATE(created) as day, COUNT(*) as n
+        FROM log
+        WHERE created >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)
+        GROUP BY DATE(created)
+        ORDER BY day
+        """
+    )
+    day_map = {str(r['day']): r['n'] for r in daily_rows}
+    today = date.today()
+    chart_labels, chart_values = [], []
+    for i in range(29, -1, -1):
+        d = today - timedelta(days=i)
+        chart_labels.append(d.strftime('%b %d'))
+        chart_values.append(day_map.get(str(d), 0))
+
+    top_pages = db_manager.execute_query(
+        """
+        SELECT resource, COUNT(*) as n
+        FROM log
+        WHERE created >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+          AND resource NOT LIKE '/static/%'
+        GROUP BY resource
+        ORDER BY n DESC
+        LIMIT 15
+        """
+    )
+
+    media_by_kind = db_manager.execute_query(
+        """
+        SELECT m.kind, COUNT(DISTINCT m.mediaID) as n
+        FROM media m
+        WHERE m.title IS NOT NULL
+          AND m.id = (SELECT MAX(m2.id) FROM media m2 WHERE m2.mediaID = m.mediaID)
+        GROUP BY m.kind
+        ORDER BY m.kind
+        """
+    )
+
+    todo_count = (db_manager.execute_one(
+        """
+        SELECT COUNT(DISTINCT t.todoID) as n
+        FROM todo t
+        WHERE t.title IS NOT NULL
+          AND t.id = (SELECT MAX(t2.id) FROM todo t2 WHERE t2.todoID = t.todoID)
+        """
+    ) or {}).get('n', 0)
+
+    habit_count = (db_manager.execute_one(
+        """
+        SELECT COUNT(DISTINCT h.habitID) as n
+        FROM habit h
+        WHERE h.name IS NOT NULL
+          AND h.id = (SELECT MAX(h2.id) FROM habit h2 WHERE h2.habitID = h.habitID)
+        """
+    ) or {}).get('n', 0)
+
+    return {
+        'total_users':   user_row.get('total', 0),
+        'pending_users': int(user_row.get('pending') or 0),
+        'req_today':     req_today,
+        'req_week':      req_week,
+        'req_total':     req_total,
+        'chart_labels':  json.dumps(chart_labels),
+        'chart_values':  json.dumps(chart_values),
+        'top_pages':     top_pages,
+        'media_by_kind': media_by_kind,
+        'todo_count':    todo_count,
+        'habit_count':   habit_count,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Routes – GET
 # ---------------------------------------------------------------------------
@@ -171,24 +302,73 @@ def users(username: str):
     )
 
 
+@admin_bp.route('/dashboard')
+@login_required
+@permission_required_read(PERM_ADMIN)
+def dashboard(username: str):
+    """Render the admin dashboard with site and server statistics."""
+    return render_template(
+        'admin_dashboard.html',
+        username=username,
+        area='admin',
+        stats=_get_dashboard_stats(),
+        health=_server_health(),
+    )
+
+
 @admin_bp.route('/log')
 @login_required
 @permission_required_read(PERM_ADMIN)
 def log(username: str):
-    """Render the recent access-log page."""
+    """Render the access log with optional filters."""
+    q         = request.args.get('q',    '').strip()
+    user_f    = request.args.get('user', '').strip()
+    from_date = request.args.get('from', '').strip()
+    to_date   = request.args.get('to',   '').strip()
+
+    where, params = ['1=1'], []
+    if q:
+        where.append('resource LIKE %s')
+        params.append(f'%{q}%')
+    if user_f:
+        where.append('username = %s')
+        params.append(user_f)
+    if from_date:
+        where.append('DATE(created) >= %s')
+        params.append(from_date)
+    if to_date:
+        where.append('DATE(created) <= %s')
+        params.append(to_date)
+
     rows = db_manager.execute_query(
-        """
+        f"""
         SELECT id, userid, username, resource, `get`, `post`, ip, user_agent, created
         FROM log
+        WHERE {' AND '.join(where)}
         ORDER BY id DESC
-        LIMIT 200
+        LIMIT 500
         """,
+        tuple(params),
     )
+
+    server_log = None
+    try:
+        result = subprocess.run(
+            ['journalctl', '-u', 'jttbh', '-n', '150', '--no-pager'],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0:
+            server_log = result.stdout
+    except Exception:
+        pass
+
     return render_template(
         'admin_log.html',
         username=username,
         area='admin',
         log_rows=rows,
+        server_log=server_log,
+        filters={'q': q, 'user': user_f, 'from': from_date, 'to': to_date},
     )
 
 
