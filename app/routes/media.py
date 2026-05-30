@@ -112,6 +112,45 @@ def _sync_movie(media_item: dict, user_id: str):
 
 _ITUNES = 'http://www.itunes.com/dtds/podcast-1.0.dtd'
 
+
+def _fetch_podcast_meta(feed_url: str) -> dict:
+    """Read channel-level metadata from an RSS feed. Returns empty dict on failure."""
+    if not feed_url or not feed_url.startswith('http'):
+        return {}
+    try:
+        with urllib.request.urlopen(feed_url, timeout=10) as r:
+            xml_bytes = r.read()
+    except Exception:
+        return {}
+    try:
+        root = ET.fromstring(xml_bytes)
+    except ET.ParseError:
+        return {}
+    channel = root.find('channel')
+    if channel is None:
+        return {}
+
+    def text(el):
+        return el.text.strip() if el is not None and el.text else ''
+
+    title   = text(channel.find('title'))
+    creator = (text(channel.find(f'{{{_ITUNES}}}author'))
+               or text(channel.find('managingEditor'))
+               or text(channel.find('author')))
+
+    # Cover: itunes:image href attr, then <image><url> child
+    cover = ''
+    itunes_img = channel.find(f'{{{_ITUNES}}}image')
+    if itunes_img is not None:
+        cover = itunes_img.get('href', '')
+    if not cover:
+        img_el = channel.find('image')
+        if img_el is not None:
+            cover = text(img_el.find('url'))
+
+    return {'title': title, 'creator': creator, 'cover_url': cover}
+
+
 def _sync_podcast(media_item: dict, user_id: str):
     """Fetch RSS feed and store episodes."""
     feed_url = media_item.get('external_id')
@@ -240,19 +279,31 @@ def search_json(username: str):
 @permission_required_read(PERM_BOOK)
 @permission_required_write(PERM_BOOK)
 def create_item(username: str):
-    user_id = session['user_id']
-    title   = request.form.get('title', '').strip()
-    kind    = request.form.get('kind', 'book')
-    if not title:
-        flash('Title is required.', 'error')
-        return _redirect_index(username)
+    user_id     = session['user_id']
+    kind        = request.form.get('kind', 'book')
     if kind not in VALID_KINDS:
         kind = 'book'
 
+    title       = request.form.get('title', '').strip()
     creator     = request.form.get('creator', '').strip() or None
     status      = request.form.get('status', 'want')
     external_id = request.form.get('external_id', '').strip() or None
     cover_url   = request.form.get('cover_url', '').strip() or None
+
+    # For podcasts, pull channel metadata from the RSS feed before saving.
+    # This fills title/creator/cover if left blank, and overrides cover always.
+    if kind == 'podcast' and external_id:
+        meta = _fetch_podcast_meta(external_id)
+        if not title and meta.get('title'):
+            title = meta['title']
+        if not creator and meta.get('creator'):
+            creator = meta['creator']
+        if meta.get('cover_url'):
+            cover_url = meta['cover_url']
+
+    if not title:
+        flash('Title is required. Could not fetch it from the RSS feed — please enter it manually.', 'error')
+        return _redirect_index(username)
 
     if status not in VALID_STATUSES:
         status = 'want'

@@ -22,11 +22,11 @@
   }
 
   function updateFeedVisibility() {
-    if (feedField) feedField.hidden = kindSel.value !== 'podcast';
-    // podcast uses the feed URL input as external_id instead of hidden field
-    if (feedInput && extIdInput) {
-      extIdInput.disabled = kindSel.value === 'podcast';
-    }
+    const isPodcast = kindSel.value === 'podcast';
+    if (feedField) feedField.hidden = !isPodcast;
+    // podcast uses feed URL as external_id; title can be auto-filled from RSS
+    if (extIdInput) extIdInput.disabled = isPodcast;
+    if (titleInput) titleInput.required = !isPodcast;
   }
 
   kindSel.addEventListener('change', () => {
