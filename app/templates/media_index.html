@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Media — jttbh{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/media.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="media">
+  <header class="media-header">
+    <h1>Media</h1>
+  </header>
+
+  <section class="media-add" aria-labelledby="add-heading">
+    <details>
+      <summary id="add-heading">Add Media</summary>
+      <form method="post" action="{{ url_for('media.create_item', username=username) }}" class="media-add-form"
+            data-search-url="{{ url_for('media.search_json', username=username) }}">
+
+        <div class="field">
+          <label for="add-kind">Kind</label>
+          <select id="add-kind" name="kind" required>
+            <option value="book">Book</option>
+            <option value="movie">Movie</option>
+            <option value="show">Show</option>
+            <option value="podcast">Podcast</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="add-title">Title</label>
+          <input type="text" id="add-title" name="title" required autocomplete="off">
+          <ul class="search-suggestions" hidden></ul>
+        </div>
+
+        <div class="field">
+          <label for="add-creator">Author / Director / Creator</label>
+          <input type="text" id="add-creator" name="creator" autocomplete="off">
+        </div>
+
+        <div class="field field--podcast" hidden>
+          <label for="add-feed">RSS Feed URL</label>
+          <input type="url" id="add-feed" name="external_id" placeholder="https://...">
+        </div>
+
+        <input type="hidden" id="add-external-id" name="external_id">
+        <input type="hidden" id="add-cover-url" name="cover_url">
+
+        <div class="field">
+          <label for="add-status">Status</label>
+          <select id="add-status" name="status">
+            <option value="want">Want to Watch / Read</option>
+            <option value="in_progress">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+        </div>
+
+        <button type="submit">Add</button>
+      </form>
+    </details>
+  </section>
+
+  {% for kind in kind_order %}
+  {% set sections = grouped[kind] %}
+  {% set ns2 = namespace(kind_total=0) %}
+  {% for s in status_order %}{% set ns2.kind_total = ns2.kind_total + sections[s]|length %}{% endfor %}
+  {% if ns2.kind_total > 0 %}
+  <section class="media-kind" aria-labelledby="kind-{{ kind }}">
+    <h2 id="kind-{{ kind }}">{{ kind_labels[kind] }}</h2>
+
+    {% for status in status_order %}
+    {% if sections[status] %}
+    <section class="media-status" aria-labelledby="status-{{ kind }}-{{ status }}">
+      <h3 id="status-{{ kind }}-{{ status }}">{{ status_labels[status] }}</h3>
+      <ul class="media-list">
+        {% for item in sections[status] %}
+        <li class="media-item media-item--{{ item.kind }}">
+          {% if item.cover_url %}
+          <img class="media-cover" src="{{ item.cover_url }}" alt="{{ item.title }}" loading="lazy">
+          {% endif %}
+          <div class="media-body">
+            <div class="media-title-row">
+              {% if item.kind in ('show', 'podcast') %}
+              <a href="{{ url_for('media.detail', username=username, media_id=item.mediaID) }}" class="media-title">{{ item.title }}</a>
+              {% else %}
+              <span class="media-title">{{ item.title }}</span>
+              {% endif %}
+              {% if item.creator %}
+              <span class="media-creator">{{ item.creator }}</span>
+              {% endif %}
+            </div>
+            <div class="media-meta">
+              {% if item.streaming %}
+              <span class="media-streaming">{{ item.streaming }}</span>
+              {% endif %}
+              {% if item.next_date %}
+              <span class="media-next">Next: {{ item.next_date }}</span>
+              {% endif %}
+              {% if item.rating %}
+              <span class="media-rating">{{ item.rating }}/5</span>
+              {% endif %}
+            </div>
+            <details class="media-edit">
+              <summary>Edit</summary>
+              <form method="post" action="{{ url_for('media.update_item', username=username, media_id=item.mediaID) }}" class="media-edit-form">
+                <div class="field">
+                  <label>Status
+                    <select name="status">
+                      {% for s in ['want','in_progress','done','dismiss'] %}
+                      <option value="{{ s }}"{% if item.status == s %} selected{% endif %}>{{ status_labels[s] }}</option>
+                      {% endfor %}
+                    </select>
+                  </label>
+                </div>
+                <div class="field">
+                  <label>Rating (1–5)
+                    <input type="number" name="rating" min="1" max="5" value="{{ item.rating or '' }}">
+                  </label>
+                </div>
+                <div class="field">
+                  <label>Review
+                    <textarea name="review" rows="2">{{ item.review or '' }}</textarea>
+                  </label>
+                </div>
+                <div class="field-row">
+                  <button type="submit">Save</button>
+                  <button type="button" formaction="{{ url_for('media.delete_item', username=username, media_id=item.mediaID) }}"
+                          formmethod="post" onclick="return confirm('Remove?')">Remove</button>
+                  {% if item.kind in ('show','podcast','movie') and item.external_id %}
+                  <button type="button" formaction="{{ url_for('media.sync_item', username=username, media_id=item.mediaID) }}"
+                          formmethod="post">Sync</button>
+                  {% endif %}
+                </div>
+              </form>
+            </details>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+    {% endfor %}
+  </section>
+  {% endif %}
+  {% endfor %}
+
+  {% set ns = namespace(total=0) %}
+  {% for k in kind_order %}
+    {% for s in status_order %}
+      {% set ns.total = ns.total + grouped[k][s]|length %}
+    {% endfor %}
+  {% endfor %}
+  {% if ns.total == 0 %}
+  <p class="empty-state">No media tracked yet. Add something above.</p>
+  {% endif %}
+</main>
+{% endblock %}
+
+{% block js %}
+<script src="{{ url_for('static', filename='js/media.js') }}" defer></script>
+{% endblock %}

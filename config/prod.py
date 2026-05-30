@@ -55,6 +55,11 @@ class ProductionConfig:
     ADMIN_EMAIL   = os.environ.get('ADMIN_EMAIL',   '')
 
     # ------------------------------------------------------------------ #
+    # External APIs                                                        #
+    # ------------------------------------------------------------------ #
+    TMDB_API_KEY = os.environ.get('TMDB_API_KEY', '')
+
+    # ------------------------------------------------------------------ #
     # Session                                                              #
     # ------------------------------------------------------------------ #
     SESSION_COOKIE_SECURE   = True    # Require HTTPS for session cookies

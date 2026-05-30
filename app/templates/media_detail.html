@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ item.title }} — Media — jttbh{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/media.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="media media-detail">
+  <header class="media-header">
+    <a href="{{ url_for('media.index', username=username) }}">&larr; Media</a>
+    <h1>{{ item.title }}</h1>
+    {% if item.creator %}<p class="media-creator">{{ item.creator }}</p>{% endif %}
+  </header>
+
+  <div class="detail-meta">
+    {% if item.cover_url %}
+    <img class="media-cover media-cover--large" src="{{ item.cover_url }}" alt="{{ item.title }}">
+    {% endif %}
+    <div class="detail-info">
+      <dl>
+        <dt>Status</dt><dd>{{ status_labels[item.status] }}</dd>
+        {% if item.streaming %}
+        <dt>Streaming</dt><dd>{{ item.streaming }}</dd>
+        {% endif %}
+        {% if item.next_date %}
+        <dt>Next</dt><dd>{{ item.next_date }}</dd>
+        {% endif %}
+        {% if item.rating %}
+        <dt>Rating</dt><dd>{{ item.rating }}/5</dd>
+        {% endif %}
+        {% if item.started %}
+        <dt>Started</dt><dd>{{ item.started }}</dd>
+        {% endif %}
+        {% if item.finished %}
+        <dt>Finished</dt><dd>{{ item.finished }}</dd>
+        {% endif %}
+      </dl>
+      {% if item.review %}
+      <p class="detail-review">{{ item.review }}</p>
+      {% endif %}
+
+      <div class="detail-actions">
+        {% if item.external_id %}
+        <form method="post" action="{{ url_for('media.sync_item', username=username, media_id=item.mediaID) }}" style="display:inline">
+          <button type="submit">Sync Episodes</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <section class="detail-edit" aria-labelledby="edit-heading">
+    <details>
+      <summary id="edit-heading">Edit</summary>
+      <form method="post" action="{{ url_for('media.update_item', username=username, media_id=item.mediaID) }}" class="media-edit-form">
+        <div class="field">
+          <label>Status
+            <select name="status">
+              {% for s in ['want','in_progress','done','dismiss'] %}
+              <option value="{{ s }}"{% if item.status == s %} selected{% endif %}>{{ status_labels[s] }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
+        <div class="field">
+          <label>Rating (1–5)
+            <input type="number" name="rating" min="1" max="5" value="{{ item.rating or '' }}">
+          </label>
+        </div>
+        <div class="field">
+          <label>Review
+            <textarea name="review" rows="3">{{ item.review or '' }}</textarea>
+          </label>
+        </div>
+        <div class="field-row">
+          <button type="submit">Save</button>
+          <button type="button" formaction="{{ url_for('media.delete_item', username=username, media_id=item.mediaID) }}"
+                  formmethod="post" onclick="return confirm('Remove?')">Remove</button>
+        </div>
+      </form>
+    </details>
+  </section>
+
+  {% if by_season %}
+  <section class="episode-list" aria-labelledby="episodes-heading">
+    <h2 id="episodes-heading">Episodes</h2>
+
+    {% if item.kind == 'podcast' %}
+    {# Podcasts: flat list, no seasons #}
+    <ul class="episode-flat">
+      {% for ep in episodes %}
+      <li class="episode-row{% if ep.seen %} episode-row--seen{% endif %}">
+        <form method="post" action="{{ url_for('media.episode_seen', username=username, episode_id=ep.episodeID) }}">
+          <input type="hidden" name="media_id" value="{{ item.mediaID }}">
+          <input type="hidden" name="seen" value="{{ '0' if ep.seen else '1' }}">
+          <button type="submit" class="episode-toggle" title="{{ 'Mark unlistened' if ep.seen else 'Mark listened' }}">
+            {{ '✓' if ep.seen else '○' }}
+          </button>
+        </form>
+        <div class="episode-info">
+          <span class="episode-title">{{ ep.title or ('Episode ' ~ loop.index) }}</span>
+          {% if ep.air_date %}<span class="episode-date">{{ ep.air_date }}</span>{% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+
+    {% else %}
+    {# Shows: grouped by season #}
+    {% for season, eps in by_season.items() %}
+    <details class="season-block" {% if loop.first %}open{% endif %}>
+      <summary>Season {{ season }}</summary>
+      <ul class="episode-flat">
+        {% for ep in eps %}
+        <li class="episode-row{% if ep.seen %} episode-row--seen{% endif %}">
+          <form method="post" action="{{ url_for('media.episode_seen', username=username, episode_id=ep.episodeID) }}">
+            <input type="hidden" name="media_id" value="{{ item.mediaID }}">
+            <input type="hidden" name="seen" value="{{ '0' if ep.seen else '1' }}">
+            <button type="submit" class="episode-toggle" title="{{ 'Mark unseen' if ep.seen else 'Mark seen' }}">
+              {{ '✓' if ep.seen else '○' }}
+            </button>
+          </form>
+          <div class="episode-info">
+            <span class="episode-num">E{{ ep.episode_number }}</span>
+            <span class="episode-title">{{ ep.title or '' }}</span>
+            {% if ep.air_date %}<span class="episode-date">{{ ep.air_date }}</span>{% endif %}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endfor %}
+    {% endif %}
+
+  </section>
+  {% endif %}
+</main>
+{% endblock %}

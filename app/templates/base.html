@@ -64,7 +64,7 @@
       <a href="{{ url_for('chore.index', username=session.username) }}"{% if area == 'chore' %} aria-current="page"{% endif %}>Chores</a>
       {% endif %}
       {% if has_perm(2048) %}
-      <a href="{{ url_for('book.index', username=session.username) }}"{% if area == 'book' %} aria-current="page"{% endif %}>Books</a>
+      <a href="{{ url_for('media.index', username=session.username) }}"{% if area == 'book' %} aria-current="page"{% endif %}>Media</a>
       {% endif %}
       {% if has_perm(4096) %}
       <a href="{{ url_for('journal.index', username=session.username) }}"{% if area == 'journal' %} aria-current="page"{% endif %}>Journal</a>
