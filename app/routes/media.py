@@ -500,6 +500,7 @@ def steam_sync(username: str):
         return redirect(url_for('media.settings', username=username))
 
     added = skipped = errors = 0
+    first_error = None
     for g in games:
         try:
             ext_id = f"steam:{g['appid']}"
@@ -524,12 +525,22 @@ def steam_sync(username: str):
         except Exception as e:
             from flask import current_app
             current_app.logger.error('Steam sync error for %s: %s', g.get('name', '?'), e)
+            if first_error is None:
+                first_error = str(e)
             errors += 1
+            # If nothing has succeeded and we've hit several errors, it's a
+            # systemic failure (e.g. missing migration). Bail out early.
+            if added == 0 and errors >= 3:
+                errors += len(games) - (added + skipped + errors)
+                break
 
     parts = [f'{added} imported', f'{skipped} already present']
     if errors:
-        parts.append(f'{errors} failed (check server log)')
-    flash(f'Steam sync complete: {", ".join(parts)}.', 'success' if not errors else 'warning')
+        parts.append(f'{errors} failed')
+    msg = f'Steam sync complete: {", ".join(parts)}.'
+    if first_error:
+        msg += f' First error: {first_error}'
+    flash(msg, 'success' if not errors else 'warning')
     return redirect(url_for('media.settings', username=username))
 
 
