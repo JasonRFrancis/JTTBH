@@ -47,12 +47,15 @@ def get_owned_games(api_key: str, steam_id: str) -> list[dict]:
     if not data:
         return []
     games = data.get("response", {}).get("games", [])
-    return [
-        {
-            "appid":            g["appid"],
-            "name":             g.get("name", f"App {g['appid']}"),
+    result = []
+    for g in games:
+        appid = g.get("appid")
+        if not appid:
+            continue
+        result.append({
+            "appid":            appid,
+            "name":             g.get("name", f"App {appid}"),
             "playtime_forever": g.get("playtime_forever", 0),
-            "cover_url":        COVER.format(appid=g["appid"]),
-        }
-        for g in games
-    ]
+            "cover_url":        COVER.format(appid=appid),
+        })
+    return result

@@ -489,34 +489,47 @@ def steam_sync(username: str):
         flash('Steam API key and Steam ID are both required.', 'error')
         return redirect(url_for('media.settings', username=username))
 
-    games = steam.get_owned_games(api_key, steam_id)
-    if not games:
-        flash('No games returned — check your API key and Steam ID.', 'error')
+    try:
+        games = steam.get_owned_games(api_key, steam_id)
+    except Exception as e:
+        flash(f'Steam API error: {e}', 'error')
         return redirect(url_for('media.settings', username=username))
 
-    added = skipped = 0
-    for g in games:
-        ext_id = f"steam:{g['appid']}"
-        existing = db_manager.execute_one(
-            """SELECT mediaID FROM media
-               WHERE userID = %s AND external_id = %s AND title IS NOT NULL
-                 AND id = (SELECT MAX(id) FROM media m2 WHERE m2.mediaID = media.mediaID)""",
-            (user_id, ext_id),
-        )
-        if existing:
-            skipped += 1
-            continue
-        status = 'in_progress' if g['playtime_forever'] > 0 else 'want'
-        create(user_id,
-               title=g['name'],
-               kind='videogame',
-               creator=None,
-               status=status,
-               external_id=ext_id,
-               cover_url=g['cover_url'])
-        added += 1
+    if not games:
+        flash('No games returned — check that your API key is valid, your Steam ID is the 17-digit number, and your profile is set to public.', 'error')
+        return redirect(url_for('media.settings', username=username))
 
-    flash(f'Steam sync complete: {added} imported, {skipped} already present.', 'success')
+    added = skipped = errors = 0
+    for g in games:
+        try:
+            ext_id = f"steam:{g['appid']}"
+            existing = db_manager.execute_one(
+                """SELECT mediaID FROM media
+                   WHERE userID = %s AND external_id = %s AND title IS NOT NULL
+                     AND id = (SELECT MAX(id) FROM media m2 WHERE m2.mediaID = media.mediaID)""",
+                (user_id, ext_id),
+            )
+            if existing:
+                skipped += 1
+                continue
+            status = 'in_progress' if g['playtime_forever'] > 0 else 'want'
+            create(user_id,
+                   title=g['name'],
+                   kind='videogame',
+                   creator=None,
+                   status=status,
+                   external_id=ext_id,
+                   cover_url=g['cover_url'])
+            added += 1
+        except Exception as e:
+            from flask import current_app
+            current_app.logger.error('Steam sync error for %s: %s', g.get('name', '?'), e)
+            errors += 1
+
+    parts = [f'{added} imported', f'{skipped} already present']
+    if errors:
+        parts.append(f'{errors} failed (check server log)')
+    flash(f'Steam sync complete: {", ".join(parts)}.', 'success' if not errors else 'warning')
     return redirect(url_for('media.settings', username=username))
 
 
