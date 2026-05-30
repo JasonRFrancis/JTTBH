@@ -352,13 +352,21 @@ def log(username: str):
     )
 
     server_log = None
+    error_log  = None
     try:
-        result = subprocess.run(
+        r = subprocess.run(
             ['journalctl', '-u', 'jttbh', '-n', '150', '--no-pager'],
             capture_output=True, text=True, timeout=5,
         )
-        if result.returncode == 0:
-            server_log = result.stdout
+        if r.returncode == 0:
+            server_log = r.stdout
+
+        r2 = subprocess.run(
+            ['journalctl', '-u', 'jttbh', '-p', 'err', '-n', '200', '--no-pager'],
+            capture_output=True, text=True, timeout=5,
+        )
+        if r2.returncode == 0:
+            error_log = r2.stdout or None
     except Exception:
         pass
 
@@ -368,6 +376,7 @@ def log(username: str):
         area='admin',
         log_rows=rows,
         server_log=server_log,
+        error_log=error_log,
         filters={'q': q, 'user': user_f, 'from': from_date, 'to': to_date},
     )
 

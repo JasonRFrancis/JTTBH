@@ -277,3 +277,5 @@
   overflow-y: auto;
   white-space: pre;
 }
+
+.server-log--error { border-left: 3px solid #dc2626; }
