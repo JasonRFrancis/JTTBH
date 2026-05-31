@@ -147,6 +147,13 @@ POST /jason/todo/delete/post/<todoID>
 | | | `POST /steam/sync/post` — import Steam library as videogame items |
 | `journal_bp` | `/<u>/journal` | `GET /index`, `GET /index/<date_str>`, `GET /questions`, `GET /mood/settings` |
 | | | `POST /answer/post/<question_id>`, `POST /mood/post`, `POST /question/create/post`, `POST /mood/category/create/post`, `POST /mood/value/create/post` |
+| `study_bp` | `/<u>/study` | `GET /index`, `GET /index/<date_str>` |
+| | | `GET /collections` — browse all collections, subscribe/unsubscribe |
+| | | `GET /collection/<collection_id>` — owner manages sources |
+| | | `POST /collection/create/post`, `POST /collection/update/post/<id>`, `POST /collection/delete/post/<id>` |
+| | | `POST /source/create/post`, `POST /source/update/post/<id>`, `POST /source/delete/post/<id>` |
+| | | `POST /subscribe/post/<collection_id>`, `POST /unsubscribe/post/<subscription_id>`, `POST /subscription/update/post/<id>` |
+| | | `POST /source/complete/post/<source_id>` — toggle daily completion |
 
 ---
 
@@ -171,8 +178,9 @@ Stored as two bitvectors (`read`, `write`) in `user_permission`. Current = row w
 | 10 | 1024 | `PERM_CHORE` | Household chores |
 | 11 | 2048 | `PERM_BOOK` | Book tracker |
 | 12 | 4096 | `PERM_JOURNAL` | Journal/mood |
+| 13 | 8192 | `PERM_STUDY` | Study collections |
 
-**Default on approval:** `read = write = 8190` (bits 1–12 set; admin bit 0 excluded)
+**Default on approval:** `read = write = 8190` (bits 1–12 set; admin bit 0 and study bit 13 excluded — grant `PERM_STUDY` manually)
 
 **Decorator usage:**
 ```python
@@ -221,6 +229,8 @@ INSERT INTO thing (thingID, userID, name, ...) VALUES (%s, %s, NULL, ...)
 | `todo` | `title` |
 | `habit` | `name` |
 | `project` | `name` |
+| `study_collection` | `name` |
+| `study_source` | `title` |
 
 #### Exceptions to insert-only
 
@@ -229,6 +239,8 @@ INSERT INTO thing (thingID, userID, name, ...) VALUES (%s, %s, NULL, ...)
 | `user` | Direct `UPDATE` | `userID` is UUID PK (stable); `approval_status`, `active`, tokens must be updated in-place |
 | `svg` | Direct `UPDATE`/`DELETE` | Reference data, not user data; `imageID` has `UNIQUE KEY` constraint |
 | `fitness_exercise` | Direct `UPDATE` | Reference/catalog data (not user data); shared across all users |
+| `study_subscription` | Direct `DELETE` | `UNIQUE(userID, collectionID)` — unsubscribe deletes the row |
+| `study_completion` | Direct `INSERT`/`DELETE` | `UNIQUE(userID, sourceID, completed_date)` — toggle inserts or deletes |
 
 #### `db_manager` API
 
@@ -296,6 +308,21 @@ One entry per date per user; latest `id` wins for same `(userID, recorded)`.
 
 **`fitness_logSet`**  
 `id`, `logSetID` (UUID), `logID` (FK), `exerciseID` (FK, NULL = soft-deleted), `set_number`, `actual_weight` DECIMAL(6,1), `actual_reps` INT, `notes`, `duration_minutes` INT (cardio), `speed` DECIMAL(4,2) (cardio), `incline` DECIMAL(4,1) (cardio), `created`, `created_by`
+
+**`study_collection`** — insert-only; `name IS NULL` = soft-deleted  
+`id`, `collectionID` (UUID), `userID` (owner), `name` VARCHAR(200, NULL = soft-deleted), `description` TEXT, `mode` ENUM('rate','calendar') DEFAULT 'rate', `created`, `created_by`  
+Migrations: `20260530_study.sql`
+
+**`study_source`** — insert-only; `title IS NULL` = soft-deleted  
+`id`, `sourceID` (UUID), `collectionID` (FK), `userID`, `category` VARCHAR(100), `title` VARCHAR(500, NULL = soft-deleted), `subtitle` VARCHAR(500), `author` VARCHAR(200), `url` VARCHAR(1000), `audio_url` VARCHAR(1000), `audio_length` VARCHAR(20), `order_by` INT, `scheduled_date` DATE, `created`, `created_by`
+
+**`study_subscription`** — **NOT** insert-only; direct DELETE to unsubscribe  
+`id`, `subscriptionID` (UUID, UNIQUE KEY), `userID`, `collectionID` (FK), `per_day` INT DEFAULT 1, `start_date` DATE, `created`, `created_by`  
+`UNIQUE KEY uq_user_collection (userID, collectionID)` — prevents duplicate subscriptions
+
+**`study_completion`** — **NOT** insert-only; toggle = INSERT or DELETE  
+`id`, `completionID` (UUID, UNIQUE KEY), `userID`, `sourceID` (FK), `completed_date` DATE, `created`, `created_by`  
+`UNIQUE KEY uq_user_source_date (userID, sourceID, completed_date)`
 
 ---
 
@@ -448,6 +475,7 @@ def create(username: str):
 | Journal | Implemented | `journal_bp` | `journal_index.html`, `journal_questions.html`, `journal_mood_settings.html` |
 | Bookmark | Implemented | `bookmark_bp` | `bookmark_index.html`, `bookmark_read_later.html` |
 | Fitness | Implemented | `fitness_bp` | `fitness_index.html`, `fitness_log.html`, `fitness_settings.html` |
+| Study | Implemented | `study_bp` | `study_index.html`, `study_collections.html`, `study_collection_detail.html` |
 | Triage | Stubbed | `triage_bp` | `triage_index.html` |
 | Vacation | Implemented (read + create) | `vacation_bp` | `vacation_index.html` |
 | Appointment | Stubbed | `appointment_bp` | `appointment_index.html` |
@@ -604,6 +632,45 @@ Statuses: `want`, `in_progress`, `done`, `dismiss`
 - `get_episodes(media_id)`, `upsert_episode(...)` (preserves `seen` on update via external_id lookup), `set_seen(episode_id, seen)`
 
 **Podcast field note:** The existing `podcast_bp` generates RSS *production* feeds (audio file collections). The media tracker's podcast support is *consumer-side* — subscribing to external RSS feeds to track episodes. These are entirely separate features.
+
+### E8. Study
+
+Daily scripture and text study. `study_bp` at `/<username>/study`. Requires `PERM_STUDY` (8192) — not in the default grant; admin must assign it.
+
+**Concepts:**
+- **Collection** — a curated list of sources (e.g., "Book of Mormon", "General Conference — April 2025"). Owned by a user; any subscriber can read it.
+- **Source** — one item in a collection: title, URL, optional audio URL, `order_by` (int, ascending). Insert-only; `title IS NULL` = soft-delete.
+- **Subscription** — a user subscribing to a collection with `per_day` (how many sources to surface per day) and `start_date`. Direct DELETE to unsubscribe.
+- **Completion** — a user marking a source done for a specific date. Toggle: INSERT or DELETE on `UNIQUE(userID, sourceID, completed_date)`.
+
+**Index page** (`study_index.html`): shows today's sources across all subscriptions. Date navigation forward/backward. Completion toggle per source.
+
+**Collections page** (`study_collections.html`): all available collections. Subscribe/unsubscribe. Link to owner's detail page.
+
+**Collection detail** (`study_collection_detail.html`): owner manages sources (add, edit, delete).
+
+**Audio:** `source.audio_url` is populated by the backfill script (`claude/backfill_audio_urls.py`). Two CDNs in use: `assets.churchofjesuschrist.org` (newer GC + hymns) and `media2.ldscdn.org` (scriptures recorded 2015). Selector must be `source[src$=".mp3"]` — NOT anchored to a specific CDN.
+
+**Pre-loaded collections** (populated via scripts in `claude/`, exported to `study_data.sql`):
+
+| Source | Collections | Audio |
+|--------|-------------|-------|
+| churchofjesuschrist.org | Old/New Testament, Book of Mormon, D&C, Pearl of Great Price | Yes (all chapters) |
+| churchofjesuschrist.org | General Conference 1971–2026 (one collection per conference) | GC 2018+ only |
+| churchofjesuschrist.org | Hymns for Home and Church (72 hymns, 1001–1210) | Yes |
+| churchofjesuschrist.org | General Handbook (41 chapters) | No |
+| churchofjesuschrist.org | Come, Follow Me 2026 — Old Testament (68 entries) | Yes |
+| sefaria.org | Tanakh (929 chapters, Sefaria ordering) | Yes (mechon-mamre.org) |
+| sefaria.org | Mishnah, Talmud, Tosefta, Midrash, Halakhah, Kabbalah, Liturgy, Jewish Thought, Chasidut, Musar, Responsa, Second Temple, Reference | No |
+| speeches.byu.edu | BYU Speeches — {Speaker Name} (257 speakers matching GC roster) | 87% |
+
+**Scraping scripts** (all in `claude/`):
+- `scrape_gospel_library.py` — churchofjesuschrist.org (flags: `--scripture-only`, `--gc-only`, `--hymns-only`, `--handbook-only`, `--cfm-only`)
+- `backfill_audio_urls.py` — async Playwright; fills `audio_url` for sources needing it (flags: `--concurrency N`, `--collection-like PATTERN`)
+- `scrape_sefaria.py` — sefaria.org via public API (flag: `--section SECTION_NAME`)
+- `scrape_byu_speeches.py` — speeches.byu.edu; matches GC speaker names, scrapes listing pages
+
+**DB export:** `study_data.sql` in project root — import to production after running migrations, then `UPDATE` the `userID` from dev admin UUID to production admin UUID.
 
 ---
 

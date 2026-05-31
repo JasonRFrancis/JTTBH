@@ -294,6 +294,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     8. Show/podcast detail page lists episodes grouped by season (shows) or flat (podcasts); each episode has a seen/unseen toggle
     9. The existing `podcast_bp` (RSS feed production) is a separate, unrelated feature
     10. Migrations: `20260529_media_tracker.sql` (creates tables, migrates book rows), `20260529_media_game_kinds.sql` (adds videogame/boardgame ENUM values), `20260529_user_preference_value_size.sql` (value column VARCHAR 100 → 500)
+  8. Study
+    1. Designated under the `study` area; requires `PERM_STUDY` (8192) — NOT in the default grant, must be assigned by admin
+    2. Allows users to subscribe to curated collections of sources and work through them one or more per day
+    3. Four database tables: `study_collection`, `study_source` (both insert-only), `study_subscription`, `study_completion` (both direct INSERT/DELETE)
+    4. Migrations: `20260530_study.sql`, `20260530_study_completion.sql`
+    5. Routes:
+       - `GET /index`, `GET /index/<date_str>` — daily reading view, grouped by subscription
+       - `GET /collections` — browse all collections; subscribe / unsubscribe
+       - `GET /collection/<collection_id>` — owner manages sources
+       - `POST /collection/create|update|delete/post` and `POST /source/create|update|delete/post`
+       - `POST /subscribe/post/<collection_id>`, `POST /unsubscribe/post/<subscription_id>`
+       - `POST /source/complete/post/<source_id>` — toggle completion for a date
+    6. Collections are pre-loaded via scraping scripts in `claude/`; see §4.8 for details on what is loaded
+    7. Audio: `source.audio_url` stores a direct MP3 URL; two CDNs in use:
+       - `assets.churchofjesuschrist.org` — newer Church content (GC 2018+, hymns, CFM)
+       - `media2.ldscdn.org` — scripture chapters (recorded 2015)
+       - `mechon-mamre.org/mp3/` — Hebrew Bible (Tanakh collection)
+       - `speeches.byu.edu/wp-content/uploads/` — BYU devotional talks
+    8. Pre-loaded content (all exported to `study_data.sql` for production import):
+       - LDS scriptures (all 5 standard works, 1,584 chapters with audio)
+       - General Conference 1971–April 2026 (110 conferences; audio for 2018+ only)
+       - Hymns for Home and Church (72 hymns with audio)
+       - General Handbook (41 chapters, no audio)
+       - Come, Follow Me 2026 — Old Testament (68 entries with audio)
+       - Sefaria.org: Tanakh (929 chapters, Hebrew audio), plus 13 other Jewish text collections
+       - BYU Speeches for 257 General Conference speakers (1,225 talks, 87% with audio)
 5. Future Features
   1. Show Tracker — **Implemented** as part of Media Tracker (§4.7)
   2. Movie Tracker — **Implemented** as part of Media Tracker (§4.7)
@@ -663,10 +689,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
       | 10  | 1024  | Chore         | Household chores (REQUIRED FEATURE) |
       | 11  | 2048  | Book          | Book tracker (REQUIRED FEATURE)     |
       | 12  | 4096  | Journal       | Daily questions & mood tracking     |
+      | 13  | 8192  | Study         | Daily study collections             |
       ```
     3. Standard Permission Sets
       1. Admin: 4294967295 (All permissions)
-      2. Default: 8190 (Bits 1-12: All features except admin)
+      2. Default: 8190 (Bits 1-12: All features except admin; Study bit 13 excluded — grant manually)
         1. Calculation: 2 + 4 + 8 + 16 + 32 + 64 + 128 + 256 + 512 + 1024 + 2048 + 4096 = 8190
     4. Permission Examples by Feature
       1. Admin: `read` = can see permissions and other admin functions; `write` = can change permissions and other admin functions
