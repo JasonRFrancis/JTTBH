@@ -154,6 +154,9 @@ POST /jason/todo/delete/post/<todoID>
 | | | `POST /source/create/post`, `POST /source/update/post/<id>`, `POST /source/delete/post/<id>` |
 | | | `POST /subscribe/post/<collection_id>`, `POST /unsubscribe/post/<subscription_id>`, `POST /subscription/update/post/<id>` |
 | | | `POST /source/complete/post/<source_id>` — toggle daily completion |
+| `quote_bp` | `/<u>/quote` | `GET /index` — list quotes; `?tag=` to filter |
+| | | `GET /add` — save form (prefilled from bookmarklet query params) |
+| | | `POST /create/post`, `POST /update/post/<quote_id>`, `POST /delete/post/<quote_id>` |
 
 ---
 
@@ -179,8 +182,9 @@ Stored as two bitvectors (`read`, `write`) in `user_permission`. Current = row w
 | 11 | 2048 | `PERM_BOOK` | Book tracker |
 | 12 | 4096 | `PERM_JOURNAL` | Journal/mood |
 | 13 | 8192 | `PERM_STUDY` | Study collections |
+| 14 | 16384 | `PERM_QUOTE` | Quote tracker |
 
-**Default on approval:** `read = write = 8190` (bits 1–12 set; admin bit 0 and study bit 13 excluded — grant `PERM_STUDY` manually)
+**Default on approval:** `read = write = 32766` (bits 1–14 set; admin bit 0 excluded)
 
 **Decorator usage:**
 ```python
@@ -476,6 +480,7 @@ def create(username: str):
 | Bookmark | Implemented | `bookmark_bp` | `bookmark_index.html`, `bookmark_read_later.html` |
 | Fitness | Implemented | `fitness_bp` | `fitness_index.html`, `fitness_log.html`, `fitness_settings.html` |
 | Study | Implemented | `study_bp` | `study_index.html`, `study_collections.html`, `study_collection_detail.html` |
+| Quote | Implemented | `quote_bp` | `quote_index.html`, `quote_add.html` |
 | Triage | Stubbed | `triage_bp` | `triage_index.html` |
 | Vacation | Implemented (read + create) | `vacation_bp` | `vacation_index.html` |
 | Appointment | Stubbed | `appointment_bp` | `appointment_index.html` |

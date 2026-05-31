@@ -1283,7 +1283,30 @@ CREATE TABLE `vacation` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+--
+-- Table structure for table `quote`
+--
 
+DROP TABLE IF EXISTS `quote`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `quote` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `quoteID` varchar(36) NOT NULL,
+  `userID` varchar(36) NOT NULL,
+  `body` text DEFAULT NULL,
+  `author` varchar(255) DEFAULT NULL,
+  `title` varchar(500) DEFAULT NULL,
+  `source` varchar(1000) DEFAULT NULL,
+  `tags` varchar(500) DEFAULT NULL,
+  `created` datetime NOT NULL,
+  `created_by` varchar(36) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_quote_id` (`quoteID`),
+  KEY `idx_quote_user` (`userID`),
+  CONSTRAINT `fk_quote_user` FOREIGN KEY (`userID`) REFERENCES `user` (`userID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

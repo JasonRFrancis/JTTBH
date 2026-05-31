@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% set area = 'quote' %}
+{% block title %}Save Quote{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/quote.css') }}">{% endblock %}
+
+{% block content %}
+<header class="quote-header">
+  <h1>Save Quote</h1>
+  <a href="{{ url_for('quote.index', username=username) }}" class="btn-cancel">Cancel</a>
+</header>
+
+<section class="quote-add-form">
+  <form method="post" action="{{ url_for('quote.create', username=username) }}">
+    <label for="body">Quote <span aria-hidden="true">*</span></label>
+    <textarea id="body" name="body" rows="5" required
+              placeholder="Enter the quote text…">{{ prefill.text }}</textarea>
+
+    <label for="author">Author</label>
+    <input id="author" name="author" type="text"
+           placeholder="e.g. C.S. Lewis"
+           value="{{ prefill.author }}">
+
+    <label for="title">Title / Work</label>
+    <input id="title" name="title" type="text"
+           placeholder="e.g. Mere Christianity"
+           value="{{ prefill.title }}">
+
+    <label for="source">Source URL</label>
+    <input id="source" name="source" type="url"
+           placeholder="https://…"
+           value="{{ prefill.source }}">
+
+    <label for="tags">Tags <span class="field-hint">(comma-separated)</span></label>
+    <input id="tags" name="tags" type="text"
+           placeholder="e.g. faith, leadership">
+
+    <div class="quote-add-actions">
+      <button type="submit" class="btn-save">Save Quote</button>
+      <a href="{{ url_for('quote.index', username=username) }}" class="btn-cancel-link">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

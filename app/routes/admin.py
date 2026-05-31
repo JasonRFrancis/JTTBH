@@ -11,7 +11,7 @@ GET  /<username>/admin/users
 
 POST /<username>/admin/users/approve/post/<user_id>
     Approve a pending user: set approval_status='approved', active=1,
-    insert default permissions (read=8190, write=8190), send approval email.
+    insert default permissions (read=32766, write=32766), send approval email.
 
 POST /<username>/admin/users/reject/post/<user_id>
     Reject a pending/approved user: set approval_status='rejected', active=0,
@@ -26,8 +26,8 @@ GET  /<username>/admin/log
 
 Default permissions on approval
 --------------------------------
-read  = 8190   (2+4+8+16+32+64+128+256+512+1024+2048+4096 – everything except admin)
-write = 8190
+read  = 32766  (2+4+8+16+32+64+128+256+512+1024+2048+4096+8192+16384 – everything except admin)
+write = 32766
 """
 
 import json
@@ -68,6 +68,7 @@ from app.services.decorators import (
     PERM_BOOK,
     PERM_JOURNAL,
     PERM_STUDY,
+    PERM_QUOTE,
 )
 
 
@@ -82,8 +83,8 @@ admin_bp = Blueprint('admin', __name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-DEFAULT_PERM_READ  = 16382   # all non-admin feature bits (bits 1–13)
-DEFAULT_PERM_WRITE = 16382
+DEFAULT_PERM_READ  = 32766   # all non-admin feature bits (bits 1–14)
+DEFAULT_PERM_WRITE = 32766
 
 # Ordered list of (bit, label) for the permissions checkbox matrix
 PERM_LABELS = [
@@ -101,6 +102,7 @@ PERM_LABELS = [
     (PERM_BOOK,        'Book'),
     (PERM_JOURNAL,     'Journal'),
     (PERM_STUDY,       'Study'),
+    (PERM_QUOTE,       'Quote'),
 ]
 
 
