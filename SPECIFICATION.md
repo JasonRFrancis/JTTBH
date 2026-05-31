@@ -228,9 +228,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
         2. `POST /<username>/admin/icon/update/post/<image_id>` — update icon in place
         3. `POST /<username>/admin/icon/delete/post/<image_id>` — hard delete icon
     4. Access Log: `GET /<username>/admin/log`
-      1. Shows the 200 most recent rows from the `log` table
+      1. Shows up to 500 rows from the `log` table, newest first
       2. Columns displayed: id, username, resource (URL path), GET params, POST data, IP, timestamp
-      3. The `log` table schema uses: `userid`, `username`, `resource`, `get`, `post`, `ip`, `user_agent`, `created`
+      3. Filter controls (query params): `q` (resource substring), `user` (exact username), `from`/`to` (date range). "Clear" link appears when any filter is active
+      4. Below the request table: journalctl full output (last 150 lines) when running on Linux; absent on macOS dev
+      5. The `log` table schema uses: `userid`, `username`, `resource`, `get`, `post`, `ip`, `user_agent`, `created`
+    5. Admin Dashboard: `GET /<username>/admin/dashboard`
+      1. Stat cards: total users (with pending count), requests today / last 7 days / all-time
+      2. Server health section: uptime, load average (1/5/15 min), memory %, disk % — read from `/proc/` on Linux; "Linux only" notice on macOS dev
+      3. 30-day request volume bar chart rendered by vanilla JS Canvas; data embedded as JSON in `data-labels`/`data-values` attributes on the `<canvas>` element
+      4. Top 15 pages table (last 30 days, `/static/` requests excluded)
+      5. Content counts table: media items by kind, todo items, habits
+    6. Error Log: `GET /<username>/admin/errors`
+      1. Runs `journalctl -u jttbh -p err -n 500 --no-pager` — priority `err` and above (error, critical, alert, emergency)
+      2. Output displayed in a dark scrollable `<pre>` block with a red left border
+      3. On non-Linux hosts (macOS dev), shows an explanatory message instead of attempting journalctl
+      4. Always renders the page (unlike the log page server-log section, which is hidden when unavailable)
+    7. Admin nav link order: **Dashboard | Users | Icons | Log | Errors**. The footer "Admin" link points to the dashboard.
   6. Fitness Program
     1. Designated under the `fitness` area using the `fitness_*` database tables; requires `PERM_FITNESS`
     2. Exercise Types
@@ -269,15 +283,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
        4. "+ Add exercise" form per day: selects from the exercise catalog; shows strength or cardio fields based on exercise type
        5. Exercise catalog section: "+ New Exercise" form with name, type, muscle group, equipment type, description, and video URL
        6. `fitness_exercise` (the catalog) uses direct `UPDATE` — it is reference data shared across all users, not insert-only
+  7. Media Tracker
+    1. Designated under the `media` area using the `media` and `media_episode` database tables; requires `PERM_BOOK` (2048)
+    2. Tracks media consumption across six kinds: shows, movies, podcasts, books, video games, board games
+    3. Statuses: `want`, `in_progress`, `done`, `dismiss`
+    4. Index page groups items by kind, then by status within each kind
+    5. TMDB integration (`app/services/tmdb.py`): show/movie search (typeahead autocomplete), streaming service info, next release date, full episode list by season. Requires `TMDB_API_KEY` environment variable
+    6. Podcast kind: RSS feed URL stored as `external_id`; title/creator/cover fetched automatically from the feed on create. Episodes stored in `media_episode`
+    7. Steam sync (`app/services/steam.py`): `POST /steam/sync/post` imports the user's Steam library; credentials (`steam_api_key`, `steam_id`) saved in `user_preference`. Games with play time → `in_progress`; unplayed → `want`. Skips games already present. First error text included in flash message if any imports fail
+    8. Show/podcast detail page lists episodes grouped by season (shows) or flat (podcasts); each episode has a seen/unseen toggle
+    9. The existing `podcast_bp` (RSS feed production) is a separate, unrelated feature
+    10. Migrations: `20260529_media_tracker.sql` (creates tables, migrates book rows), `20260529_media_game_kinds.sql` (adds videogame/boardgame ENUM values), `20260529_user_preference_value_size.sql` (value column VARCHAR 100 → 500)
 5. Future Features
-  1. Show Tracker
-    1. Tracks the shows the user would like to watch
-    2. Includes information (including links) to streaming services where those shows can be watched
-    3. Uses API calls to an external service to track when shows are available or upcoming
-  2. Movie Tracker
-    1. Tracks movies the user has seen and would like to watch
-    2. Thumbs-up or thumbs-down rating
-    3. Includes the possibility for a short review
+  1. Show Tracker — **Implemented** as part of Media Tracker (§4.7)
+  2. Movie Tracker — **Implemented** as part of Media Tracker (§4.7)
   3. Project List
     1. Designated under the `project` area using the `project` database tables
     2. A page that allows for tracking and brainstorming about longer-term projects
@@ -317,9 +336,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     3. Chores (in the `chore` table) are organized into lists, associated with a household (stored in the `chore_list` table)
     4. Frequency is designated in the `chore_listItemDay` and `chore_listItemMonth` tables
     5. Chores become available to perform when they enter the `chore_assigned` table. They can be assigned by household members, or completed by the user (whether or not it was assigned)
-  10. Book Tracker
-    1. Designated by `book` and stored in the `book` table
-    2. For now: a form to add a new book and a list of books with a way to indicate the user has finished reading it
+  10. Book Tracker — **Implemented** as part of Media Tracker (§4.7); books are a `kind` within the `media` table
   11. Daily Questions
     1. Part of the `journal` designation, stored in the `journal_answer` and `journal_question` tables
     2. Provides a prompt per day and allows the user to input a response
@@ -886,7 +903,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   4. Key Integrations
     1. Google APIs: Gmail (readonly) and Calendar (readonly) for triage functionality
     2. Email System: SMTP notifications for user approval workflow
-    3. TVDB API: Television database for media tracking features
+    3. TMDB API (`api.themoviedb.org/3`): Show and movie search, streaming info, episode lists. Key via `TMDB_API_KEY` env var; implemented in `app/services/tmdb.py`
+    4. Steam Web API (`api.steampowered.com`): Imports user's game library via `IPlayerService/GetOwnedGames/v0001/`. Implemented in `app/services/steam.py`; credentials stored in `user_preference`
 15. Database Migrations
   1. Initial Setup
     1. Create database: `CREATE DATABASE jttbh CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`

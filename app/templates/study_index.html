@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Study — {{ target_date | format_date_long }}{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}">{% endblock %}
+
+{% block content %}
+<header>
+  <h1>Study</h1>
+  <nav class="study-nav" aria-label="Study navigation">
+    <a href="{{ url_for('study.collections', username=username) }}">Collections</a>
+  </nav>
+  <nav class="date-nav" aria-label="Date navigation">
+    <a class="btn-nav" href="{{ url_for('study.index', username=username, date_str=prev_date.isoformat()) }}" aria-label="Previous day">&#8592;</a>
+    <span class="date-label">{{ target_date | format_date_long }}</span>
+    <a class="btn-nav" href="{{ url_for('study.index', username=username, date_str=next_date.isoformat()) }}" aria-label="Next day">&#8594;</a>
+    {% if target_date != today %}
+    <a class="btn-today" href="{{ url_for('study.index', username=username) }}">Today</a>
+    {% endif %}
+  </nav>
+</header>
+
+{% if not has_subscriptions %}
+<p class="study-empty">No subscriptions yet. <a href="{{ url_for('study.collections', username=username) }}">Browse collections</a> to subscribe.</p>
+{% elif not day_sources %}
+<p class="study-empty">Nothing scheduled for this day.</p>
+{% else %}
+{% for group in day_sources %}
+<section class="study-collection-section" aria-labelledby="col-{{ loop.index }}">
+  <h2 id="col-{{ loop.index }}">{{ group.collection_name }}</h2>
+  <ul class="source-list" role="list">
+    {% for source in group.sources %}
+    {% set done = source.sourceID in completions %}
+    <li class="source-item{% if done %} source-item--done{% endif %}">
+      <div class="source-top">
+        <form method="post" action="{{ url_for('study.source_complete', username=username, source_id=source.sourceID) }}">
+          <input type="hidden" name="date" value="{{ target_date.isoformat() }}">
+          <button type="submit" class="complete-btn{% if done %} complete-btn--done{% endif %}"
+                  aria-label="{% if done %}Mark incomplete{% else %}Mark complete{% endif %}">{% if done %}&#10003;{% else %}&#9675;{% endif %}</button>
+        </form>
+        {% if source.category %}<span class="source-category">{{ source.category }}</span>{% endif %}
+        <div class="source-title">
+          {% if source.url %}
+          <a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.title }}</a>
+          {% else %}
+          {{ source.title }}
+          {% endif %}
+        </div>
+      </div>
+      {% if source.subtitle or source.author %}
+      <div class="source-meta">
+        {% if source.subtitle %}<p class="source-subtitle">{{ source.subtitle }}</p>{% endif %}
+        {% if source.author %}<p class="source-author">{{ source.author }}</p>{% endif %}
+      </div>
+      {% endif %}
+      {% if source.audio_url %}
+      <div class="source-audio">
+        <a class="audio-link" href="{{ source.audio_url }}" target="_blank" rel="noopener noreferrer">
+          &#9654; Audio{% if source.audio_length %} <span class="audio-length">({{ source.audio_length }})</span>{% endif %}
+        </a>
+      </div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endfor %}
+{% endif %}
+{% endblock %}

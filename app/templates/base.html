@@ -69,6 +69,9 @@
       {% if has_perm(4096) %}
       <a href="{{ url_for('journal.index', username=session.username) }}"{% if area == 'journal' %} aria-current="page"{% endif %}>Journal</a>
       {% endif %}
+      {% if has_perm(8192) %}
+      <a href="{{ url_for('study.index', username=session.username) }}"{% if area == 'study' %} aria-current="page"{% endif %}>Study</a>
+      {% endif %}
       {% if has_perm(2) %}
       <a href="{{ url_for('podcast.subscription', username=session.username) }}"{% if area == 'podcast' %} aria-current="page"{% endif %}>Podcast</a>
       {% endif %}
@@ -94,7 +97,8 @@
       FITNESS:     512,
       CHORE:       1024,
       BOOK:        2048,
-      JOURNAL:     4096
+      JOURNAL:     4096,
+      STUDY:       8192
     };
     {% if session.get('user_id') %}
     const SESSION = {

@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}{{ collection.name }} — Sources{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}">{% endblock %}
+
+{% block content %}
+<header>
+  <nav class="study-nav" aria-label="Study navigation">
+    <a href="{{ url_for('study.index', username=username) }}">Today</a>
+    <a href="{{ url_for('study.collections', username=username) }}">Collections</a>
+  </nav>
+  <div class="collection-detail-header">
+    <h1>{{ collection.name }}</h1>
+    {% if collection.description %}<p>{{ collection.description }}</p>{% endif %}
+    <p><span class="badge-mode">{{ 'Rate-based' if collection.mode == 'rate' else 'Calendar-pinned' }}</span></p>
+  </div>
+
+  <details>
+    <summary>Edit collection</summary>
+    <form method="post" action="{{ url_for('study.collection_update', username=username, collection_id=collection.collectionID) }}"
+          style="margin-top:0.75rem; max-width:480px; display:flex; flex-direction:column; gap:0.75rem;">
+      <div class="form-row">
+        <label for="edit-name">Name <span aria-hidden="true">*</span></label>
+        <input type="text" id="edit-name" name="name" required maxlength="200" value="{{ collection.name }}">
+      </div>
+      <div class="form-row">
+        <label for="edit-desc">Description</label>
+        <textarea id="edit-desc" name="description" rows="2">{{ collection.description or '' }}</textarea>
+      </div>
+      <div class="form-row">
+        <label for="edit-mode">Delivery</label>
+        <select id="edit-mode" name="mode">
+          <option value="rate"{% if collection.mode == 'rate' %} selected{% endif %}>Rate-based</option>
+          <option value="calendar"{% if collection.mode == 'calendar' %} selected{% endif %}>Calendar-pinned</option>
+        </select>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+    <form method="post" action="{{ url_for('study.collection_delete', username=username, collection_id=collection.collectionID) }}"
+          onsubmit="return confirm('Delete collection \'{{ collection.name }}\'? This cannot be undone.')">
+      <button type="submit" class="btn btn-danger" style="margin-top:0.5rem;">Delete Collection</button>
+    </form>
+  </details>
+</header>
+
+<section aria-labelledby="sources-heading">
+  <h2 id="sources-heading">Sources ({{ sources | length }})</h2>
+
+  {% if sources %}
+  <ul class="source-admin-list" role="list">
+    {% for source in sources %}
+    <li class="source-admin-item">
+      <details>
+        <summary>
+          {% if source.category %}<span class="source-category">{{ source.category }}</span>{% endif %}
+          {{ source.title }}
+          <span style="color:var(--color-muted,#999);font-size:0.75rem;font-weight:400;margin-left:auto;">#{{ source.order_by }}</span>
+        </summary>
+        <form method="post"
+              action="{{ url_for('study.source_update', username=username, source_id=source.sourceID) }}"
+              class="source-edit-form">
+          <div class="form-row">
+            <label for="cat-{{ source.sourceID }}">Category</label>
+            <input type="text" id="cat-{{ source.sourceID }}" name="category" maxlength="100"
+                   value="{{ source.category or '' }}">
+          </div>
+          <div class="form-row">
+            <label for="title-{{ source.sourceID }}">Title <span aria-hidden="true">*</span></label>
+            <input type="text" id="title-{{ source.sourceID }}" name="title" required maxlength="500"
+                   value="{{ source.title }}">
+          </div>
+          <div class="form-row">
+            <label for="sub-{{ source.sourceID }}">Subtitle</label>
+            <input type="text" id="sub-{{ source.sourceID }}" name="subtitle" maxlength="500"
+                   value="{{ source.subtitle or '' }}">
+          </div>
+          <div class="form-row">
+            <label for="author-{{ source.sourceID }}">Author</label>
+            <input type="text" id="author-{{ source.sourceID }}" name="author" maxlength="200"
+                   value="{{ source.author or '' }}">
+          </div>
+          <div class="form-row">
+            <label for="url-{{ source.sourceID }}">URL</label>
+            <input type="url" id="url-{{ source.sourceID }}" name="url" maxlength="1000"
+                   value="{{ source.url or '' }}">
+          </div>
+          <div class="form-row">
+            <label for="audio-{{ source.sourceID }}">Audio URL</label>
+            <input type="url" id="audio-{{ source.sourceID }}" name="audio_url" maxlength="1000"
+                   value="{{ source.audio_url or '' }}">
+          </div>
+          <div class="form-row">
+            <label for="len-{{ source.sourceID }}">Audio length</label>
+            <input type="text" id="len-{{ source.sourceID }}" name="audio_length" maxlength="20"
+                   placeholder="e.g. 42:15" value="{{ source.audio_length or '' }}">
+          </div>
+          <div class="form-row">
+            <label for="order-{{ source.sourceID }}">Order</label>
+            <input type="number" id="order-{{ source.sourceID }}" name="order_by" min="0"
+                   value="{{ source.order_by }}">
+          </div>
+          {% if collection.mode == 'calendar' %}
+          <div class="form-row">
+            <label for="sched-{{ source.sourceID }}">Date</label>
+            <input type="date" id="sched-{{ source.sourceID }}" name="scheduled_date"
+                   value="{{ source.scheduled_date.isoformat() if source.scheduled_date else '' }}">
+          </div>
+          {% endif %}
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+        <form method="post"
+              action="{{ url_for('study.source_delete', username=username, source_id=source.sourceID) }}"
+              onsubmit="return confirm('Delete \'{{ source.title }}\'?')">
+          <button type="submit" class="btn btn-danger" style="margin-top:0.4rem;">Delete</button>
+        </form>
+      </details>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="study-empty">No sources yet. Add one below.</p>
+  {% endif %}
+</section>
+
+<section aria-labelledby="add-source-heading">
+  <h2 id="add-source-heading">Add Source</h2>
+  <form method="post" action="{{ url_for('study.source_create', username=username) }}" class="add-source-form">
+    <input type="hidden" name="collection_id" value="{{ collection.collectionID }}">
+    <div class="form-row">
+      <label for="new-cat">Category</label>
+      <input type="text" id="new-cat" name="category" maxlength="100" placeholder="e.g. Philosophy">
+    </div>
+    <div class="form-row">
+      <label for="new-title">Title <span aria-hidden="true">*</span></label>
+      <input type="text" id="new-title" name="title" required maxlength="500">
+    </div>
+    <div class="form-row">
+      <label for="new-subtitle">Subtitle</label>
+      <input type="text" id="new-subtitle" name="subtitle" maxlength="500">
+    </div>
+    <div class="form-row">
+      <label for="new-author">Author</label>
+      <input type="text" id="new-author" name="author" maxlength="200">
+    </div>
+    <div class="form-row">
+      <label for="new-url">URL</label>
+      <input type="url" id="new-url" name="url" maxlength="1000">
+    </div>
+    <div class="form-row">
+      <label for="new-audio">Audio URL</label>
+      <input type="url" id="new-audio" name="audio_url" maxlength="1000">
+    </div>
+    <div class="form-row">
+      <label for="new-len">Audio length</label>
+      <input type="text" id="new-len" name="audio_length" maxlength="20" placeholder="e.g. 42:15">
+    </div>
+    <div class="form-row">
+      <label for="new-order">Order</label>
+      <input type="number" id="new-order" name="order_by" min="0" value="{{ sources | length }}">
+    </div>
+    {% if collection.mode == 'calendar' %}
+    <div class="form-row">
+      <label for="new-sched">Date</label>
+      <input type="date" id="new-sched" name="scheduled_date">
+    </div>
+    {% endif %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Add Source</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

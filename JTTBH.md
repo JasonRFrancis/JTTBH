@@ -113,7 +113,7 @@ POST /jason/todo/delete/post/<todoID>
 |-----------|-----------|----------------|
 | `auth_bp` | `/auth` | `GET /login`, `GET /login/google`, `GET /oauth2callback`, `GET /logout`, `GET /pending-approval` |
 | `dashboard_bp` | `/<u>/dashboard` | `GET /index`, `GET /index/json` |
-| `admin_bp` | `/<u>/admin` | `GET /users`, `GET /log`, `GET /icons` |
+| `admin_bp` | `/<u>/admin` | `GET /dashboard`, `GET /users`, `GET /log`, `GET /icons`, `GET /errors` |
 | | | `POST /users/approve/post/<user_id>`, `POST /users/reject/post/<user_id>`, `POST /users/permissions/post/<user_id>` |
 | | | `POST /icon/create/post`, `POST /icon/update/post/<image_id>`, `POST /icon/delete/post/<image_id>` |
 | `user_bp` | `/<u>` | `GET /settings`, `POST /settings/post` |
@@ -140,6 +140,11 @@ POST /jason/todo/delete/post/<todoID>
 | `chore_bp` | `/<u>/chore` | `GET /index` |
 | `book_bp` | `/<u>/book` | `GET /index` |
 | | | `POST /create/post`, `POST /update/post/<book_id>`, `POST /finish/post/<book_id>` |
+| `media_bp` | `/<u>/media` | `GET /index`, `GET /detail/<media_id>`, `GET /settings`, `GET /search/json` |
+| | | `POST /create/post`, `POST /update/post/<media_id>`, `POST /delete/post/<media_id>` |
+| | | `POST /sync/post/<media_id>` — re-sync TMDB/RSS metadata for one item |
+| | | `POST /episode/seen/post/<episode_id>` — toggle episode seen/unseen |
+| | | `POST /steam/sync/post` — import Steam library as videogame items |
 | `journal_bp` | `/<u>/journal` | `GET /index`, `GET /index/<date_str>`, `GET /questions`, `GET /mood/settings` |
 | | | `POST /answer/post/<question_id>`, `POST /mood/post`, `POST /question/create/post`, `POST /mood/category/create/post`, `POST /mood/value/create/post` |
 
@@ -270,6 +275,17 @@ Current row = highest `id` per `userID`.
 
 **`book`**  
 `id`, `bookID`, `userID`, `title` (NULL = soft-deleted), `author`, `status` ENUM('reading','finished','abandoned'), `started` (date), `finished` (date), `notes` (TEXT), `created`, `created_by`
+
+**`media`** — insert-only (title NULL = soft-deleted); uses `PERM_BOOK` (2048)  
+`id`, `mediaID` (UUID), `userID`, `title` VARCHAR(500, NULL = soft-deleted), `kind` ENUM('book','movie','show','podcast','videogame','boardgame'), `creator` VARCHAR(255), `status` ENUM('want','in_progress','done','dismiss'), `rating` TINYINT (1–5), `review` TEXT, `external_id` VARCHAR(500) (TMDB int ID, RSS feed URL, or `steam:<appid>`), `cover_url` VARCHAR(500), `streaming` VARCHAR(255), `next_date` DATE (next episode/release date), `started` DATE, `finished` DATE, `created`, `created_by`
+
+**`media_episode`** — direct UPDATE for `seen` (not insert-only)  
+`id`, `episodeID` (UUID, UNIQUE KEY), `mediaID` (FK), `title` VARCHAR(500), `season` SMALLINT (NULL for podcasts), `episode_number` SMALLINT, `air_date` DATE, `seen` TINYINT DEFAULT 0, `description` TEXT, `external_id` VARCHAR(500) (TMDB episode ID or RSS guid), `created`, `created_by`
+
+**`user_preference`** — key-value store; current row = highest `id` per `(userID, preference)`  
+`id`, `userID`, `preference` (key string), `value` VARCHAR(500), `created`, `created_by`  
+Known keys: `timezone`, `steam_api_key`, `steam_id`, `todo_list1_name` … `todo_list4_name`  
+⚠ `value` was VARCHAR(100) before migration `20260529_user_preference_value_size.sql`.
 
 **`fitness_bodyWeight`**  
 `id`, `weightID` (UUID), `userID`, `weight` DECIMAL(5,1), `unit` ENUM('lbs','kg') DEFAULT 'lbs', `recorded` (date), `created`, `created_by`  
@@ -420,12 +436,15 @@ def create(username: str):
 | Dashboard | Implemented | `dashboard_bp` | `dashboard_index.html` |
 | Todo | Implemented | `todo_bp` | `todo_index.html`, `todo_search.html`, `_todo_item.html` |
 | Habit | Implemented | `habit_bp` | `habit_index.html`, `habit_heatmap.html`, `habit_settings.html` |
+| Admin (dashboard) | Implemented | `admin_bp` | `admin_dashboard.html` |
 | Admin (users) | Implemented | `admin_bp` | `admin_users.html` |
 | Admin (icons) | Implemented | `admin_bp` | `admin_icons.html` |
 | Admin (log) | Implemented | `admin_bp` | `admin_log.html` |
+| Admin (errors) | Implemented | `admin_bp` | `admin_errors.html` |
 | User settings | Implemented | `user_bp` | `user_settings.html` |
 | Project | Implemented | `project_bp` | `project_index.html`, `project_view.html` |
-| Book | Implemented | `book_bp` | `book_index.html` |
+| Media Tracker | Implemented | `media_bp` | `media_index.html`, `media_detail.html`, `media_settings.html` |
+| Book (legacy) | Implemented | `book_bp` | `book_index.html` |
 | Journal | Implemented | `journal_bp` | `journal_index.html`, `journal_questions.html`, `journal_mood_settings.html` |
 | Bookmark | Implemented | `bookmark_bp` | `bookmark_index.html`, `bookmark_read_later.html` |
 | Fitness | Implemented | `fitness_bp` | `fitness_index.html`, `fitness_log.html`, `fitness_settings.html` |
@@ -462,10 +481,18 @@ applies = bool(habit['dayweek'] & day_bit)
 ### E3. Admin
 
 - All admin routes require `PERM_ADMIN` read (and write for mutations).
-- Admin nav: **Users | Icons | Log** — consistent across all three admin pages.
-- **Users page:** Three sections: Pending Approval, Approved Users, Rejected. Pending shows approve/reject buttons. Approved shows permission bitmask badges + "Edit Permissions" toggle form + "Revoke" button. Rejected shows approve button only.
-- **Icons page:** Add form (name, description, SVG code textarea with live preview) + grid of existing icons with inline edit/delete per icon.
-- **Log page:** Table of last 200 `log` rows: id, user, resource, GET params, POST params, IP, time.
+- Admin nav: **Dashboard | Users | Icons | Log | Errors** — consistent across all five admin pages.
+- Footer "Admin" link points to `admin.dashboard`.
+- **Dashboard page** (`GET /dashboard`):
+  - Stat cards: total users (+ pending count), requests today / last 7 days / all-time
+  - Server health: uptime, load average (1/5/15 min), memory %, disk % — read from `/proc/` on Linux; shows "Linux only" message on macOS dev
+  - 30-day request volume bar chart — vanilla JS Canvas, data embedded as JSON in `data-labels`/`data-values` attributes
+  - Top 15 pages table (last 30 days, static assets excluded)
+  - Content counts: media by kind, todos, habits
+- **Users page** (`GET /users`): Three sections: Pending Approval, Approved Users, Rejected. Pending shows approve/reject buttons. Approved shows permission bitmask badges + "Edit Permissions" toggle form + "Revoke" button. Rejected shows approve button only.
+- **Icons page** (`GET /icons`): Add form (name, description, SVG code textarea with live preview) + grid of existing icons with inline edit/delete per icon.
+- **Log page** (`GET /log`): Up to 500 `log` rows with filter controls (resource substring, username, date range). Below the table: journalctl full output (last 150 lines) when available. Filter state shown in URL query params; "Clear" link appears when any filter is active.
+- **Errors page** (`GET /errors`): `journalctl -u jttbh -p err -n 500 --no-pager` output — priority `err` and above (error, critical, alert, emergency). Displayed in a dark scrollable `<pre>` with a red left border. Shows an explanatory message when journalctl is unavailable (macOS dev).
 - SVG icons are stored as raw SVG text in `svg.svg`; rendered with `{{ icon.svg | safe }}`.
 
 ### E4. Todo
@@ -537,6 +564,47 @@ applies = bool(habit['dayweek'] & day_bit)
 **`fitness_log` table** (one row per workout session):
 `id`, `logID` (UUID), `fitnessID` (FK), `userID`, `log_date` (date), `location` ENUM(`'gym'`,`'home'`,`'other'`), `start_time` (datetime), `end_time` (datetime or NULL), `created`, `created_by`
 
+### E7. Media Tracker
+
+Tracks media consumption across six kinds: **show**, **movie**, **podcast**, **book**, **videogame**, **boardgame**. Uses `PERM_BOOK` (2048). Blueprint: `media_bp` at `/<username>/media`.
+
+**Kinds and statuses:**
+
+| Kind | Label | External data source |
+|------|-------|----------------------|
+| `show` | Shows | TMDB (`/3/search/tv`, `/3/tv/<id>`, `/3/tv/<id>/season/<n>`) |
+| `movie` | Movies | TMDB (`/3/search/movie`, `/3/movie/<id>`) |
+| `podcast` | Podcasts | RSS feed URL (stored as `external_id`) |
+| `book` | Books | Manual entry |
+| `videogame` | Video Games | Steam API or manual entry |
+| `boardgame` | Board Games | Manual entry |
+
+Statuses: `want`, `in_progress`, `done`, `dismiss`
+
+**Index page** — groups by kind (KIND_ORDER: show → movie → podcast → book → videogame → boardgame), then by status within each kind. Add form has TMDB autocomplete for show/movie (debounced, fires after 400 ms), hidden for other kinds. Podcast title/creator/cover auto-populated from RSS feed on create.
+
+**Detail page** — cover image, metadata (creator, status, rating 1–5, review, streaming, next release date). Edit form. Episode list for shows (grouped by season, each with a seen/unseen toggle) and podcasts (flat list).
+
+**Settings page** — Steam library sync form: `steam_api_key` and `steam_id` (17-digit), saved to `user_preference`. Submit imports the full Steam library: games with `playtime_forever > 0` → `in_progress`; unplayed → `want`. Skips games already present (matched by `external_id = 'steam:<appid>'`). Reports imported / already present / failed counts; first error text included in flash if any failures.
+
+**TMDB integration** (`app/services/tmdb.py`):
+- `TMDB_API_KEY` from `app.config['TMDB_API_KEY']` (env var)
+- `search(query, kind)` — typeahead suggestions
+- `show_details(tmdb_id)` → streaming, next_date, cover_url, season count
+- `show_season(tmdb_id, season)` → episode list
+- `movie_details(tmdb_id)` → cover_url, next_date (sequel release)
+
+**Steam integration** (`app/services/steam.py`):
+- `get_owned_games(api_key, steam_id)` → list of `{appid, name, playtime_forever, cover_url}`
+- Cover URL: `https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/header.jpg`
+- Credentials stored in `user_preference` (`steam_api_key`, `steam_id`); `value` column is VARCHAR(500)
+
+**Model** (`app/models/media_model.py`) — module-level functions (not a class):
+- `get_all(user_id)`, `get_one(user_id, media_id)`, `create(...)`, `update(user_id, media, **overrides)`, `soft_delete(user_id, media_id)`
+- `get_episodes(media_id)`, `upsert_episode(...)` (preserves `seen` on update via external_id lookup), `set_seen(episode_id, seen)`
+
+**Podcast field note:** The existing `podcast_bp` generates RSS *production* feeds (audio file collections). The media tracker's podcast support is *consumer-side* — subscribing to external RSS feeds to track episodes. These are entirely separate features.
+
 ---
 
 ## Part F — Operations
@@ -574,6 +642,7 @@ applies = bool(habit['dayweek'] & day_bit)
 | `SMTP_PASSWORD` | Yes | Email sender password |
 | `SMTP_FROM` | Yes | From address in approval emails |
 | `ADMIN_EMAIL` | Yes | Recipient for admin alerts |
+| `TMDB_API_KEY` | Yes (for media) | TMDB API key for show/movie search and metadata sync |
 
 ### F3. Infrastructure
 

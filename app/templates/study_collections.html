@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Study Collections{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}">{% endblock %}
+
+{% block content %}
+<header>
+  <h1>Study Collections</h1>
+  <nav class="study-nav" aria-label="Study navigation">
+    <a href="{{ url_for('study.index', username=username) }}">Today</a>
+  </nav>
+</header>
+
+<section aria-labelledby="collections-heading">
+  <h2 id="collections-heading">All Collections ({{ collections | length }})</h2>
+
+  {% if collections %}
+  <ul class="collection-list" role="list">
+    {% for col in collections %}
+    {% set sub = user_subs.get(col.collectionID) %}
+    <li class="collection-card">
+      <div class="collection-card-header">
+        <div>
+          <p class="collection-name">
+            {% if col.userID == session.user_id %}
+            <a href="{{ url_for('study.collection_detail', username=username, collection_id=col.collectionID) }}">{{ col.name }}</a>
+            {% else %}
+            {{ col.name }}
+            {% endif %}
+          </p>
+          {% if col.description %}<p class="collection-desc">{{ col.description }}</p>{% endif %}
+          <p class="collection-owner">by {{ col.owner_username }}{% if col.userID == session.user_id %} (you){% endif %}</p>
+        </div>
+        <div class="collection-badges">
+          <span class="badge-mode">{{ 'Rate' if col.mode == 'rate' else 'Calendar' }}</span>
+          <span class="badge-count">{{ col.source_count }} source{{ '' if col.source_count == 1 else 's' }}</span>
+        </div>
+      </div>
+
+      <div class="collection-actions">
+        {% if sub %}
+        <span class="sub-info">
+          Subscribed
+          {% if col.mode == 'rate' %}&mdash; {{ sub.per_day }} per day, starting {{ sub.start_date }}{% endif %}
+        </span>
+        <details>
+          <summary>Edit subscription</summary>
+          <form method="post" action="{{ url_for('study.subscription_update', username=username, subscription_id=sub.subscriptionID) }}" class="sub-edit-form">
+            {% if col.mode == 'rate' %}
+            <div class="form-row">
+              <label for="per-day-{{ sub.subscriptionID }}">Per day</label>
+              <input type="number" id="per-day-{{ sub.subscriptionID }}" name="per_day" min="1" max="20"
+                     value="{{ sub.per_day }}" required>
+            </div>
+            <div class="form-row">
+              <label for="start-{{ sub.subscriptionID }}">Start date</label>
+              <input type="date" id="start-{{ sub.subscriptionID }}" name="start_date"
+                     value="{{ sub.start_date }}">
+            </div>
+            {% else %}
+            <input type="hidden" name="per_day" value="1">
+            <input type="hidden" name="start_date" value="{{ sub.start_date }}">
+            {% endif %}
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+          <form method="post" action="{{ url_for('study.unsubscribe', username=username, subscription_id=sub.subscriptionID) }}"
+                onsubmit="return confirm('Unsubscribe from \'{{ col.name }}\'?')">
+            <button type="submit" class="btn btn-danger">Unsubscribe</button>
+          </form>
+        </details>
+        {% else %}
+        <details>
+          <summary>Subscribe</summary>
+          <form method="post" action="{{ url_for('study.subscribe', username=username, collection_id=col.collectionID) }}" class="sub-edit-form">
+            {% if col.mode == 'rate' %}
+            <div class="form-row">
+              <label for="new-per-day-{{ col.collectionID }}">Per day</label>
+              <input type="number" id="new-per-day-{{ col.collectionID }}" name="per_day" min="1" max="20" value="1" required>
+            </div>
+            <div class="form-row">
+              <label for="new-start-{{ col.collectionID }}">Start date</label>
+              <input type="date" id="new-start-{{ col.collectionID }}" name="start_date"
+                     value="{{ today.isoformat() }}">
+            </div>
+            {% else %}
+            <input type="hidden" name="per_day" value="1">
+            <input type="hidden" name="start_date" value="{{ today.isoformat() }}">
+            {% endif %}
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Subscribe</button>
+            </div>
+          </form>
+        </details>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>No collections yet. Create one below.</p>
+  {% endif %}
+</section>
+
+<section aria-labelledby="create-heading">
+  <h2 id="create-heading">Create Collection</h2>
+  <form method="post" action="{{ url_for('study.collection_create', username=username) }}" class="create-collection-form">
+    <div class="form-row">
+      <label for="new-name">Name <span aria-hidden="true">*</span></label>
+      <input type="text" id="new-name" name="name" required maxlength="200" placeholder="e.g. Philosophy">
+    </div>
+    <div class="form-row">
+      <label for="new-desc">Description</label>
+      <textarea id="new-desc" name="description" rows="2" placeholder="Optional description"></textarea>
+    </div>
+    <div class="form-row">
+      <label for="new-mode">Delivery</label>
+      <select id="new-mode" name="mode">
+        <option value="rate">Rate-based (N per day, cycling)</option>
+        <option value="calendar">Calendar-pinned (by date)</option>
+      </select>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Create Collection</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

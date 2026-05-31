@@ -67,6 +67,7 @@ from app.services.decorators import (
     PERM_CHORE,
     PERM_BOOK,
     PERM_JOURNAL,
+    PERM_STUDY,
 )
 
 
@@ -81,8 +82,8 @@ admin_bp = Blueprint('admin', __name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-DEFAULT_PERM_READ  = 8190   # all non-admin feature bits
-DEFAULT_PERM_WRITE = 8190
+DEFAULT_PERM_READ  = 16382   # all non-admin feature bits (bits 1–13)
+DEFAULT_PERM_WRITE = 16382
 
 # Ordered list of (bit, label) for the permissions checkbox matrix
 PERM_LABELS = [
@@ -99,6 +100,7 @@ PERM_LABELS = [
     (PERM_CHORE,       'Chore'),
     (PERM_BOOK,        'Book'),
     (PERM_JOURNAL,     'Journal'),
+    (PERM_STUDY,       'Study'),
 ]
 
 
