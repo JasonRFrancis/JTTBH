@@ -93,10 +93,19 @@
         for (let i = 0; i < perDay; i++) out.push(filtered[(si + i) % filtered.length]);
         return out;
       } else {
-        // Every N days (perDay is negative: -2 = every other day, -7 = weekly)
-        const n = Math.abs(perDay);
-        if (days % n !== 0) return [];
-        const idx = Math.floor(days / n);
+        // Alternating days
+        // -2 = even days: item on days 0, 2, 4… (starts on start_date)
+        // -1 = odd days:  item on days 1, 3, 5… (starts one day after start_date)
+        let idx;
+        if (perDay === -2) {
+          if (days % 2 !== 0) return [];
+          idx = Math.floor(days / 2);
+        } else if (perDay === -1) {
+          if (days % 2 !== 1) return [];
+          idx = Math.floor((days - 1) / 2);
+        } else {
+          return [];
+        }
         if (!repeatOn) {
           if (idx >= filtered.length) return [];
           return [filtered[idx]];

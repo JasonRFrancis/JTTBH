@@ -391,11 +391,19 @@ class StudyModel:
                 start_idx = (days * per_day) % len(filtered)
                 return [filtered[(start_idx + i) % len(filtered)] for i in range(per_day)]
         else:
-            # Every N days (per_day is negative: -2 = every other day, -7 = weekly)
-            n = abs(per_day)
-            if days % n != 0:
+            # Alternating days
+            # -2 = even days: item on days 0, 2, 4… (starts on start_date)
+            # -1 = odd days:  item on days 1, 3, 5… (starts one day after start_date)
+            if per_day == -2:
+                if days % 2 != 0:
+                    return []
+                item_idx = days // 2
+            elif per_day == -1:
+                if days % 2 != 1:
+                    return []
+                item_idx = (days - 1) // 2
+            else:
                 return []
-            item_idx = days // n
             if not repeat:
                 if item_idx >= len(filtered):
                     return []

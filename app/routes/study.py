@@ -58,7 +58,7 @@ def _parse_date(date_str: str) -> date | None:
         return None
 
 
-_VALID_PER_DAY = set(range(-7, -1)) | set(range(1, 8))  # {-7...-2} ∪ {1...7}
+_VALID_PER_DAY = {-2, -1} | set(range(1, 8))  # odd/even alternating + 1–7 per day
 
 def _parse_per_day(raw: str) -> int:
     try:
