@@ -30,9 +30,23 @@
     <h2 id="delivery-heading">Delivery</h2>
 
     <div class="form-row">
-      <label for="per_day">Items per day</label>
-      <input type="number" id="per_day" name="per_day" min="1" max="20"
-             value="{{ sub.per_day or 1 }}" required>
+      <label for="per_day">Cadence</label>
+      <select id="per_day" name="per_day">
+        {% set pd = sub.per_day or 1 %}
+        <option value="7"  {% if pd == 7  %}selected{% endif %}>7 per day</option>
+        <option value="6"  {% if pd == 6  %}selected{% endif %}>6 per day</option>
+        <option value="5"  {% if pd == 5  %}selected{% endif %}>5 per day</option>
+        <option value="4"  {% if pd == 4  %}selected{% endif %}>4 per day</option>
+        <option value="3"  {% if pd == 3  %}selected{% endif %}>3 per day</option>
+        <option value="2"  {% if pd == 2  %}selected{% endif %}>2 per day</option>
+        <option value="1"  {% if pd == 1  %}selected{% endif %}>1 per day</option>
+        <option value="-2" {% if pd == -2 %}selected{% endif %}>Every other day</option>
+        <option value="-3" {% if pd == -3 %}selected{% endif %}>Every 3rd day</option>
+        <option value="-4" {% if pd == -4 %}selected{% endif %}>Every 4th day</option>
+        <option value="-5" {% if pd == -5 %}selected{% endif %}>Every 5th day</option>
+        <option value="-6" {% if pd == -6 %}selected{% endif %}>Every 6th day</option>
+        <option value="-7" {% if pd == -7 %}selected{% endif %}>Every 7th day (weekly)</option>
+      </select>
     </div>
 
     <div class="form-row">

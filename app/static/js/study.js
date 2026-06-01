@@ -80,15 +80,29 @@
       if (!filtered.length || !startIso) return [];
       const days = daysDiff(startIso, targetIso);
       if (days < 0) return [];
-      if (!repeatOn) {
-        const si = days * perDay;
-        if (si >= filtered.length) return [];
-        return filtered.slice(si, si + perDay);
+
+      if (perDay > 0) {
+        // N items per day
+        if (!repeatOn) {
+          const si = days * perDay;
+          if (si >= filtered.length) return [];
+          return filtered.slice(si, si + perDay);
+        }
+        const si = (days * perDay) % filtered.length;
+        const out = [];
+        for (let i = 0; i < perDay; i++) out.push(filtered[(si + i) % filtered.length]);
+        return out;
+      } else {
+        // Every N days (perDay is negative: -2 = every other day, -7 = weekly)
+        const n = Math.abs(perDay);
+        if (days % n !== 0) return [];
+        const idx = Math.floor(days / n);
+        if (!repeatOn) {
+          if (idx >= filtered.length) return [];
+          return [filtered[idx]];
+        }
+        return [filtered[idx % filtered.length]];
       }
-      const si = (days * perDay) % filtered.length;
-      const out = [];
-      for (let i = 0; i < perDay; i++) out.push(filtered[(si + i) % filtered.length]);
-      return out;
     }
 
     /* ── Start-item dropdown ─────────────────────────────────── */
@@ -188,7 +202,7 @@
         return;
       }
 
-      const perDay    = Math.max(1, parseInt((document.getElementById('per_day') || {}).value) || 1);
+      const perDay    = parseInt((document.getElementById('per_day') || {}).value) || 1;
       const startIso  = (document.getElementById('start_date') || {}).value || TODAY;
       const repeatOn  = (document.getElementById('repeat') || {}).checked ? 1 : 0;
 

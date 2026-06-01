@@ -58,6 +58,16 @@ def _parse_date(date_str: str) -> date | None:
         return None
 
 
+_VALID_PER_DAY = set(range(-7, -1)) | set(range(1, 8))  # {-7...-2} ∪ {1...7}
+
+def _parse_per_day(raw: str) -> int:
+    try:
+        v = int(raw.strip())
+    except (ValueError, AttributeError):
+        return 1
+    return v if v in _VALID_PER_DAY else 1
+
+
 def _normalise_csv(raw: str) -> str:
     """Deduplicate and strip a comma-separated string; return '' if empty."""
     parts = [p.strip() for p in raw.split(',') if p.strip()]
@@ -433,11 +443,7 @@ def subscribe(username: str, collection_id: str):
     if not collection:
         flash('Collection not found.', 'error')
         return redirect(url_for('study.collections', username=username))
-    per_day_raw = request.form.get('per_day', '1').strip()
-    try:
-        per_day = max(1, int(per_day_raw))
-    except ValueError:
-        per_day = 1
+    per_day = _parse_per_day(request.form.get('per_day', '1'))
     start_date_raw = request.form.get('start_date', '').strip()
     start_date = _parse_date(start_date_raw) if start_date_raw else today_for_tz(session.get('timezone', 'UTC'))
     name = request.form.get('name', '').strip() or None
@@ -456,11 +462,7 @@ def subscription_update(username: str, subscription_id: str):
         flash('Subscription not found.', 'error')
         return redirect(url_for('study.collections', username=username))
 
-    per_day_raw = request.form.get('per_day', '1').strip()
-    try:
-        per_day = max(1, int(per_day_raw))
-    except ValueError:
-        per_day = 1
+    per_day = _parse_per_day(request.form.get('per_day', '1'))
 
     start_date_raw = request.form.get('start_date', '').strip()
     start_date = _parse_date(start_date_raw) if start_date_raw else sub['start_date']

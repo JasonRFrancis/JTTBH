@@ -63,8 +63,15 @@
             </div>
             {% if col.mode == 'rate' %}
             <div class="form-row">
-              <label for="new-per-day-{{ col.collectionID }}">Per day</label>
-              <input type="number" id="new-per-day-{{ col.collectionID }}" name="per_day" min="1" max="20" value="1" required>
+              <label for="new-per-day-{{ col.collectionID }}">Cadence</label>
+              <select id="new-per-day-{{ col.collectionID }}" name="per_day">
+                <option value="1">1 per day</option>
+                <option value="2">2 per day</option>
+                <option value="3">3 per day</option>
+                <option value="-2">Every other day</option>
+                <option value="-3">Every 3rd day</option>
+                <option value="-7">Every 7th day (weekly)</option>
+              </select>
             </div>
             <div class="form-row">
               <label for="new-start-{{ col.collectionID }}">Start date</label>

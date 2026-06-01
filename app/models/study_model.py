@@ -377,14 +377,28 @@ class StudyModel:
         days = (target_date - start).days
         if days < 0:
             return []
-        per_day = subscription.get('per_day', 1)
-        repeat = subscription.get('repeat', 1)
+        per_day = subscription.get('per_day', 1) or 1
+        repeat  = subscription.get('repeat', 1)
 
-        if not repeat:
-            start_idx = days * per_day
-            if start_idx >= len(filtered):
-                return []
-            return filtered[start_idx:start_idx + per_day]
+        if per_day > 0:
+            # N items per day
+            if not repeat:
+                start_idx = days * per_day
+                if start_idx >= len(filtered):
+                    return []
+                return filtered[start_idx:start_idx + per_day]
+            else:
+                start_idx = (days * per_day) % len(filtered)
+                return [filtered[(start_idx + i) % len(filtered)] for i in range(per_day)]
         else:
-            start_idx = (days * per_day) % len(filtered)
-            return [filtered[(start_idx + i) % len(filtered)] for i in range(per_day)]
+            # Every N days (per_day is negative: -2 = every other day, -7 = weekly)
+            n = abs(per_day)
+            if days % n != 0:
+                return []
+            item_idx = days // n
+            if not repeat:
+                if item_idx >= len(filtered):
+                    return []
+                return [filtered[item_idx]]
+            else:
+                return [filtered[item_idx % len(filtered)]]
