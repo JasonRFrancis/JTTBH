@@ -459,9 +459,9 @@ def subscription_update(username: str, subscription_id: str):
     limit_raw = request.form.get('limit_count', '').strip()
     limit_count = int(limit_raw) if limit_raw.isdigit() and int(limit_raw) > 0 else None
 
-    offset_raw = request.form.get('start_offset', '0').strip()
+    offset_raw = request.form.get('start_offset', '1').strip()
     try:
-        start_offset = max(0, int(offset_raw))
+        start_offset = max(0, int(offset_raw) - 1)  # UI is 1-indexed; store 0-indexed
     except ValueError:
         start_offset = 0
 

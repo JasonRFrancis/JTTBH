@@ -25,7 +25,15 @@
 {% else %}
 {% for group in day_sources %}
 <section class="study-collection-section" aria-labelledby="col-{{ loop.index }}">
-  <h2 id="col-{{ loop.index }}">{{ group.collection_name }}</h2>
+  <h2 id="col-{{ loop.index }}">
+    {{ group.collection_name }}
+    <span class="collection-section-actions">
+      <a href="{{ url_for('study.subscription_edit', username=username, subscription_id=group.subscription_id) }}" class="action-link">Filters</a>
+      {% if group.use_personal_schedule %}
+      <a href="{{ url_for('study.subscription_schedule', username=username, subscription_id=group.subscription_id) }}" class="action-link">Schedule</a>
+      {% endif %}
+    </span>
+  </h2>
   <ul class="source-list" role="list">
     {% for source in group.sources %}
     {% set done = source.sourceID in completions %}
