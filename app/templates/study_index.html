@@ -26,7 +26,7 @@
 {% for group in day_sources %}
 <section class="study-collection-section" aria-labelledby="col-{{ loop.index }}">
   <h2 id="col-{{ loop.index }}">
-    {{ group.collection_name }}
+    {{ group.display_name }}
     <span class="collection-section-actions">
       <a href="{{ url_for('study.subscription_edit', username=username, subscription_id=group.subscription_id) }}" class="action-link">Filters</a>
       {% if group.use_personal_schedule %}

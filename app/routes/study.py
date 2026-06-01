@@ -90,6 +90,7 @@ def index(username: str, date_str: str = None):
         items = StudyModel.sources_for_date(sub, sources, target_date, user_id)
         if items:
             day_sources.append({
+                'display_name': sub.get('subscription_name') or sub['collection_name'],
                 'collection_name': sub['collection_name'],
                 'collection_id': sub['collectionID'],
                 'subscription_id': sub['subscriptionID'],
@@ -123,7 +124,10 @@ def index(username: str, date_str: str = None):
 @permission_required_read(PERM_STUDY)
 def collections(username: str):
     all_collections = StudyModel.get_all_collections()
-    user_subs = {s['collectionID']: s for s in StudyModel.get_user_subscriptions(session['user_id'])}
+    subs_list = StudyModel.get_user_subscriptions(session['user_id'])
+    user_subs: dict[str, list] = {}
+    for s in subs_list:
+        user_subs.setdefault(s['collectionID'], []).append(s)
     today = today_for_tz(session.get('timezone', 'UTC'))
     return render_template(
         'study_collections.html',
@@ -414,10 +418,6 @@ def subscribe(username: str, collection_id: str):
     if not collection:
         flash('Collection not found.', 'error')
         return redirect(url_for('study.collections', username=username))
-    existing = StudyModel.get_subscription(session['user_id'], collection_id)
-    if existing:
-        flash('Already subscribed.', 'warning')
-        return redirect(url_for('study.collections', username=username))
     per_day_raw = request.form.get('per_day', '1').strip()
     try:
         per_day = max(1, int(per_day_raw))
@@ -425,8 +425,9 @@ def subscribe(username: str, collection_id: str):
         per_day = 1
     start_date_raw = request.form.get('start_date', '').strip()
     start_date = _parse_date(start_date_raw) if start_date_raw else today_for_tz(session.get('timezone', 'UTC'))
-    sub_id = StudyModel.create_subscription(session['user_id'], collection_id, per_day, start_date)
-    flash(f'Subscribed to "{collection["name"]}". Configure filters below.', 'success')
+    name = request.form.get('name', '').strip() or None
+    sub_id = StudyModel.create_subscription(session['user_id'], collection_id, per_day, start_date, name)
+    flash('Subscribed. Configure filters and name below.', 'success')
     return redirect(url_for('study.subscription_edit', username=username, subscription_id=sub_id))
 
 
@@ -468,8 +469,9 @@ def subscription_update(username: str, subscription_id: str):
     repeat               = 1 if request.form.get('repeat') else 0
     use_personal_schedule = 1 if request.form.get('use_personal_schedule') else 0
 
+    name = request.form.get('name', '').strip() or None
     StudyModel.update_subscription(
-        subscription_id, per_day, start_date,
+        subscription_id, name, per_day, start_date,
         filter_author, filter_category,
         sort_order, limit_count, start_offset,
         repeat, use_personal_schedule,

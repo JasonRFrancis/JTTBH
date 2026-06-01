@@ -164,6 +164,7 @@ class StudyModel:
     def get_user_subscriptions(user_id: str) -> list[dict]:
         return db_manager.execute_query("""
             SELECT sub.subscriptionID, sub.userID, sub.collectionID,
+                   sub.name AS subscription_name,
                    sub.per_day, sub.start_date,
                    sub.filter_author, sub.filter_category, sub.sort_order,
                    sub.limit_count, sub.start_offset, sub.`repeat`,
@@ -175,7 +176,7 @@ class StudyModel:
               AND sc.id = (SELECT MAX(sc2.id) FROM study_collection sc2 WHERE sc2.collectionID = sc.collectionID)
               AND sc.name IS NOT NULL
             WHERE sub.userID = %s
-            ORDER BY sc.name
+            ORDER BY COALESCE(sub.name, sc.name)
         """, (user_id,))
 
     @staticmethod
@@ -193,27 +194,28 @@ class StudyModel:
         )
 
     @staticmethod
-    def create_subscription(user_id: str, collection_id: str, per_day: int, start_date) -> str:
+    def create_subscription(user_id: str, collection_id: str, per_day: int,
+                            start_date, name: str = None) -> str:
         subscription_id = str(uuid.uuid4())
         db_manager.execute_insert(
-            "INSERT INTO study_subscription (subscriptionID, userID, collectionID, per_day, start_date, created, created_by) VALUES (%s,%s,%s,%s,%s,NOW(),%s)",
-            (subscription_id, user_id, collection_id, per_day, start_date, user_id),
+            "INSERT INTO study_subscription (subscriptionID, userID, collectionID, name, per_day, start_date, created, created_by) VALUES (%s,%s,%s,%s,%s,%s,NOW(),%s)",
+            (subscription_id, user_id, collection_id, name or None, per_day, start_date, user_id),
         )
         return subscription_id
 
     @staticmethod
-    def update_subscription(subscription_id: str, per_day: int, start_date,
+    def update_subscription(subscription_id: str, name: str, per_day: int, start_date,
                             filter_author: str, filter_category: str,
                             sort_order: str, limit_count, start_offset: int,
                             repeat: int, use_personal_schedule: int):
         db_manager.execute_update(
             """UPDATE study_subscription
-               SET per_day=%s, start_date=%s,
+               SET name=%s, per_day=%s, start_date=%s,
                    filter_author=%s, filter_category=%s,
                    sort_order=%s, limit_count=%s, start_offset=%s,
                    `repeat`=%s, use_personal_schedule=%s
                WHERE subscriptionID=%s""",
-            (per_day, start_date,
+            (name or None, per_day, start_date,
              filter_author or None, filter_category or None,
              sort_order, limit_count or None, start_offset,
              repeat, use_personal_schedule,

@@ -14,6 +14,17 @@
 <form method="post" action="{{ url_for('study.subscription_update', username=username, subscription_id=sub.subscriptionID) }}"
       class="sub-edit-page-form">
 
+  {# ── Name ────────────────────────────────────────────────────── #}
+  <section class="edit-section" aria-labelledby="name-heading">
+    <h2 id="name-heading">Name</h2>
+    <div class="form-row">
+      <label for="sub_name">Subscription name <span class="field-hint">(leave blank to use collection name)</span></label>
+      <input type="text" id="sub_name" name="name" maxlength="200"
+             placeholder="{{ collection.name }}"
+             value="{{ sub.subscription_name or '' }}">
+    </div>
+  </section>
+
   {# ── Delivery ─────────────────────────────────────────────── #}
   <section class="edit-section" aria-labelledby="delivery-heading">
     <h2 id="delivery-heading">Delivery</h2>

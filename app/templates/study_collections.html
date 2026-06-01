@@ -16,7 +16,7 @@
   {% if collections %}
   <ul class="collection-list" role="list">
     {% for col in collections %}
-    {% set sub = user_subs.get(col.collectionID) %}
+    {% set subs = user_subs.get(col.collectionID, []) %}
     <li class="collection-card">
       <div class="collection-card-header">
         <div>
@@ -36,20 +36,31 @@
         </div>
       </div>
 
+      {% if subs %}
+      <ul class="sub-list" role="list">
+        {% for sub in subs %}
+        <li class="sub-row">
+          <span class="sub-info">
+            <strong>{{ sub.subscription_name or col.name }}</strong>
+            {% if sub.filter_author or sub.filter_category %}<span class="sub-filtered">filtered</span>{% endif %}
+            {% if sub.use_personal_schedule %}<span class="sub-filtered">calendar</span>{% endif %}
+          </span>
+          <a href="{{ url_for('study.subscription_edit', username=username, subscription_id=sub.subscriptionID) }}"
+             class="btn btn-secondary btn-sm">Edit</a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
       <div class="collection-actions">
-        {% if sub %}
-        <span class="sub-info">
-          Subscribed
-          {% if col.mode == 'rate' and not sub.use_personal_schedule %}&mdash; {{ sub.per_day }} per day{% endif %}
-          {% if sub.filter_author or sub.filter_category %}<span class="sub-filtered">filtered</span>{% endif %}
-          {% if sub.use_personal_schedule %}<span class="sub-filtered">personal schedule</span>{% endif %}
-        </span>
-        <a href="{{ url_for('study.subscription_edit', username=username, subscription_id=sub.subscriptionID) }}"
-           class="btn btn-secondary btn-sm">Edit</a>
-        {% else %}
         <details>
-          <summary>Subscribe</summary>
+          <summary>{% if subs %}Add another subscription{% else %}Subscribe{% endif %}</summary>
           <form method="post" action="{{ url_for('study.subscribe', username=username, collection_id=col.collectionID) }}" class="sub-edit-form">
+            <div class="form-row">
+              <label for="new-name-{{ col.collectionID }}">Name <span class="field-hint">(optional)</span></label>
+              <input type="text" id="new-name-{{ col.collectionID }}" name="name"
+                     maxlength="200" placeholder="e.g. Neal A. Maxwell talks">
+            </div>
             {% if col.mode == 'rate' %}
             <div class="form-row">
               <label for="new-per-day-{{ col.collectionID }}">Per day</label>
@@ -69,7 +80,6 @@
             </div>
           </form>
         </details>
-        {% endif %}
       </div>
     </li>
     {% endfor %}
