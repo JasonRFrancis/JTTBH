@@ -103,6 +103,9 @@
         } else if (perDay === -1) {
           if (days % 2 !== 1) return [];
           idx = Math.floor((days - 1) / 2);
+        } else if (perDay === -7) {
+          if (days % 7 !== 0) return [];
+          idx = Math.floor(days / 7);
         } else {
           return [];
         }

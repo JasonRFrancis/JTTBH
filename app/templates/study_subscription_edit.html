@@ -42,6 +42,7 @@
         <option value="1"  {% if pd == 1  %}selected{% endif %}>1 per day</option>
         <option value="-2" {% if pd == -2 %}selected{% endif %}>Even days (start date, then every other)</option>
         <option value="-1" {% if pd == -1 %}selected{% endif %}>Odd days (day after start, then every other)</option>
+        <option value="-7" {% if pd == -7 %}selected{% endif %}>Weekly (every 7th day)</option>
       </select>
     </div>
 

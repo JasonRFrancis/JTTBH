@@ -402,6 +402,10 @@ class StudyModel:
                 if days % 2 != 1:
                     return []
                 item_idx = (days - 1) // 2
+            elif per_day == -7:
+                if days % 7 != 0:
+                    return []
+                item_idx = days // 7
             else:
                 return []
             if not repeat:
