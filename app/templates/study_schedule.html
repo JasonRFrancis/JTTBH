@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Schedule — {{ collection.name }}{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}">{% endblock %}
+
+{% block content %}
+<header>
+  <h1>{{ collection.name }}</h1>
+  <nav class="study-nav" aria-label="Study navigation">
+    <a href="{{ url_for('study.subscription_edit', username=username, subscription_id=sub.subscriptionID) }}">← Edit filters</a>
+    <a href="{{ url_for('study.index', username=username) }}">Today</a>
+  </nav>
+</header>
+
+<section aria-labelledby="schedule-heading">
+  <h2 id="schedule-heading">Personal Schedule</h2>
+  <p class="edit-section-desc">
+    Assign specific items to calendar dates. Only items you schedule will appear
+    on your study index when "Use my personal schedule" is enabled.
+    Showing {{ sources | length }} item{{ '' if sources | length == 1 else 's' }}.
+  </p>
+
+  {% if not sub.use_personal_schedule %}
+  <p class="schedule-notice">
+    Personal scheduling is <strong>off</strong> for this subscription.
+    <a href="{{ url_for('study.subscription_edit', username=username, subscription_id=sub.subscriptionID) }}">Enable it in Edit filters →</a>
+  </p>
+  {% endif %}
+
+  {% if sources %}
+  <div class="schedule-filter-bar">
+    <input type="text" id="schedule-search" class="filter-search schedule-search"
+           placeholder="Search title or author…" autocomplete="off">
+    <label class="schedule-show-scheduled">
+      <input type="checkbox" id="show-scheduled-only"> Show scheduled only
+    </label>
+  </div>
+
+  <ul class="schedule-list" role="list" id="schedule-list">
+    {% for source in sources %}
+    {% set sched_date = schedule_map.get(source.sourceID) %}
+    <li class="schedule-item{% if sched_date %} schedule-item--scheduled{% endif %}"
+        data-title="{{ source.title | lower }}"
+        data-author="{{ (source.author or '') | lower }}"
+        data-scheduled="{{ '1' if sched_date else '0' }}">
+      <div class="schedule-item-info">
+        <span class="schedule-item-title">
+          {% if source.url %}
+          <a href="{{ source.url }}" target="_blank" rel="noopener">{{ source.title }}</a>
+          {% else %}
+          {{ source.title }}
+          {% endif %}
+        </span>
+        {% if source.author %}<span class="schedule-item-author">{{ source.author }}</span>{% endif %}
+        {% if source.category %}<span class="schedule-item-category">{{ source.category }}</span>{% endif %}
+      </div>
+      <div class="schedule-item-actions">
+        <form method="post"
+              action="{{ url_for('study.schedule_set', username=username, subscription_id=sub.subscriptionID) }}">
+          <input type="hidden" name="source_id" value="{{ source.sourceID }}">
+          <input type="date" name="scheduled_date"
+                 value="{{ sched_date.isoformat() if sched_date else '' }}"
+                 class="schedule-date-input"
+                 aria-label="Schedule date for {{ source.title }}">
+          <button type="submit" class="btn-schedule-set">Set</button>
+        </form>
+        {% if sched_date %}
+        <form method="post"
+              action="{{ url_for('study.schedule_clear', username=username, subscription_id=sub.subscriptionID, source_id=source.sourceID) }}">
+          <button type="submit" class="btn-schedule-clear" aria-label="Clear scheduled date">✕</button>
+        </form>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="study-empty">No items match your current filters. <a href="{{ url_for('study.subscription_edit', username=username, subscription_id=sub.subscriptionID) }}">Adjust filters →</a></p>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block js %}<script src="{{ url_for('static', filename='js/study.js') }}" defer></script>{% endblock %}

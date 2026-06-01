@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Edit Subscription — {{ collection.name }}{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}">{% endblock %}
+
+{% block content %}
+<header>
+  <h1>{{ collection.name }}</h1>
+  <nav class="study-nav" aria-label="Study navigation">
+    <a href="{{ url_for('study.collections', username=username) }}">Collections</a>
+    <a href="{{ url_for('study.index', username=username) }}">Today</a>
+  </nav>
+</header>
+
+<form method="post" action="{{ url_for('study.subscription_update', username=username, subscription_id=sub.subscriptionID) }}"
+      class="sub-edit-page-form">
+
+  {# ── Delivery ─────────────────────────────────────────────── #}
+  <section class="edit-section" aria-labelledby="delivery-heading">
+    <h2 id="delivery-heading">Delivery</h2>
+
+    <div class="form-row">
+      <label for="per_day">Items per day</label>
+      <input type="number" id="per_day" name="per_day" min="1" max="20"
+             value="{{ sub.per_day or 1 }}" required>
+    </div>
+
+    <div class="form-row">
+      <label for="start_date">Start date</label>
+      <input type="date" id="start_date" name="start_date"
+             value="{{ sub.start_date.isoformat() if sub.start_date else '' }}">
+      <span class="field-hint">Rate mode uses this as the anchor for cycling.</span>
+    </div>
+
+    <div class="form-row form-row--checkbox">
+      <input type="checkbox" id="repeat" name="repeat" value="1"
+             {% if sub.repeat != 0 %}checked{% endif %}>
+      <label for="repeat">Repeat when the filtered set is exhausted</label>
+    </div>
+
+    <div class="form-row form-row--checkbox">
+      <input type="checkbox" id="use_personal_schedule" name="use_personal_schedule" value="1"
+             {% if sub.use_personal_schedule %}checked{% endif %}>
+      <label for="use_personal_schedule">Use my personal calendar schedule instead of rate cycling</label>
+    </div>
+    <p class="field-hint indent">
+      When enabled, only items you have pinned to specific dates will appear on those dates.
+      <a href="{{ url_for('study.subscription_schedule', username=username, subscription_id=sub.subscriptionID) }}">Manage schedule →</a>
+    </p>
+  </section>
+
+  {# ── Filters ──────────────────────────────────────────────── #}
+  <section class="edit-section" aria-labelledby="filter-heading">
+    <h2 id="filter-heading">Filters</h2>
+    <p class="edit-section-desc">
+      Leave blank to include everything. Showing {{ total_filtered }} of {{ total_all }} items with current settings.
+    </p>
+
+    {# Sort order #}
+    <fieldset class="form-fieldset">
+      <legend>Sort order</legend>
+      <div class="radio-group">
+        <label><input type="radio" name="sort_order" value="natural"
+               {% if (sub.sort_order or 'natural') == 'natural' %}checked{% endif %}> Natural (collection order)</label>
+        <label><input type="radio" name="sort_order" value="newest"
+               {% if sub.sort_order == 'newest' %}checked{% endif %}> Newest first</label>
+        <label><input type="radio" name="sort_order" value="oldest"
+               {% if sub.sort_order == 'oldest' %}checked{% endif %}> Oldest first</label>
+      </div>
+    </fieldset>
+
+    {# Limit count #}
+    <div class="form-row">
+      <label for="limit_count">Limit to N items <span class="field-hint">(blank = all)</span></label>
+      <input type="number" id="limit_count" name="limit_count" min="1"
+             value="{{ sub.limit_count or '' }}" placeholder="e.g. 20">
+    </div>
+
+    {# Start offset #}
+    <div class="form-row">
+      <label for="start_offset">Skip first N items <span class="field-hint">(0 = start from beginning)</span></label>
+      <input type="number" id="start_offset" name="start_offset" min="0"
+             value="{{ sub.start_offset or 0 }}">
+    </div>
+
+    {# Author filter #}
+    {% if distinct_authors %}
+    <div class="filter-group" id="author-filter-group">
+      <div class="filter-group-header">
+        <label class="filter-group-label">Filter by author</label>
+        <input type="text" id="author-search" class="filter-search"
+               placeholder="Search authors…" autocomplete="off">
+        <button type="button" class="btn-filter-clear" data-target="author">Clear</button>
+      </div>
+      <input type="hidden" id="filter_author_hidden" name="filter_author"
+             value="{{ sub.filter_author or '' }}">
+      <ul class="filter-checklist" id="author-checklist" role="list">
+        {% for author in distinct_authors %}
+        <li class="filter-check-item">
+          <label>
+            <input type="checkbox" class="author-cb"
+                   value="{{ author }}"
+                   {% if author in selected_authors %}checked{% endif %}>
+            {{ author }}
+          </label>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {# Category filter #}
+    {% if distinct_categories %}
+    <div class="filter-group" id="category-filter-group">
+      <div class="filter-group-header">
+        <label class="filter-group-label">Filter by category</label>
+        <input type="text" id="category-search" class="filter-search"
+               placeholder="Search categories…" autocomplete="off">
+        <button type="button" class="btn-filter-clear" data-target="category">Clear</button>
+      </div>
+      <input type="hidden" id="filter_category_hidden" name="filter_category"
+             value="{{ sub.filter_category or '' }}">
+      <ul class="filter-checklist" id="category-checklist" role="list">
+        {% for cat in distinct_categories %}
+        <li class="filter-check-item">
+          <label>
+            <input type="checkbox" class="category-cb"
+                   value="{{ cat }}"
+                   {% if cat in selected_categories %}checked{% endif %}>
+            {{ cat }}
+          </label>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </section>
+
+  {# ── Preview ──────────────────────────────────────────────── #}
+  {% if preview_sources %}
+  <section class="edit-section" aria-labelledby="preview-heading">
+    <h2 id="preview-heading">Preview <span class="field-hint">(first {{ preview_sources | length }} of {{ total_filtered }})</span></h2>
+    <ol class="preview-list">
+      {% for s in preview_sources %}
+      <li class="preview-item">
+        <span class="preview-title">{{ s.title }}</span>
+        {% if s.author %}<span class="preview-author">{{ s.author }}</span>{% endif %}
+        {% if s.category %}<span class="preview-category">{{ s.category }}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="{{ url_for('study.collections', username=username) }}" class="btn-cancel-link">Back to collections</a>
+    <form method="post" action="{{ url_for('study.unsubscribe', username=username, subscription_id=sub.subscriptionID) }}"
+          style="display:inline"
+          onsubmit="return confirm('Unsubscribe from \'{{ collection.name }}\'?')">
+      <button type="submit" class="btn btn-danger">Unsubscribe</button>
+    </form>
+  </div>
+</form>
+{% endblock %}
+
+{% block js %}<script src="{{ url_for('static', filename='js/study.js') }}" defer></script>{% endblock %}

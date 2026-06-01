@@ -128,6 +128,34 @@ class StudyModel:
             (source_id, collection_id, user_id, user_id),
         )
 
+    @staticmethod
+    def get_distinct_authors(collection_id: str) -> list[str]:
+        rows = db_manager.execute_query("""
+            SELECT DISTINCT ss.author
+            FROM study_source ss
+            WHERE ss.collectionID = %s
+              AND ss.id = (SELECT MAX(ss2.id) FROM study_source ss2 WHERE ss2.sourceID = ss.sourceID)
+              AND ss.title IS NOT NULL
+              AND ss.author IS NOT NULL
+              AND ss.author != ''
+            ORDER BY ss.author
+        """, (collection_id,))
+        return [r['author'] for r in rows]
+
+    @staticmethod
+    def get_distinct_categories(collection_id: str) -> list[str]:
+        rows = db_manager.execute_query("""
+            SELECT DISTINCT ss.category
+            FROM study_source ss
+            WHERE ss.collectionID = %s
+              AND ss.id = (SELECT MAX(ss2.id) FROM study_source ss2 WHERE ss2.sourceID = ss.sourceID)
+              AND ss.title IS NOT NULL
+              AND ss.category IS NOT NULL
+              AND ss.category != ''
+            ORDER BY ss.category
+        """, (collection_id,))
+        return [r['category'] for r in rows]
+
     # ------------------------------------------------------------------
     # Subscriptions
     # ------------------------------------------------------------------
@@ -137,6 +165,9 @@ class StudyModel:
         return db_manager.execute_query("""
             SELECT sub.subscriptionID, sub.userID, sub.collectionID,
                    sub.per_day, sub.start_date,
+                   sub.filter_author, sub.filter_category, sub.sort_order,
+                   sub.limit_count, sub.start_offset, sub.`repeat`,
+                   sub.use_personal_schedule,
                    sc.name AS collection_name, sc.description AS collection_description,
                    sc.mode
             FROM study_subscription sub
@@ -171,10 +202,22 @@ class StudyModel:
         return subscription_id
 
     @staticmethod
-    def update_subscription(subscription_id: str, per_day: int, start_date):
+    def update_subscription(subscription_id: str, per_day: int, start_date,
+                            filter_author: str, filter_category: str,
+                            sort_order: str, limit_count, start_offset: int,
+                            repeat: int, use_personal_schedule: int):
         db_manager.execute_update(
-            "UPDATE study_subscription SET per_day=%s, start_date=%s WHERE subscriptionID=%s",
-            (per_day, start_date, subscription_id),
+            """UPDATE study_subscription
+               SET per_day=%s, start_date=%s,
+                   filter_author=%s, filter_category=%s,
+                   sort_order=%s, limit_count=%s, start_offset=%s,
+                   `repeat`=%s, use_personal_schedule=%s
+               WHERE subscriptionID=%s""",
+            (per_day, start_date,
+             filter_author or None, filter_category or None,
+             sort_order, limit_count or None, start_offset,
+             repeat, use_personal_schedule,
+             subscription_id),
         )
 
     @staticmethod
@@ -185,8 +228,40 @@ class StudyModel:
         )
 
     # ------------------------------------------------------------------
-    # Daily calculation
+    # Smart filtering
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def get_filtered_sources(subscription: dict, sources: list[dict]) -> list[dict]:
+        """Apply smart subscription filters to a source list."""
+        result = list(sources)
+
+        filter_author = subscription.get('filter_author')
+        if filter_author:
+            allowed = {a.strip().lower() for a in filter_author.split(',') if a.strip()}
+            result = [s for s in result if s.get('author') and s['author'].lower() in allowed]
+
+        filter_category = subscription.get('filter_category')
+        if filter_category:
+            allowed = {c.strip().lower() for c in filter_category.split(',') if c.strip()}
+            result = [s for s in result if s.get('category') and s['category'].lower() in allowed]
+
+        sort_order = subscription.get('sort_order', 'natural')
+        if sort_order == 'newest':
+            result = sorted(result, key=lambda s: s.get('order_by', 0), reverse=True)
+        elif sort_order == 'oldest':
+            result = sorted(result, key=lambda s: s.get('order_by', 0))
+        # 'natural' keeps the existing ORDER BY order_by, id from get_sources()
+
+        start_offset = subscription.get('start_offset') or 0
+        if start_offset > 0:
+            result = result[start_offset:]
+
+        limit_count = subscription.get('limit_count')
+        if limit_count:
+            result = result[:limit_count]
+
+        return result
 
     # ------------------------------------------------------------------
     # Completions
@@ -218,17 +293,82 @@ class StudyModel:
             )
 
     # ------------------------------------------------------------------
+    # Personal schedule
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def set_personal_schedule(user_id: str, source_id: str, scheduled_date) -> None:
+        existing = db_manager.execute_one(
+            "SELECT id FROM study_schedule WHERE userID=%s AND sourceID=%s",
+            (user_id, source_id),
+        )
+        if existing:
+            db_manager.execute_update(
+                "UPDATE study_schedule SET scheduled_date=%s WHERE userID=%s AND sourceID=%s",
+                (scheduled_date, user_id, source_id),
+            )
+        else:
+            db_manager.execute_insert(
+                "INSERT INTO study_schedule (scheduleID, userID, sourceID, scheduled_date, created, created_by) VALUES (%s,%s,%s,%s,NOW(),%s)",
+                (str(uuid.uuid4()), user_id, source_id, scheduled_date, user_id),
+            )
+
+    @staticmethod
+    def clear_personal_schedule(user_id: str, source_id: str) -> None:
+        db_manager.execute_update(
+            "DELETE FROM study_schedule WHERE userID=%s AND sourceID=%s",
+            (user_id, source_id),
+        )
+
+    @staticmethod
+    def get_personal_scheduled_sources(user_id: str, source_ids: list[str], target_date) -> set[str]:
+        if not source_ids:
+            return set()
+        placeholders = ','.join(['%s'] * len(source_ids))
+        rows = db_manager.execute_query(
+            f"SELECT sourceID FROM study_schedule WHERE userID=%s AND scheduled_date=%s AND sourceID IN ({placeholders})",
+            (user_id, target_date, *source_ids),
+        )
+        return {r['sourceID'] for r in rows}
+
+    @staticmethod
+    def get_personal_schedule_for_sources(user_id: str, source_ids: list[str]) -> dict:
+        """Return {sourceID: scheduled_date} for the given source IDs."""
+        if not source_ids:
+            return {}
+        placeholders = ','.join(['%s'] * len(source_ids))
+        rows = db_manager.execute_query(
+            f"SELECT sourceID, scheduled_date FROM study_schedule WHERE userID=%s AND sourceID IN ({placeholders})",
+            (user_id, *source_ids),
+        )
+        return {r['sourceID']: r['scheduled_date'] for r in rows}
+
+    # ------------------------------------------------------------------
     # Daily calculation
     # ------------------------------------------------------------------
 
     @staticmethod
-    def sources_for_date(subscription: dict, sources: list[dict], target_date) -> list[dict]:
+    def sources_for_date(subscription: dict, sources: list[dict],
+                         target_date, user_id: str = None) -> list[dict]:
+        filtered = StudyModel.get_filtered_sources(subscription, sources)
+        if not filtered:
+            return []
+
+        # Personal schedule mode overrides collection mode
+        if subscription.get('use_personal_schedule'):
+            if not user_id:
+                return []
+            source_ids = [s['sourceID'] for s in filtered]
+            scheduled = StudyModel.get_personal_scheduled_sources(user_id, source_ids, target_date)
+            return [s for s in filtered if s['sourceID'] in scheduled]
+
         mode = subscription.get('mode')
         if mode == 'calendar':
-            return [s for s in sources if s.get('scheduled_date') == target_date]
-        # rate mode
+            return [s for s in filtered if s.get('scheduled_date') == target_date]
+
+        # Rate mode
         start = subscription.get('start_date')
-        if start is None or not sources:
+        if start is None:
             return []
         if isinstance(start, str):
             start = date_cls.fromisoformat(start)
@@ -236,5 +376,13 @@ class StudyModel:
         if days < 0:
             return []
         per_day = subscription.get('per_day', 1)
-        start_idx = (days * per_day) % len(sources)
-        return [sources[(start_idx + i) % len(sources)] for i in range(per_day)]
+        repeat = subscription.get('repeat', 1)
+
+        if not repeat:
+            start_idx = days * per_day
+            if start_idx >= len(filtered):
+                return []
+            return filtered[start_idx:start_idx + per_day]
+        else:
+            start_idx = (days * per_day) % len(filtered)
+            return [filtered[(start_idx + i) % len(filtered)] for i in range(per_day)]

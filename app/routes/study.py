@@ -9,6 +9,8 @@ GET  /<username>/study/index
 GET  /<username>/study/index/<date_str>
 GET  /<username>/study/collections
 GET  /<username>/study/collection/<collection_id>
+GET  /<username>/study/subscription/<subscription_id>/edit
+GET  /<username>/study/subscription/<subscription_id>/schedule
 
 POST /<username>/study/collection/create/post
 POST /<username>/study/collection/update/post/<collection_id>
@@ -20,6 +22,8 @@ POST /<username>/study/subscribe/post/<collection_id>
 POST /<username>/study/subscription/update/post/<subscription_id>
 POST /<username>/study/unsubscribe/post/<subscription_id>
 POST /<username>/study/source/complete/post/<source_id>
+POST /<username>/study/subscription/<subscription_id>/schedule/set/post
+POST /<username>/study/subscription/<subscription_id>/schedule/clear/post/<source_id>
 """
 
 from datetime import date, timedelta
@@ -53,6 +57,16 @@ def _parse_date(date_str: str) -> date | None:
         return None
 
 
+def _normalise_csv(raw: str) -> str:
+    """Deduplicate and strip a comma-separated string; return '' if empty."""
+    parts = [p.strip() for p in raw.split(',') if p.strip()]
+    seen = []
+    for p in parts:
+        if p not in seen:
+            seen.append(p)
+    return ', '.join(seen)
+
+
 # ---------------------------------------------------------------------------
 # Daily index
 # ---------------------------------------------------------------------------
@@ -67,21 +81,24 @@ def index(username: str, date_str: str = None):
     if target_date is None:
         return redirect(url_for('study.index', username=username))
 
-    subscriptions = StudyModel.get_user_subscriptions(session['user_id'])
+    user_id = session['user_id']
+    subscriptions = StudyModel.get_user_subscriptions(user_id)
 
     day_sources = []
     for sub in subscriptions:
         sources = StudyModel.get_sources(sub['collectionID'])
-        items = StudyModel.sources_for_date(sub, sources, target_date)
+        items = StudyModel.sources_for_date(sub, sources, target_date, user_id)
         if items:
             day_sources.append({
                 'collection_name': sub['collection_name'],
                 'collection_id': sub['collectionID'],
+                'subscription_id': sub['subscriptionID'],
                 'mode': sub['mode'],
+                'use_personal_schedule': sub.get('use_personal_schedule', 0),
                 'sources': items,
             })
 
-    completions = StudyModel.get_completions_for_date(session['user_id'], target_date)
+    completions = StudyModel.get_completions_for_date(user_id, target_date)
 
     return render_template(
         'study_index.html',
@@ -140,6 +157,85 @@ def collection_detail(username: str, collection_id: str):
         area='study',
         collection=collection,
         sources=sources,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Subscription edit (smart filters)
+# ---------------------------------------------------------------------------
+
+@study_bp.route('/subscription/<subscription_id>/edit')
+@login_required
+@permission_required_read(PERM_STUDY)
+def subscription_edit(username: str, subscription_id: str):
+    sub = StudyModel.get_subscription_by_id(subscription_id)
+    if not sub or sub['userID'] != session['user_id']:
+        flash('Subscription not found.', 'error')
+        return redirect(url_for('study.collections', username=username))
+    collection = StudyModel.get_collection(sub['collectionID'])
+    if not collection:
+        flash('Collection not found.', 'error')
+        return redirect(url_for('study.collections', username=username))
+
+    distinct_authors    = StudyModel.get_distinct_authors(sub['collectionID'])
+    distinct_categories = StudyModel.get_distinct_categories(sub['collectionID'])
+
+    selected_authors = set()
+    if sub.get('filter_author'):
+        selected_authors = {a.strip() for a in sub['filter_author'].split(',') if a.strip()}
+    selected_categories = set()
+    if sub.get('filter_category'):
+        selected_categories = {c.strip() for c in sub['filter_category'].split(',') if c.strip()}
+
+    all_sources = StudyModel.get_sources(sub['collectionID'])
+    filtered    = StudyModel.get_filtered_sources(sub, all_sources)
+
+    return render_template(
+        'study_subscription_edit.html',
+        username=username,
+        area='study',
+        sub=sub,
+        collection=collection,
+        distinct_authors=distinct_authors,
+        distinct_categories=distinct_categories,
+        selected_authors=selected_authors,
+        selected_categories=selected_categories,
+        preview_sources=filtered[:5],
+        total_filtered=len(filtered),
+        total_all=len(all_sources),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Personal schedule view
+# ---------------------------------------------------------------------------
+
+@study_bp.route('/subscription/<subscription_id>/schedule')
+@login_required
+@permission_required_read(PERM_STUDY)
+def subscription_schedule(username: str, subscription_id: str):
+    sub = StudyModel.get_subscription_by_id(subscription_id)
+    if not sub or sub['userID'] != session['user_id']:
+        flash('Subscription not found.', 'error')
+        return redirect(url_for('study.collections', username=username))
+    collection = StudyModel.get_collection(sub['collectionID'])
+    if not collection:
+        flash('Collection not found.', 'error')
+        return redirect(url_for('study.collections', username=username))
+
+    all_sources = StudyModel.get_sources(sub['collectionID'])
+    filtered    = StudyModel.get_filtered_sources(sub, all_sources)
+    source_ids  = [s['sourceID'] for s in filtered]
+    schedule_map = StudyModel.get_personal_schedule_for_sources(session['user_id'], source_ids)
+
+    return render_template(
+        'study_schedule.html',
+        username=username,
+        area='study',
+        sub=sub,
+        collection=collection,
+        sources=filtered,
+        schedule_map=schedule_map,
     )
 
 
@@ -329,9 +425,9 @@ def subscribe(username: str, collection_id: str):
         per_day = 1
     start_date_raw = request.form.get('start_date', '').strip()
     start_date = _parse_date(start_date_raw) if start_date_raw else today_for_tz(session.get('timezone', 'UTC'))
-    StudyModel.create_subscription(session['user_id'], collection_id, per_day, start_date)
-    flash(f'Subscribed to "{collection["name"]}".', 'success')
-    return redirect(url_for('study.collections', username=username))
+    sub_id = StudyModel.create_subscription(session['user_id'], collection_id, per_day, start_date)
+    flash(f'Subscribed to "{collection["name"]}". Configure filters below.', 'success')
+    return redirect(url_for('study.subscription_edit', username=username, subscription_id=sub_id))
 
 
 @study_bp.route('/subscription/update/post/<subscription_id>', methods=['POST'])
@@ -343,16 +439,43 @@ def subscription_update(username: str, subscription_id: str):
     if not sub or sub['userID'] != session['user_id']:
         flash('Subscription not found.', 'error')
         return redirect(url_for('study.collections', username=username))
+
     per_day_raw = request.form.get('per_day', '1').strip()
     try:
         per_day = max(1, int(per_day_raw))
     except ValueError:
         per_day = 1
+
     start_date_raw = request.form.get('start_date', '').strip()
     start_date = _parse_date(start_date_raw) if start_date_raw else sub['start_date']
-    StudyModel.update_subscription(subscription_id, per_day, start_date)
+
+    filter_author   = _normalise_csv(request.form.get('filter_author', ''))
+    filter_category = _normalise_csv(request.form.get('filter_category', ''))
+
+    sort_order = request.form.get('sort_order', 'natural')
+    if sort_order not in ('natural', 'newest', 'oldest'):
+        sort_order = 'natural'
+
+    limit_raw = request.form.get('limit_count', '').strip()
+    limit_count = int(limit_raw) if limit_raw.isdigit() and int(limit_raw) > 0 else None
+
+    offset_raw = request.form.get('start_offset', '0').strip()
+    try:
+        start_offset = max(0, int(offset_raw))
+    except ValueError:
+        start_offset = 0
+
+    repeat               = 1 if request.form.get('repeat') else 0
+    use_personal_schedule = 1 if request.form.get('use_personal_schedule') else 0
+
+    StudyModel.update_subscription(
+        subscription_id, per_day, start_date,
+        filter_author, filter_category,
+        sort_order, limit_count, start_offset,
+        repeat, use_personal_schedule,
+    )
     flash('Subscription updated.', 'success')
-    return redirect(url_for('study.collections', username=username))
+    return redirect(url_for('study.subscription_edit', username=username, subscription_id=subscription_id))
 
 
 @study_bp.route('/unsubscribe/post/<subscription_id>', methods=['POST'])
@@ -384,3 +507,37 @@ def source_complete(username: str, source_id: str):
     if date_str:
         return redirect(url_for('study.index', username=username, date_str=date_str))
     return redirect(url_for('study.index', username=username))
+
+
+# ---------------------------------------------------------------------------
+# Personal schedule management
+# ---------------------------------------------------------------------------
+
+@study_bp.route('/subscription/<subscription_id>/schedule/set/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_STUDY)
+@permission_required_write(PERM_STUDY)
+def schedule_set(username: str, subscription_id: str):
+    sub = StudyModel.get_subscription_by_id(subscription_id)
+    if not sub or sub['userID'] != session['user_id']:
+        flash('Subscription not found.', 'error')
+        return redirect(url_for('study.collections', username=username))
+    source_id  = request.form.get('source_id', '').strip()
+    date_str   = request.form.get('scheduled_date', '').strip()
+    target_date = _parse_date(date_str) if date_str else None
+    if source_id and target_date:
+        StudyModel.set_personal_schedule(session['user_id'], source_id, target_date)
+    return redirect(url_for('study.subscription_schedule', username=username, subscription_id=subscription_id))
+
+
+@study_bp.route('/subscription/<subscription_id>/schedule/clear/post/<source_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_STUDY)
+@permission_required_write(PERM_STUDY)
+def schedule_clear(username: str, subscription_id: str, source_id: str):
+    sub = StudyModel.get_subscription_by_id(subscription_id)
+    if not sub or sub['userID'] != session['user_id']:
+        flash('Subscription not found.', 'error')
+        return redirect(url_for('study.collections', username=username))
+    StudyModel.clear_personal_schedule(session['user_id'], source_id)
+    return redirect(url_for('study.subscription_schedule', username=username, subscription_id=subscription_id))

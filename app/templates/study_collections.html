@@ -40,35 +40,12 @@
         {% if sub %}
         <span class="sub-info">
           Subscribed
-          {% if col.mode == 'rate' %}&mdash; {{ sub.per_day }} per day, starting {{ sub.start_date }}{% endif %}
+          {% if col.mode == 'rate' and not sub.use_personal_schedule %}&mdash; {{ sub.per_day }} per day{% endif %}
+          {% if sub.filter_author or sub.filter_category %}<span class="sub-filtered">filtered</span>{% endif %}
+          {% if sub.use_personal_schedule %}<span class="sub-filtered">personal schedule</span>{% endif %}
         </span>
-        <details>
-          <summary>Edit subscription</summary>
-          <form method="post" action="{{ url_for('study.subscription_update', username=username, subscription_id=sub.subscriptionID) }}" class="sub-edit-form">
-            {% if col.mode == 'rate' %}
-            <div class="form-row">
-              <label for="per-day-{{ sub.subscriptionID }}">Per day</label>
-              <input type="number" id="per-day-{{ sub.subscriptionID }}" name="per_day" min="1" max="20"
-                     value="{{ sub.per_day }}" required>
-            </div>
-            <div class="form-row">
-              <label for="start-{{ sub.subscriptionID }}">Start date</label>
-              <input type="date" id="start-{{ sub.subscriptionID }}" name="start_date"
-                     value="{{ sub.start_date }}">
-            </div>
-            {% else %}
-            <input type="hidden" name="per_day" value="1">
-            <input type="hidden" name="start_date" value="{{ sub.start_date }}">
-            {% endif %}
-            <div class="form-actions">
-              <button type="submit" class="btn btn-primary">Save</button>
-            </div>
-          </form>
-          <form method="post" action="{{ url_for('study.unsubscribe', username=username, subscription_id=sub.subscriptionID) }}"
-                onsubmit="return confirm('Unsubscribe from \'{{ col.name }}\'?')">
-            <button type="submit" class="btn btn-danger">Unsubscribe</button>
-          </form>
-        </details>
+        <a href="{{ url_for('study.subscription_edit', username=username, subscription_id=sub.subscriptionID) }}"
+           class="btn btn-secondary btn-sm">Edit</a>
         {% else %}
         <details>
           <summary>Subscribe</summary>
