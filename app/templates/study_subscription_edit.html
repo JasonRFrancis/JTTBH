@@ -64,7 +64,8 @@
   <section class="edit-section" aria-labelledby="filter-heading">
     <h2 id="filter-heading">Filters</h2>
     <p class="edit-section-desc">
-      Leave blank to include everything. Showing {{ total_filtered }} of {{ total_all }} items with current settings.
+      Leave blank to include everything.
+      <span id="filter-count">Showing {{ total_all }} of {{ total_all }}</span> items with current settings.
     </p>
 
     {# Sort order #}
@@ -87,11 +88,19 @@
              value="{{ sub.limit_count or '' }}" placeholder="e.g. 20">
     </div>
 
-    {# Start offset — displayed 1-indexed; route converts to 0-indexed for storage #}
-    <div class="form-row">
-      <label for="start_offset">Start at item # <span class="field-hint">(1 = beginning)</span></label>
-      <input type="number" id="start_offset" name="start_offset" min="1"
-             value="{{ (sub.start_offset or 0) + 1 }}">
+    {# Start item — searchable dropdown, populated and managed by JS #}
+    <div class="form-row form-row--start-item">
+      <label>Start from</label>
+      <div class="start-item-picker">
+        <div id="start-item-label" class="start-item-selected-label">Loading…</div>
+        <div class="start-item-search-wrap">
+          <input type="text" id="start-item-search" class="start-item-search-input"
+                 placeholder="Search by title or author…" autocomplete="off" spellcheck="false">
+          <ul id="start-item-list" class="start-item-dropdown hidden" role="listbox"></ul>
+        </div>
+        <button type="button" id="start-item-clear" class="btn-filter-clear">Reset to beginning</button>
+        <input type="hidden" name="start_offset" id="start_offset_hidden" value="{{ sub.start_offset or 0 }}">
+      </div>
     </div>
 
     {# Author filter #}
@@ -147,21 +156,13 @@
     {% endif %}
   </section>
 
-  {# ── Preview ──────────────────────────────────────────────── #}
-  {% if preview_sources %}
+  {# ── Preview — rendered live by JS ──────────────────────── #}
   <section class="edit-section" aria-labelledby="preview-heading">
-    <h2 id="preview-heading">Preview <span class="field-hint">(first {{ preview_sources | length }} of {{ total_filtered }})</span></h2>
-    <ol class="preview-list">
-      {% for s in preview_sources %}
-      <li class="preview-item">
-        <span class="preview-title">{{ s.title }}</span>
-        {% if s.author %}<span class="preview-author">{{ s.author }}</span>{% endif %}
-        {% if s.category %}<span class="preview-category">{{ s.category }}</span>{% endif %}
-      </li>
-      {% endfor %}
-    </ol>
+    <h2 id="preview-heading">Preview — next 30 days</h2>
+    <div id="preview-output" class="preview-output">
+      <p class="preview-notice">Loading…</p>
+    </div>
   </section>
-  {% endif %}
 
   <div class="form-actions">
     <button type="submit" class="btn btn-primary">Save</button>
@@ -175,4 +176,7 @@
 </form>
 {% endblock %}
 
-{% block js %}<script src="{{ url_for('static', filename='js/study.js') }}" defer></script>{% endblock %}
+{% block js %}
+<script id="study-sub-data" type="application/json">{{ all_sources_json | safe }}</script>
+<script src="{{ url_for('static', filename='js/study.js') }}" defer></script>
+{% endblock %}

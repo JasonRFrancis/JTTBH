@@ -26,6 +26,7 @@ POST /<username>/study/subscription/<subscription_id>/schedule/set/post
 POST /<username>/study/subscription/<subscription_id>/schedule/clear/post/<source_id>
 """
 
+import json
 from datetime import date, timedelta
 
 from flask import (
@@ -192,7 +193,22 @@ def subscription_edit(username: str, subscription_id: str):
         selected_categories = {c.strip() for c in sub['filter_category'].split(',') if c.strip()}
 
     all_sources = StudyModel.get_sources(sub['collectionID'])
-    filtered    = StudyModel.get_filtered_sources(sub, all_sources)
+    today_str   = today_for_tz(session.get('timezone', 'UTC')).isoformat()
+
+    all_sources_json = json.dumps({
+        'sources': [
+            {
+                'sourceID': s['sourceID'],
+                'title':    s['title'] or '',
+                'author':   s['author'] or '',
+                'category': s['category'] or '',
+                'order_by': s.get('order_by') or 0,
+            }
+            for s in all_sources
+        ],
+        'today':       today_str,
+        'startOffset': sub.get('start_offset') or 0,
+    })
 
     return render_template(
         'study_subscription_edit.html',
@@ -204,9 +220,8 @@ def subscription_edit(username: str, subscription_id: str):
         distinct_categories=distinct_categories,
         selected_authors=selected_authors,
         selected_categories=selected_categories,
-        preview_sources=filtered[:5],
-        total_filtered=len(filtered),
         total_all=len(all_sources),
+        all_sources_json=all_sources_json,
     )
 
 
@@ -460,9 +475,9 @@ def subscription_update(username: str, subscription_id: str):
     limit_raw = request.form.get('limit_count', '').strip()
     limit_count = int(limit_raw) if limit_raw.isdigit() and int(limit_raw) > 0 else None
 
-    offset_raw = request.form.get('start_offset', '1').strip()
+    offset_raw = request.form.get('start_offset', '0').strip()
     try:
-        start_offset = max(0, int(offset_raw) - 1)  # UI is 1-indexed; store 0-indexed
+        start_offset = max(0, int(offset_raw))
     except ValueError:
         start_offset = 0
 
