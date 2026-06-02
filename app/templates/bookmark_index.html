@@ -79,7 +79,7 @@
       </div>
 
       <ul class="bm-list" data-cat-id="{{ cat.categoryID }}" data-reorderable="1">
-        {% for bm in cat.items %}
+        {% for bm in cat.bm_list %}
         <li class="bm-row{% if bm.favorite %} bm-row--fav{% endif %}"
             draggable="true"
             data-bm-id="{{ bm.bookmarkID }}"
@@ -106,7 +106,7 @@
         {% endfor %}
       </ul>
 
-      {% if cat.total > cat.items | length %}
+      {% if cat.total > cat.bm_list | length %}
       <footer class="bm-card-foot">
         <a href="{{ url_for('bookmark.category_view', username=username, category_id=cat.categoryID) }}">
           View all {{ cat.total }} →

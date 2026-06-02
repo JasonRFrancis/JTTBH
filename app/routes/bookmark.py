@@ -211,7 +211,7 @@ def index(username: str):
             "WHERE bci.categoryID = %s AND b.userID = %s AND b.`read` = 0",
             (cat['categoryID'], user_id),
         )
-        cat['items'] = items
+        cat['bm_list'] = items
         cat['total'] = total_row['cnt'] if total_row else 0
         try:
             cat['criteria_url'] = json.loads(cat['criteria'] or '{}').get('url_contains', '')
