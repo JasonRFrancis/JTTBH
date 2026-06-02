@@ -24,7 +24,7 @@ import json
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
-TOKEN    = "PASTE_YOUR_TOKEN_HERE"
+TOKEN    = "38ddb856a73551826c304146022e4ccedcfcca529d7c09d12231b51645e396cc"
 USERNAME = "jason"
 API_URL  = f"https://jttbh.com/{USERNAME}/bookmark/api/create"
 

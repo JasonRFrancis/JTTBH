@@ -58,7 +58,8 @@ class DevelopmentConfig:
     # ------------------------------------------------------------------ #
     # External APIs                                                        #
     # ------------------------------------------------------------------ #
-    TMDB_API_KEY = os.environ.get('TMDB_API_KEY', '')
+    TMDB_API_KEY       = os.environ.get('TMDB_API_KEY', '')
+    IMPORT_API_KEY     = os.environ.get('IMPORT_API_KEY', '')
 
     SESSION_COOKIE_SECURE   = False   # Allow HTTP cookies in development
     SESSION_COOKIE_HTTPONLY = True

@@ -31,6 +31,7 @@ from datetime import datetime
 
 from flask import (
     Blueprint,
+    current_app,
     flash,
     jsonify,
     redirect,
@@ -346,3 +347,55 @@ def mark_read(username: str, bookmark_id: str):
     if referrer:
         return redirect(referrer)
     return _redirect_to_index(username)
+
+
+# ---------------------------------------------------------------------------
+# API import (no session required — authenticated by IMPORT_API_KEY header)
+# ---------------------------------------------------------------------------
+
+@bookmark_bp.route('/import/post', methods=['POST'])
+def bookmark_import(username: str):
+    """
+    Bulk-import bookmarks from an external script (e.g. Safari tab importer).
+
+    Authentication: X-Api-Key header must match IMPORT_API_KEY in app config.
+    Body: JSON array of {url, title} objects.
+    Returns: JSON {imported: N, skipped: N, errors: N}
+    """
+    expected_key = current_app.config.get('IMPORT_API_KEY', '')
+    if not expected_key or request.headers.get('X-Api-Key', '') != expected_key:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    user = db_manager.execute_one(
+        "SELECT userID FROM `user` WHERE username = %s AND active = 1", (username,)
+    )
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    user_id = user['userID']
+
+    items = request.get_json(silent=True)
+    if not isinstance(items, list):
+        return jsonify({'error': 'Expected a JSON array'}), 400
+
+    imported = skipped = errors = 0
+    for item in items:
+        url   = (item.get('url')   or '').strip()
+        title = (item.get('title') or url).strip()[:500]
+        if not url or not url.startswith(('http://', 'https://')):
+            errors += 1
+            continue
+        existing = db_manager.execute_one(
+            "SELECT id FROM bookmark WHERE userID = %s AND url = %s AND `read` = 0 LIMIT 1",
+            (user_id, url),
+        )
+        if existing:
+            skipped += 1
+            continue
+        db_manager.execute_insert(
+            "INSERT INTO bookmark (bookmarkID, userID, url, title, read_later, `read`, created, created_by) "
+            "VALUES (%s, %s, %s, %s, 1, 0, NOW(), %s)",
+            (str(uuid.uuid4()), user_id, url, title, user_id),
+        )
+        imported += 1
+
+    return jsonify({'imported': imported, 'skipped': skipped, 'errors': errors})
