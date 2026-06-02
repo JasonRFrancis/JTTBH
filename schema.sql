@@ -170,6 +170,7 @@ CREATE TABLE `bookmark` (
   `tags` text,
   `read_later` tinyint(1) DEFAULT '0',
   `read` tinyint(1) DEFAULT '0',
+  `favorite` tinyint(1) NOT NULL DEFAULT '0',
   `notes` text,
   `favicon` text,
   `created` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -226,6 +227,47 @@ CREATE TABLE `bookmark_tag` (
   CONSTRAINT `bookmark_tags_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `user` (`userID`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `bookmark_category`
+--
+
+DROP TABLE IF EXISTS `bookmark_category`;
+CREATE TABLE `bookmark_category` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `categoryID` varchar(36) NOT NULL,
+  `userID` varchar(36) NOT NULL,
+  `name` varchar(200) NOT NULL,
+  `position` int NOT NULL DEFAULT '0',
+  `criteria` text,
+  `created` datetime DEFAULT CURRENT_TIMESTAMP,
+  `created_by` varchar(36) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_categoryID` (`categoryID`),
+  KEY `idx_bcat_user` (`userID`),
+  CONSTRAINT `fk_bcat_user` FOREIGN KEY (`userID`) REFERENCES `user` (`userID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Table structure for table `bookmark_category_item`
+--
+
+DROP TABLE IF EXISTS `bookmark_category_item`;
+CREATE TABLE `bookmark_category_item` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `categoryID` varchar(36) NOT NULL,
+  `bookmarkID` varchar(36) NOT NULL,
+  `userID` varchar(36) NOT NULL,
+  `position` int NOT NULL DEFAULT '0',
+  `created` datetime DEFAULT CURRENT_TIMESTAMP,
+  `created_by` varchar(36) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_cat_bm` (`categoryID`,`bookmarkID`),
+  KEY `idx_catitem_cat` (`categoryID`),
+  KEY `idx_catitem_bm` (`bookmarkID`),
+  CONSTRAINT `fk_catitem_cat` FOREIGN KEY (`categoryID`) REFERENCES `bookmark_category` (`categoryID`) ON DELETE CASCADE,
+  CONSTRAINT `fk_catitem_bm` FOREIGN KEY (`bookmarkID`) REFERENCES `bookmark` (`bookmarkID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Table structure for table `chore`

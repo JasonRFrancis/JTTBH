@@ -47,7 +47,11 @@
       "WebFetch(domain:media.ldscdn.org)",
       "WebFetch(domain:podcasts.apple.com)",
       "Bash(pip3 install *)",
-      "Bash(tee /tmp/retry_nt.log)"
+      "Bash(tee /tmp/retry_nt.log)",
+      "Read(//Users/jason/Library/Safari/**)",
+      "Bash(sqlite3 \"/Users/jason/Library/Containers/com.apple.Safari/Data/Library/Safari/CloudTabs.db\" \".tables\")",
+      "Bash(sqlite3 \"/Users/jason/Library/Containers/com.apple.Safari/Data/Library/Safari/CloudTabs.db\" \".schema\")",
+      "Bash(plutil -p ~/Library/Safari/Bookmarks.plist)"
     ],
     "deny": [],
     "ask": []

@@ -1,77 +1,166 @@
 {% extends 'base.html' %}
 
-{% block title %}Bookmarks - jttbh{% endblock %}
+{% block title %}Bookmarks{% endblock %}
 
-{% block css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/bookmark.css') }}">
-{% endblock %}
-
-{% set area = 'bookmark' %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/bookmark.css') }}">{% endblock %}
 
 {% block content %}
 <main class="bookmark">
-  <header class="bookmark-header">
+  <header class="bm-header">
     <h1>Bookmarks</h1>
-    <a href="{{ url_for('bookmark.read_later', username=username) }}" class="read-later-link">Read Later</a>
-    <a href="{{ url_for('bookmark.settings', username=username) }}" class="read-later-link">Tools</a>
+    <nav class="bm-nav">
+      <a href="{{ url_for('bookmark.archive', username=username) }}">Archive</a>
+      <a href="{{ url_for('bookmark.read_later', username=username) }}">Read Later</a>
+      <a href="{{ url_for('bookmark.settings', username=username) }}">Settings</a>
+    </nav>
   </header>
 
-  <section class="bookmark-add">
-    <details>
+  {# ---- Add bookmark form ---- #}
+  <section class="bm-add-section">
+    <details class="bm-add-details">
       <summary>Add Bookmark</summary>
-      <form method="post" action="{{ url_for('bookmark.create', username=username) }}">
-        <div class="field">
-          <label for="bm-url">URL</label>
-          <input type="url" id="bm-url" name="url" required placeholder="https://" autocomplete="off">
-        </div>
-        <div class="field">
-          <label for="bm-title">Title</label>
-          <input type="text" id="bm-title" name="title" placeholder="Page title" autocomplete="off">
-        </div>
-        <div class="field">
-          <label for="bm-tags">Tags</label>
-          <input type="text" id="bm-tags" name="tags" placeholder="tag1, tag2" autocomplete="off">
-        </div>
-        <div class="field field--inline">
-          <label>
-            <input type="checkbox" name="read_later" value="1"> Read Later
-          </label>
-        </div>
+      <form method="post" action="{{ url_for('bookmark.create', username=username) }}" class="bm-add-form">
+        <input type="url"  name="url"   placeholder="URL"   required autocomplete="off">
+        <input type="text" name="title" placeholder="Title" autocomplete="off">
+        <input type="text" name="tags"  placeholder="Tags (comma-separated)" autocomplete="off">
         <button type="submit">Add</button>
       </form>
     </details>
   </section>
 
-  {% if bookmarks_by_day %}
-    {% for day, items in bookmarks_by_day.items() %}
-    <section class="bookmark-day">
-      <h2><time datetime="{{ day }}">{{ day }}</time></h2>
-      <ul class="bookmark-list">
-        {% for bookmark in items %}
-        <li class="bookmark-item{% if bookmark.read %} bookmark-item--read{% endif %}{% if bookmark.read_later and not bookmark.read %} bookmark-item--later{% endif %}">
-          <div class="bookmark-main">
-            <a href="{{ bookmark.url }}" target="_blank" rel="noopener noreferrer" class="bookmark-link">
-              {{ bookmark.title or bookmark.url }}
-            </a>
-            {% if bookmark.tags %}
-            <span class="bookmark-tags">{{ bookmark.tags }}</span>
-            {% endif %}
-            {% if bookmark.read_later and not bookmark.read %}
-            <span class="badge-later">Read Later</span>
-            {% endif %}
+  {# ---- New category form ---- #}
+  <section class="bm-cat-create-section">
+    <details class="bm-add-details">
+      <summary>New Category</summary>
+      <form method="post" action="{{ url_for('bookmark.category_create', username=username) }}" class="bm-add-form">
+        <input type="text" name="name" placeholder="Category name" required autocomplete="off">
+        <input type="text" name="url_contains" placeholder="Auto-match: URL contains… (optional)" autocomplete="off">
+        <button type="submit">Create</button>
+      </form>
+    </details>
+  </section>
+
+  {# ---- Category cards grid ---- #}
+  {% set all_cards = categories | list %}
+  {% if all_cards or uncategorized %}
+  <div class="bm-grid" id="bm-grid">
+
+    {# Named categories #}
+    {% for cat in all_cards %}
+    <article class="bm-card" draggable="true"
+             data-cat-id="{{ cat.categoryID }}"
+             data-position="{{ loop.index0 }}">
+      <header class="bm-card-head">
+        <span class="bm-drag-handle" title="Drag to reorder">⠿</span>
+        <span class="bm-card-name">{{ cat.name }}</span>
+        <span class="bm-card-count">{{ cat.total }}</span>
+        <a href="{{ url_for('bookmark.category_view', username=username, category_id=cat.categoryID) }}"
+           class="bm-card-viewall">View all</a>
+        <button class="bm-card-edit-btn" type="button" title="Edit category">✎</button>
+      </header>
+
+      <div class="bm-card-edit-panel" hidden>
+        <form method="post" action="{{ url_for('bookmark.category_update', username=username, category_id=cat.categoryID) }}">
+          <input type="text" name="name" value="{{ cat.name }}" placeholder="Category name" required>
+          <input type="text" name="url_contains"
+                 value="{{ cat.criteria_url }}"
+                 placeholder="URL contains… (auto-match)">
+          <div class="bm-edit-actions">
+            <button type="submit">Save</button>
+            <button type="button" class="bm-card-edit-cancel">Cancel</button>
+            <form method="post"
+                  action="{{ url_for('bookmark.category_delete', username=username, category_id=cat.categoryID) }}"
+                  style="display:inline"
+                  onsubmit="return confirm('Delete category "{{ cat.name }}"? Bookmarks are kept.')">
+              <button type="submit" class="bm-btn-danger">Delete category</button>
+            </form>
           </div>
-          {% if not bookmark.read %}
-          <form method="post" action="{{ url_for('bookmark.mark_read', username=username, bookmark_id=bookmark.bookmarkID) }}" class="bookmark-read-form">
-            <button type="submit" class="btn-mark-read" title="Mark as read">&#10003;</button>
-          </form>
-          {% endif %}
+        </form>
+      </div>
+
+      <ul class="bm-list" data-cat-id="{{ cat.categoryID }}" data-reorderable="1">
+        {% for bm in cat.items %}
+        <li class="bm-row{% if bm.favorite %} bm-row--fav{% endif %}"
+            draggable="true"
+            data-bm-id="{{ bm.bookmarkID }}"
+            data-position="{{ loop.index0 }}">
+          <a href="{{ bm.url }}" target="_blank" rel="noopener noreferrer"
+             class="bm-link">{{ bm.title or bm.url }}</a>
+          <span class="bm-actions">
+            <button class="bm-btn-fav"     title="Favorite"  data-bm-id="{{ bm.bookmarkID }}" data-active="{{ '1' if bm.favorite else '0' }}">★</button>
+            <button class="bm-btn-archive" title="Archive"   data-bm-id="{{ bm.bookmarkID }}">⊘</button>
+            <button class="bm-btn-edit"    title="Edit"      data-bm-id="{{ bm.bookmarkID }}">✎</button>
+          </span>
+          <div class="bm-edit-row" hidden>
+            <input type="text"     class="bm-edit-title" value="{{ bm.title or '' }}" placeholder="Title">
+            <input type="text"     class="bm-edit-tags"  value="{{ bm.tags or '' }}"  placeholder="Tags">
+            <textarea              class="bm-edit-notes" placeholder="Notes">{{ bm.notes or '' }}</textarea>
+            <span class="bm-edit-row-actions">
+              <button class="bm-edit-save" data-bm-id="{{ bm.bookmarkID }}">Save</button>
+              <button class="bm-edit-cancel">Cancel</button>
+            </span>
+          </div>
         </li>
+        {% else %}
+        <li class="bm-empty">No bookmarks yet.</li>
         {% endfor %}
       </ul>
-    </section>
+
+      {% if cat.total > cat.items | length %}
+      <footer class="bm-card-foot">
+        <a href="{{ url_for('bookmark.category_view', username=username, category_id=cat.categoryID) }}">
+          View all {{ cat.total }} →
+        </a>
+      </footer>
+      {% endif %}
+    </article>
     {% endfor %}
+
+    {# Uncategorized card #}
+    {% if uncategorized or uncat_total > 0 %}
+    <article class="bm-card bm-card--uncat" data-cat-id="__uncat__">
+      <header class="bm-card-head">
+        <span class="bm-card-name">Uncategorized</span>
+        <span class="bm-card-count">{{ uncat_total }}</span>
+      </header>
+      <ul class="bm-list">
+        {% for bm in uncategorized %}
+        <li class="bm-row{% if bm.favorite %} bm-row--fav{% endif %}"
+            data-bm-id="{{ bm.bookmarkID }}">
+          <a href="{{ bm.url }}" target="_blank" rel="noopener noreferrer"
+             class="bm-link">{{ bm.title or bm.url }}</a>
+          <span class="bm-actions">
+            <button class="bm-btn-fav"     title="Favorite"  data-bm-id="{{ bm.bookmarkID }}" data-active="{{ '1' if bm.favorite else '0' }}">★</button>
+            <button class="bm-btn-archive" title="Archive"   data-bm-id="{{ bm.bookmarkID }}">⊘</button>
+            <button class="bm-btn-edit"    title="Edit"      data-bm-id="{{ bm.bookmarkID }}">✎</button>
+          </span>
+          <div class="bm-edit-row" hidden>
+            <input type="text"     class="bm-edit-title" value="{{ bm.title or '' }}" placeholder="Title">
+            <input type="text"     class="bm-edit-tags"  value="{{ bm.tags or '' }}"  placeholder="Tags">
+            <textarea              class="bm-edit-notes" placeholder="Notes">{{ bm.notes or '' }}</textarea>
+            <span class="bm-edit-row-actions">
+              <button class="bm-edit-save" data-bm-id="{{ bm.bookmarkID }}">Save</button>
+              <button class="bm-edit-cancel">Cancel</button>
+            </span>
+          </div>
+        </li>
+        {% else %}
+        <li class="bm-empty">No uncategorized bookmarks.</li>
+        {% endfor %}
+      </ul>
+      {% if uncat_total > uncategorized | length %}
+      <footer class="bm-card-foot">
+        <span>{{ uncat_total - (uncategorized | length) }} more — use search or add to a category</span>
+      </footer>
+      {% endif %}
+    </article>
+    {% endif %}
+
+  </div>
   {% else %}
-    <p class="empty-state">No bookmarks saved yet. Add your first bookmark above.</p>
+  <p class="bm-empty-state">No bookmarks yet. Add your first one above.</p>
   {% endif %}
 </main>
 {% endblock %}
+
+{% block js %}<script src="{{ url_for('static', filename='js/bookmark.js') }}" defer></script>{% endblock %}

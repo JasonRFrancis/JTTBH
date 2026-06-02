@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Archive — Bookmarks{% endblock %}
+
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/bookmark.css') }}">{% endblock %}
+
+{% block content %}
+<main class="bookmark">
+  <header class="bm-header">
+    <h1>Archive</h1>
+    <nav class="bm-nav">
+      <a href="{{ url_for('bookmark.index', username=username) }}">← Bookmarks</a>
+    </nav>
+  </header>
+
+  {% if items %}
+  <form method="post" action="{{ url_for('bookmark.delete_bulk', username=username) }}" id="archive-form">
+    <div class="bm-archive-toolbar">
+      <label class="bm-select-all">
+        <input type="checkbox" id="select-all"> Select all
+      </label>
+      <button type="submit" class="bm-btn-danger"
+              onclick="return confirm('Delete selected bookmarks? This cannot be undone.')">
+        Delete selected
+      </button>
+    </div>
+
+    <ul class="bm-list bm-list--archive">
+      {% for bm in items %}
+      <li class="bm-row bm-row--archived" data-bm-id="{{ bm.bookmarkID }}">
+        <label class="bm-checkbox-wrap">
+          <input type="checkbox" name="bookmark_id" value="{{ bm.bookmarkID }}">
+        </label>
+        <a href="{{ bm.url }}" target="_blank" rel="noopener noreferrer"
+           class="bm-link">{{ bm.title or bm.url }}</a>
+        <span class="bm-actions">
+          <button class="bm-btn-unarchive" type="button" title="Restore"
+                  data-bm-id="{{ bm.bookmarkID }}">↩</button>
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </form>
+  {% else %}
+  <p class="bm-empty-state">No archived bookmarks.</p>
+  {% endif %}
+</main>
+{% endblock %}
+
+{% block js %}<script src="{{ url_for('static', filename='js/bookmark.js') }}" defer></script>{% endblock %}

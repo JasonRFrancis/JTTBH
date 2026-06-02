@@ -1,257 +1,417 @@
-/* bookmark.css
-   Styles for the bookmark index and read-later pages.
-   Mobile-first; no CSS framework dependencies.
-*/
+/* bookmark.css — mobile-first, no framework */
 
 /* ---------------------------------------------------------------------------
-   Page layout
+   Page shell
 */
+.bookmark { max-width: 1400px; margin: 0 auto; padding: 0 1rem 3rem; }
 
-.bookmark-header {
+.bm-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
+.bm-header h1 { margin: 0; font-size: 1.4rem; }
 
-.bookmark-header h1 {
-  margin: 0;
-  font-size: 1.5rem;
+.bm-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.95rem;
 }
+.bm-breadcrumb a { color: var(--color-link, #1a73e8); text-decoration: none; }
+.bm-breadcrumb a:hover { text-decoration: underline; }
 
-.read-later-link {
-  font-size: 0.875rem;
-  color: var(--color-link, #1a73e8);
-  text-decoration: none;
-}
-
-.read-later-link:hover {
-  text-decoration: underline;
-}
+.bm-nav { display: flex; gap: 1rem; font-size: 0.85rem; }
+.bm-nav a { color: var(--color-link, #1a73e8); text-decoration: none; }
+.bm-nav a:hover { text-decoration: underline; }
 
 /* ---------------------------------------------------------------------------
-   Add bookmark (collapsible)
+   Add / new-category forms (collapsible)
 */
+.bm-add-section,
+.bm-cat-create-section { margin-bottom: 0.75rem; }
 
-.bookmark-add {
-  margin-bottom: 1.5rem;
-}
-
-.bookmark-add details summary {
+.bm-add-details summary {
   cursor: pointer;
-  font-weight: bold;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--color-link, #1a73e8);
-  padding: 0.5rem 0;
+  padding: 0.25rem 0;
+  user-select: none;
 }
 
-.bookmark-add form {
-  padding: 1rem;
+.bm-add-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  margin-top: 0.4rem;
   border: 1px solid var(--color-border, #ddd);
   border-radius: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
 }
-
-.bookmark-add input[type="url"],
-.bookmark-add input[type="text"] {
-  width: 100%;
-  padding: 0.5rem;
+.bm-add-form input {
+  flex: 1 1 160px;
+  padding: 0.35rem 0.5rem;
   border: 1px solid var(--color-border, #ddd);
   border-radius: 3px;
-  font-size: 0.9rem;
-  box-sizing: border-box;
+  font-size: 0.875rem;
 }
-
-.field--inline {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.field--inline label {
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  cursor: pointer;
-}
-
-.bookmark-add button[type="submit"] {
-  align-self: flex-start;
-  padding: 0.4rem 1.25rem;
+.bm-add-form button {
+  padding: 0.35rem 1rem;
   background: var(--color-link, #1a73e8);
   color: #fff;
   border: none;
   border-radius: 3px;
   cursor: pointer;
+  font-size: 0.875rem;
+}
+.bm-add-form button:hover { opacity: 0.88; }
+
+/* ---------------------------------------------------------------------------
+   Card grid
+*/
+.bm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+/* ---------------------------------------------------------------------------
+   Individual card
+*/
+.bm-card {
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 6px;
+  background: var(--color-surface, #fff);
+  overflow: hidden;
+}
+.bm-card.bm-drag-over { outline: 2px dashed var(--color-link, #1a73e8); }
+.bm-card.bm-dragging  { opacity: 0.45; }
+
+.bm-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-alt, #f9fafb);
+  border-bottom: 1px solid var(--color-border, #ddd);
+  min-height: 2.2rem;
+}
+.bm-card--uncat .bm-card-head { background: var(--color-bg-alt, #f3f4f6); }
+
+.bm-drag-handle {
+  cursor: grab;
+  color: var(--color-text-secondary, #aaa);
+  font-size: 1rem;
+  padding: 0 0.15rem;
+  user-select: none;
+}
+.bm-drag-handle:active { cursor: grabbing; }
+
+.bm-card-name {
+  font-weight: 600;
   font-size: 0.9rem;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
-.bookmark-add button[type="submit"]:hover {
-  opacity: 0.9;
-}
-
-/* ---------------------------------------------------------------------------
-   Day groupings
-*/
-
-.bookmark-day {
-  margin-bottom: 2rem;
-}
-
-.bookmark-day h2 {
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+.bm-card-count {
+  font-size: 0.75rem;
   color: var(--color-text-secondary, #888);
-  margin: 0 0 0.75rem;
-  border-bottom: 1px solid var(--color-border, #eee);
-  padding-bottom: 0.35rem;
+  background: var(--color-bg, #eee);
+  border-radius: 99px;
+  padding: 0.1rem 0.45rem;
+  white-space: nowrap;
+}
+.bm-card-viewall {
+  font-size: 0.75rem;
+  color: var(--color-link, #1a73e8);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.bm-card-viewall:hover { text-decoration: underline; }
+.bm-card-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary, #aaa);
+  font-size: 0.9rem;
+  padding: 0 0.2rem;
+  line-height: 1;
+}
+.bm-card-edit-btn:hover { color: var(--color-text, #333); }
+
+/* Category edit panel */
+.bm-card-edit-panel {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-border, #ddd);
+  background: #fffbf0;
+}
+.bm-card-edit-panel input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.35rem 0.5rem;
+  margin-bottom: 0.4rem;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 3px;
+  font-size: 0.875rem;
+}
+.bm-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.bm-edit-actions button,
+.bm-edit-actions [type="submit"] {
+  padding: 0.3rem 0.8rem;
+  font-size: 0.8rem;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid var(--color-border, #ddd);
+  background: var(--color-bg, #fff);
+}
+.bm-edit-actions [type="submit"]:first-child {
+  background: var(--color-link, #1a73e8);
+  color: #fff;
+  border-color: transparent;
 }
 
-/* ---------------------------------------------------------------------------
-   Bookmark items
-*/
+.bm-card-foot {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #888);
+  border-top: 1px solid var(--color-border, #f0f0f0);
+  text-align: right;
+}
+.bm-card-foot a { color: var(--color-link, #1a73e8); text-decoration: none; }
+.bm-card-foot a:hover { text-decoration: underline; }
 
-.bookmark-list {
+/* ---------------------------------------------------------------------------
+   Bookmark list rows
+*/
+.bm-list {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.bookmark-item {
+.bm-row {
+  position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.6rem 0;
-  border-bottom: 1px solid var(--color-border, #f0f0f0);
+  gap: 0.25rem;
+  padding: 0.3rem 0.75rem;
+  border-bottom: 1px solid var(--color-border, #f3f3f3);
+  min-height: 1.8rem;
 }
+.bm-row:last-child { border-bottom: none; }
+.bm-row.bm-drag-over-top    { border-top: 2px solid var(--color-link, #1a73e8); }
+.bm-row.bm-drag-over-bottom { border-bottom: 2px solid var(--color-link, #1a73e8); }
+.bm-row.bm-dragging         { opacity: 0.4; }
+.bm-row--fav .bm-link       { color: #b45309; }
 
-.bookmark-item:last-child {
-  border-bottom: none;
-}
-
-.bookmark-item--read {
-  opacity: 0.55;
-}
-
-.bookmark-item--later .bookmark-link {
-  font-style: italic;
-}
-
-.bookmark-main {
+.bm-link {
   flex: 1;
   min-width: 0;
-}
-
-.bookmark-link {
-  display: block;
+  font-size: 0.875rem;
   color: var(--color-link, #1a73e8);
   text-decoration: none;
-  font-size: 0.95rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 0.15rem;
+  line-height: 1.5;
 }
+.bm-link:hover { text-decoration: underline; }
 
-.bookmark-link:hover {
-  text-decoration: underline;
-}
-
-.bookmark-tags {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary, #888);
-  display: block;
-}
-
-.badge-later {
-  display: inline-block;
-  font-size: 0.7rem;
-  background: #fff3e0;
-  color: #e65100;
-  border: 1px solid #ffcc80;
-  border-radius: 3px;
-  padding: 0.1rem 0.4rem;
-  margin-left: 0.35rem;
-  vertical-align: middle;
-}
-
-/* ---------------------------------------------------------------------------
-   Mark-read button
-*/
-
-.bookmark-read-form {
+/* Hover-reveal action buttons */
+.bm-actions {
+  display: flex;
+  gap: 0.2rem;
+  opacity: 0;
+  transition: opacity 0.1s;
   flex-shrink: 0;
 }
+.bm-row:hover .bm-actions,
+.bm-row:focus-within .bm-actions { opacity: 1; }
 
-.btn-mark-read {
+.bm-actions button {
   background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0.1rem 0.25rem;
+  color: var(--color-text-secondary, #999);
+  border-radius: 3px;
+  line-height: 1;
+}
+.bm-actions button:hover { background: var(--color-bg-alt, #f0f0f0); color: var(--color-text, #333); }
+.bm-btn-fav[data-active="1"]  { color: #b45309; }
+.bm-btn-archive:hover          { color: #dc2626 !important; }
+.bm-btn-remove:hover           { color: #dc2626 !important; }
+
+/* Inline edit panel within a row */
+.bm-edit-row {
+  width: 100%;
+  padding: 0.4rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.bm-edit-row input,
+.bm-edit-row textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.3rem 0.5rem;
   border: 1px solid var(--color-border, #ddd);
   border-radius: 3px;
-  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+}
+.bm-edit-row textarea { resize: vertical; min-height: 3rem; }
+.bm-edit-row-actions { display: flex; gap: 0.4rem; }
+.bm-edit-row-actions button {
+  padding: 0.25rem 0.7rem;
+  font-size: 0.8rem;
+  border-radius: 3px;
   cursor: pointer;
-  font-size: 0.9rem;
-  color: var(--color-text-secondary, #555);
-  line-height: 1.4;
+  border: 1px solid var(--color-border, #ddd);
+  background: var(--color-bg, #fff);
+}
+.bm-edit-save {
+  background: var(--color-link, #1a73e8) !important;
+  color: #fff !important;
+  border-color: transparent !important;
 }
 
-.btn-mark-read:hover {
-  background: #e8f5e9;
-  border-color: #2e7d32;
-  color: #2e7d32;
+.bm-empty {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #aaa);
+  font-style: italic;
 }
 
 /* ---------------------------------------------------------------------------
-   Read-later page
+   Category full view
 */
-
-.bookmark-read-later .bookmark-header {
-  margin-bottom: 1.5rem;
-}
-
-.bookmark-read-later .bookmark-item {
-  flex-direction: column;
-  align-items: stretch;
-}
-
-.bookmark-description {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary, #666);
-  margin: 0.25rem 0 0;
-}
-
-.bookmark-read-later .btn-mark-read {
-  align-self: flex-start;
-  margin-top: 0.5rem;
-  padding: 0.35rem 1rem;
+.bm-search-section { margin-bottom: 1rem; }
+.bm-search-form { display: flex; gap: 0.4rem; align-items: center; }
+.bm-search-form input {
+  flex: 1;
+  max-width: 380px;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 3px;
   font-size: 0.875rem;
 }
+.bm-search-form button {
+  padding: 0.35rem 0.8rem;
+  background: var(--color-link, #1a73e8);
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+.bm-clear-search {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #888);
+  text-decoration: none;
+}
+.bm-clear-search:hover { text-decoration: underline; }
+
+.bm-cat-meta {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, #888);
+  margin-bottom: 0.5rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+.bm-search-label { font-style: italic; }
+
+.bm-list--full .bm-row { padding-left: 0.25rem; }
+
+.bm-pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  font-size: 0.875rem;
+}
+.bm-page-btn {
+  color: var(--color-link, #1a73e8);
+  text-decoration: none;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 3px;
+}
+.bm-page-btn:hover { background: var(--color-bg-alt, #f0f0f0); }
+.bm-page-info { color: var(--color-text-secondary, #888); }
+
+/* ---------------------------------------------------------------------------
+   Archive page
+*/
+.bm-archive-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border, #eee);
+}
+.bm-select-all {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.bm-list--archive .bm-row { align-items: center; }
+.bm-checkbox-wrap {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding-right: 0.4rem;
+}
+.bm-row--archived .bm-link { color: var(--color-text-secondary, #888); }
+.bm-btn-unarchive { color: var(--color-link, #1a73e8) !important; }
+
+/* ---------------------------------------------------------------------------
+   Shared danger button
+*/
+.bm-btn-danger {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.bm-btn-danger:hover { background: #b91c1c; }
 
 /* ---------------------------------------------------------------------------
    Empty state
 */
-
-.empty-state {
+.bm-empty-state {
   color: var(--color-text-secondary, #888);
   font-style: italic;
-}
-
-/* ---------------------------------------------------------------------------
-   Tools / settings page
-*/
-
-.bookmark section {
   margin-top: 2rem;
 }
 
-.bookmark section h2 {
-  font-size: 1rem;
-  margin: 0 0 0.75rem;
-}
+/* ---------------------------------------------------------------------------
+   Settings / tools page (kept from original)
+*/
+.bookmark section { margin-top: 2rem; }
+.bookmark section h2 { font-size: 1rem; margin: 0 0 0.75rem; }
 
 .bookmarklet-link {
   display: inline-block;
@@ -263,10 +423,7 @@
   text-decoration: none;
   cursor: grab;
 }
-
-.bookmarklet-link:hover {
-  background: #1d4ed8;
-}
+.bookmarklet-link:hover { background: #1d4ed8; }
 
 .api-token {
   font-family: monospace;
@@ -278,7 +435,6 @@
   word-break: break-all;
   margin: 0 0 0.75rem;
 }
-
 .api-table {
   border-collapse: collapse;
   font-size: 0.875rem;
@@ -286,14 +442,14 @@
   max-width: 600px;
   margin-bottom: 0.75rem;
 }
-
 .api-table th, .api-table td {
   text-align: left;
   padding: 0.35rem 0.75rem;
   border-bottom: 1px solid #e5e7eb;
 }
+.api-table th { font-weight: 600; background: #f9fafb; }
 
-.api-table th {
-  font-weight: 600;
-  background: #f9fafb;
-}
+/* Read-later page (kept) */
+.bookmark-read-later .bookmark-header { margin-bottom: 1.5rem; }
+.bookmark-read-later .bookmark-item { flex-direction: column; align-items: stretch; }
+.bookmark-description { font-size: 0.875rem; color: var(--color-text-secondary, #666); margin: 0.25rem 0 0; }

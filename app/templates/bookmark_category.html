@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ category.name }} — Bookmarks{% endblock %}
+
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/bookmark.css') }}">{% endblock %}
+
+{% block content %}
+<main class="bookmark">
+  <header class="bm-header">
+    <div class="bm-breadcrumb">
+      <a href="{{ url_for('bookmark.index', username=username) }}">Bookmarks</a>
+      <span>›</span>
+      <span>{{ category.name }}</span>
+    </div>
+    <nav class="bm-nav">
+      <a href="{{ url_for('bookmark.index', username=username) }}">← All Categories</a>
+    </nav>
+  </header>
+
+  {# Search #}
+  <section class="bm-search-section">
+    <form method="get" action="{{ url_for('bookmark.category_view', username=username, category_id=category.categoryID) }}" class="bm-search-form">
+      <input type="search" name="q" value="{{ q }}" placeholder="Search {{ category.name }}…" autocomplete="off">
+      <button type="submit">Search</button>
+      {% if q %}<a href="{{ url_for('bookmark.category_view', username=username, category_id=category.categoryID) }}" class="bm-clear-search">Clear</a>{% endif %}
+    </form>
+  </section>
+
+  <section class="bm-cat-detail">
+    <div class="bm-cat-meta">
+      <span class="bm-card-count">{{ total }} bookmark{{ 's' if total != 1 }}</span>
+      {% if q %}<span class="bm-search-label">matching "{{ q }}"</span>{% endif %}
+    </div>
+
+    <ul class="bm-list bm-list--full" data-cat-id="{{ category.categoryID }}" data-reorderable="1">
+      {% for bm in items %}
+      <li class="bm-row{% if bm.favorite %} bm-row--fav{% endif %}"
+          draggable="true"
+          data-bm-id="{{ bm.bookmarkID }}"
+          data-position="{{ loop.index0 + (page - 1) * 50 }}">
+        <a href="{{ bm.url }}" target="_blank" rel="noopener noreferrer"
+           class="bm-link">{{ bm.title or bm.url }}</a>
+        <span class="bm-actions">
+          <button class="bm-btn-fav"     title="Favorite"  data-bm-id="{{ bm.bookmarkID }}" data-active="{{ '1' if bm.favorite else '0' }}">★</button>
+          <button class="bm-btn-archive" title="Archive"   data-bm-id="{{ bm.bookmarkID }}">⊘</button>
+          <button class="bm-btn-edit"    title="Edit"      data-bm-id="{{ bm.bookmarkID }}">✎</button>
+          <button class="bm-btn-remove"  title="Remove from category"
+                  data-cat-id="{{ category.categoryID }}" data-bm-id="{{ bm.bookmarkID }}">✕</button>
+        </span>
+        <div class="bm-edit-row" hidden>
+          <input type="text"     class="bm-edit-title" value="{{ bm.title or '' }}" placeholder="Title">
+          <input type="text"     class="bm-edit-tags"  value="{{ bm.tags or '' }}"  placeholder="Tags">
+          <textarea              class="bm-edit-notes" placeholder="Notes">{{ bm.notes or '' }}</textarea>
+          <span class="bm-edit-row-actions">
+            <button class="bm-edit-save" data-bm-id="{{ bm.bookmarkID }}">Save</button>
+            <button class="bm-edit-cancel">Cancel</button>
+          </span>
+        </div>
+      </li>
+      {% else %}
+      <li class="bm-empty">No bookmarks found{% if q %} for "{{ q }}"{% endif %}.</li>
+      {% endfor %}
+    </ul>
+
+    {% if pages > 1 %}
+    <nav class="bm-pagination">
+      {% if page > 1 %}
+      <a href="{{ url_for('bookmark.category_view', username=username, category_id=category.categoryID, page=page-1, q=q) }}"
+         class="bm-page-btn">← Prev</a>
+      {% endif %}
+      <span class="bm-page-info">Page {{ page }} of {{ pages }}</span>
+      {% if page < pages %}
+      <a href="{{ url_for('bookmark.category_view', username=username, category_id=category.categoryID, page=page+1, q=q) }}"
+         class="bm-page-btn">Next →</a>
+      {% endif %}
+    </nav>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}
+
+{% block js %}<script src="{{ url_for('static', filename='js/bookmark.js') }}" defer></script>{% endblock %}
