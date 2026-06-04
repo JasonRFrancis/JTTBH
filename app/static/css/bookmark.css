@@ -1,5 +1,8 @@
 /* bookmark.css — mobile-first, no framework */
 
+/* Ensure hidden attribute is always respected even if other rules set display */
+.bookmark [hidden] { display: none !important; }
+
 /* ---------------------------------------------------------------------------
    Page shell
 */

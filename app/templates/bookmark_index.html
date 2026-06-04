@@ -68,13 +68,12 @@
           <div class="bm-edit-actions">
             <button type="submit">Save</button>
             <button type="button" class="bm-card-edit-cancel">Cancel</button>
-            <form method="post"
-                  action="{{ url_for('bookmark.category_delete', username=username, category_id=cat.categoryID) }}"
-                  style="display:inline"
-                  onsubmit="return confirm('Delete category "{{ cat.name }}"? Bookmarks are kept.')">
-              <button type="submit" class="bm-btn-danger">Delete category</button>
-            </form>
           </div>
+        </form>
+        <form method="post"
+              action="{{ url_for('bookmark.category_delete', username=username, category_id=cat.categoryID) }}"
+              onsubmit="return confirm('Delete category &quot;{{ cat.name }}&quot;? Bookmarks are kept.')">
+          <button type="submit" class="bm-btn-danger">Delete category</button>
         </form>
       </div>
 
