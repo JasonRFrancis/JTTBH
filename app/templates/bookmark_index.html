@@ -45,6 +45,41 @@
   {% if all_cards or uncategorized %}
   <div class="bm-grid" id="bm-grid">
 
+    {# Favorites card (system, not draggable) #}
+    {% if fav_total > 0 %}
+    <article class="bm-card bm-card--system" data-cat-id="__favorites__">
+      <header class="bm-card-head">
+        <span class="bm-card-name">★ Favorites</span>
+        <span class="bm-card-count">{{ fav_total }}</span>
+      </header>
+      <ul class="bm-list">
+        {% for bm in favorites %}
+        <li class="bm-row bm-row--fav" data-bm-id="{{ bm.bookmarkID }}">
+          <a href="{{ bm.url }}" target="_blank" rel="noopener noreferrer"
+             class="bm-link">{{ bm.title or bm.url }}</a>
+          <span class="bm-actions">
+            <button class="bm-btn-fav"     title="Unfavorite" data-bm-id="{{ bm.bookmarkID }}" data-active="1">★</button>
+            <button class="bm-btn-archive" title="Archive"    data-bm-id="{{ bm.bookmarkID }}">⊘</button>
+            <button class="bm-btn-edit"    title="Edit"       data-bm-id="{{ bm.bookmarkID }}">✎</button>
+          </span>
+          <div class="bm-edit-row" hidden>
+            <input type="text"     class="bm-edit-title" value="{{ bm.title or '' }}" placeholder="Title">
+            <input type="text"     class="bm-edit-tags"  value="{{ bm.tags or '' }}"  placeholder="Tags">
+            <textarea              class="bm-edit-notes" placeholder="Notes">{{ bm.notes or '' }}</textarea>
+            <span class="bm-edit-row-actions">
+              <button class="bm-edit-save" data-bm-id="{{ bm.bookmarkID }}">Save</button>
+              <button class="bm-edit-cancel">Cancel</button>
+            </span>
+          </div>
+        </li>
+        {% endfor %}
+        {% if fav_total > favorites | length %}
+        <li class="bm-empty">+{{ fav_total - (favorites | length) }} more — favorite items appear in their categories too</li>
+        {% endif %}
+      </ul>
+    </article>
+    {% endif %}
+
     {# Named categories #}
     {% for cat in all_cards %}
     <article class="bm-card" draggable="true"

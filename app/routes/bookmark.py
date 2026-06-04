@@ -218,6 +218,24 @@ def index(username: str):
         except (ValueError, TypeError):
             cat['criteria_url'] = ''
 
+    # Favorites: active bookmarks with favorite=1, newest first
+    favorites = db_manager.execute_query(
+        """SELECT b.bookmarkID, b.url, b.title, b.tags, b.favorite, b.notes
+           FROM bookmark b
+           WHERE b.userID = %s AND b.`read` = 0 AND b.favorite = 1
+           ORDER BY b.created DESC
+           LIMIT %s""",
+        (user_id, PER_PAGE + 1),
+    )
+    fav_has_more = len(favorites) > PER_PAGE
+    if fav_has_more:
+        favorites = favorites[:PER_PAGE]
+    fav_total_row = db_manager.execute_one(
+        "SELECT COUNT(*) AS cnt FROM bookmark WHERE userID = %s AND `read` = 0 AND favorite = 1",
+        (user_id,),
+    )
+    fav_total = fav_total_row['cnt'] if fav_total_row else 0
+
     # Uncategorized: active bookmarks not in any category_item for this user
     uncategorized = db_manager.execute_query(
         """SELECT b.bookmarkID, b.url, b.title, b.tags, b.favorite, b.notes
@@ -248,6 +266,8 @@ def index(username: str):
         'bookmark_index.html',
         username=username,
         categories=categories,
+        favorites=favorites,
+        fav_total=fav_total,
         uncategorized=uncategorized,
         uncat_total=uncat_total,
     )
