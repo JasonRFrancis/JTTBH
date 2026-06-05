@@ -273,6 +273,69 @@ def index(username: str):
     )
 
 
+_SORT_ORDER = {
+    'date_desc':  'b.created DESC',
+    'date_asc':   'b.created ASC',
+    'title_asc':  'b.title ASC',
+    'title_desc': 'b.title DESC',
+    'domain_asc': 'SUBSTRING_INDEX(SUBSTRING_INDEX(b.url, "/", 3), "//", -1) ASC',
+    'manual':     'bci.position ASC',
+}
+
+
+@bookmark_bp.route('/items/json')
+@login_required
+@permission_required_read(PERM_BOOKMARK)
+def items_json(username: str):
+    """Return a sorted list of bookmark items for a card as JSON.
+
+    Query params
+    ------------
+    cat  : category UUID | '__favorites__' | '__uncat__'
+    sort : date_desc | date_asc | title_asc | title_desc | domain_asc | manual
+    """
+    user_id = session['user_id']
+    cat     = request.args.get('cat', '').strip()
+    sort    = request.args.get('sort', 'date_desc')
+    order   = _SORT_ORDER.get(sort, 'b.created DESC')
+
+    cols = 'b.bookmarkID, b.url, b.title, b.tags, b.favorite, b.notes'
+
+    if cat == '__favorites__':
+        if sort == 'manual':
+            order = 'b.created DESC'
+        rows = db_manager.execute_query(
+            f'SELECT {cols} FROM bookmark b '
+            f'WHERE b.userID = %s AND b.`read` = 0 AND b.favorite = 1 '
+            f'ORDER BY {order}',
+            (user_id,),
+        )
+    elif cat == '__uncat__':
+        if sort == 'manual':
+            order = 'b.created DESC'
+        rows = db_manager.execute_query(
+            f'SELECT {cols} FROM bookmark b '
+            f'WHERE b.userID = %s AND b.`read` = 0 '
+            f'AND b.bookmarkID NOT IN ('
+            f'  SELECT bci.bookmarkID FROM bookmark_category_item bci WHERE bci.userID = %s'
+            f') ORDER BY {order}',
+            (user_id, user_id),
+        )
+    else:
+        cat_row = _get_category(cat, user_id)
+        if not cat_row:
+            return jsonify({'error': 'Not found'}), 404
+        rows = db_manager.execute_query(
+            f'SELECT {cols}, bci.position FROM bookmark_category_item bci '
+            f'JOIN bookmark b ON b.bookmarkID = bci.bookmarkID '
+            f'WHERE bci.categoryID = %s AND b.userID = %s AND b.`read` = 0 '
+            f'ORDER BY {order}',
+            (cat, user_id),
+        )
+
+    return jsonify({'items': [dict(r) for r in rows]})
+
+
 @bookmark_bp.route('/archive')
 @login_required
 @permission_required_read(PERM_BOOKMARK)

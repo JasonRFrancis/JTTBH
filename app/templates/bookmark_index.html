@@ -51,6 +51,13 @@
       <header class="bm-card-head">
         <span class="bm-card-name">★ Favorites</span>
         <span class="bm-card-count">{{ fav_total }}</span>
+        <select class="bm-sort" data-cat-id="__favorites__">
+          <option value="date_desc">Newest</option>
+          <option value="date_asc">Oldest</option>
+          <option value="title_asc">A → Z</option>
+          <option value="title_desc">Z → A</option>
+          <option value="domain_asc">Domain</option>
+        </select>
       </header>
       <ul class="bm-list">
         {% for bm in favorites %}
@@ -89,6 +96,14 @@
         <span class="bm-drag-handle" title="Drag to reorder">⠿</span>
         <span class="bm-card-name">{{ cat.name }}</span>
         <span class="bm-card-count">{{ cat.total }}</span>
+        <select class="bm-sort" data-cat-id="{{ cat.categoryID }}">
+          <option value="manual">Manual</option>
+          <option value="date_desc">Newest</option>
+          <option value="date_asc">Oldest</option>
+          <option value="title_asc">A → Z</option>
+          <option value="title_desc">Z → A</option>
+          <option value="domain_asc">Domain</option>
+        </select>
         <a href="{{ url_for('bookmark.category_view', username=username, category_id=cat.categoryID) }}"
            class="bm-card-viewall">View all</a>
         <button class="bm-card-edit-btn" type="button" title="Edit category">✎</button>
@@ -156,6 +171,13 @@
       <header class="bm-card-head">
         <span class="bm-card-name">Uncategorized</span>
         <span class="bm-card-count">{{ uncat_total }}</span>
+        <select class="bm-sort" data-cat-id="__uncat__">
+          <option value="date_desc">Newest</option>
+          <option value="date_asc">Oldest</option>
+          <option value="title_asc">A → Z</option>
+          <option value="title_desc">Z → A</option>
+          <option value="domain_asc">Domain</option>
+        </select>
       </header>
       <ul class="bm-list">
         {% for bm in uncategorized %}

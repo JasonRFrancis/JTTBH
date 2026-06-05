@@ -262,6 +262,86 @@ function saveRowOrder(list) {
 }
 
 // ---------------------------------------------------------------------------
+// Sort
+// ---------------------------------------------------------------------------
+
+function renderRow(bm, catId) {
+  const reorderable = catId && catId !== '__favorites__' && catId !== '__uncat__';
+  const li = document.createElement('li');
+  li.className = 'bm-row' + (bm.favorite ? ' bm-row--fav' : '');
+  li.dataset.bmId = bm.bookmarkID;
+  if (reorderable) {
+    li.draggable = true;
+    li.dataset.position = '0';
+  }
+
+  const title = bm.title || bm.url;
+  const favActive = bm.favorite ? '1' : '0';
+
+  li.innerHTML =
+    `<a href="${escHtml(bm.url)}" target="_blank" rel="noopener noreferrer" class="bm-link">${escHtml(title)}</a>` +
+    `<span class="bm-actions">` +
+      `<button class="bm-btn-fav" title="${bm.favorite ? 'Unfavorite' : 'Favorite'}" data-bm-id="${bm.bookmarkID}" data-active="${favActive}">★</button>` +
+      `<button class="bm-btn-archive" title="Archive" data-bm-id="${bm.bookmarkID}">⊘</button>` +
+      `<button class="bm-btn-edit"    title="Edit"    data-bm-id="${bm.bookmarkID}">✎</button>` +
+      (catId && catId !== '__favorites__' && catId !== '__uncat__'
+        ? `<button class="bm-btn-remove" title="Remove from category" data-cat-id="${catId}" data-bm-id="${bm.bookmarkID}">✕</button>`
+        : '') +
+    `</span>` +
+    `<div class="bm-edit-row" hidden>` +
+      `<input type="text" class="bm-edit-title" value="${escAttr(bm.title || '')}" placeholder="Title">` +
+      `<input type="text" class="bm-edit-tags"  value="${escAttr(bm.tags  || '')}" placeholder="Tags">` +
+      `<textarea class="bm-edit-notes" placeholder="Notes">${escHtml(bm.notes || '')}</textarea>` +
+      `<span class="bm-edit-row-actions">` +
+        `<button class="bm-edit-save" data-bm-id="${bm.bookmarkID}">Save</button>` +
+        `<button class="bm-edit-cancel">Cancel</button>` +
+      `</span>` +
+    `</div>`;
+
+  return li;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+}
+
+function initSort() {
+  document.addEventListener('change', e => {
+    const sel = e.target.closest('.bm-sort');
+    if (!sel) return;
+    const catId = sel.dataset.catId;
+    const sort  = sel.value;
+    const card  = sel.closest('.bm-card');
+    const list  = card && card.querySelector('.bm-list');
+    if (!list) return;
+
+    fetch(`${BASE}/items/json?cat=${encodeURIComponent(catId)}&sort=${encodeURIComponent(sort)}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.items) return;
+        list.innerHTML = '';
+        if (data.items.length === 0) {
+          const li = document.createElement('li');
+          li.className = 'bm-empty';
+          li.textContent = 'No bookmarks.';
+          list.appendChild(li);
+        } else {
+          data.items.forEach(bm => list.appendChild(renderRow(bm, catId)));
+        }
+        // Disable drag-reorder while a non-manual sort is active
+        if (catId !== '__favorites__' && catId !== '__uncat__') {
+          list.dataset.reorderable = sort === 'manual' ? '1' : '0';
+        }
+      });
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Archive page: select all
 // ---------------------------------------------------------------------------
 
@@ -282,3 +362,4 @@ initRowActions();
 initCardDrag();
 initRowDrag();
 initSelectAll();
+initSort();
