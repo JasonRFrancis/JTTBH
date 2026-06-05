@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}{% if recipe %}Edit {{ recipe.title }}{% else %}Add Recipe{% endif %}{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe.css') }}">{% endblock %}
+{% block content %}
+<article class="recipe-form-page">
+  <header>
+    <nav class="breadcrumb">
+      {% if recipe %}
+      <a href="{{ url_for('recipe.detail', username=username, recipe_id=recipe.recipeID) }}">← {{ recipe.title }}</a>
+      {% else %}
+      <a href="{{ url_for('recipe.index', username=username) }}">← Recipes</a>
+      {% endif %}
+    </nav>
+    <h1>{% if recipe %}Edit Recipe{% else %}Add Recipe{% endif %}</h1>
+  </header>
+
+  <section class="extract-section">
+    <label for="extract-url">Extract from URL</label>
+    <div class="extract-row">
+      <input type="url" id="extract-url" placeholder="https://..." class="extract-input">
+      <button type="button" id="extract-btn">Extract</button>
+    </div>
+    <p class="extract-status" id="extract-status" hidden></p>
+  </section>
+
+  <form method="post" action="{% if recipe %}{{ url_for('recipe.update', username=username, recipe_id=recipe.recipeID) }}{% else %}{{ url_for('recipe.create', username=username) }}{% endif %}" id="recipe-form">
+    <section class="form-section">
+      <h2>Details</h2>
+      <div class="form-grid">
+        <div class="form-field form-field--wide">
+          <label for="title">Title <span aria-hidden="true">*</span></label>
+          <input type="text" id="title" name="title" required value="{{ recipe.title if recipe else '' }}">
+        </div>
+        <div class="form-field">
+          <label for="type">Type / Category</label>
+          <input type="text" id="type" name="type" value="{{ recipe.type if recipe else '' }}" placeholder="e.g. Pasta, Desserts">
+        </div>
+        <div class="form-field">
+          <label for="source">Source</label>
+          <input type="text" id="source" name="source" value="{{ recipe.source if recipe else '' }}" placeholder="URL or description">
+        </div>
+        <div class="form-field">
+          <label for="servings">Servings</label>
+          <input type="text" id="servings" name="servings" value="{{ recipe.servings if recipe else '' }}" placeholder="e.g. 4 servings">
+        </div>
+        <div class="form-field">
+          <label for="prep_time">Prep Time</label>
+          <input type="text" id="prep_time" name="prep_time" value="{{ recipe.prep_time if recipe else '' }}" placeholder="e.g. 15m">
+        </div>
+        <div class="form-field">
+          <label for="cook_time">Cook Time</label>
+          <input type="text" id="cook_time" name="cook_time" value="{{ recipe.cook_time if recipe else '' }}" placeholder="e.g. 1h">
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <h2>Ingredients</h2>
+      <div id="ingredients-list">
+        {% if recipe and recipe.ingredients_list %}
+          {% for ing in recipe.ingredients_list %}
+          <div class="ingredient-row">
+            <input type="text" name="ingredient_amount[]" placeholder="Amount" value="{{ ing.amount }}" class="ing-amount">
+            <input type="text" name="ingredient_unit[]" placeholder="Unit" value="{{ ing.unit }}" class="ing-unit">
+            <input type="text" name="ingredient_item[]" placeholder="Ingredient *" value="{{ ing.item }}" class="ing-item">
+            <input type="text" name="ingredient_note[]" placeholder="Note" value="{{ ing.note }}" class="ing-note">
+            <button type="button" class="remove-row" aria-label="Remove ingredient">×</button>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="ingredient-row">
+            <input type="text" name="ingredient_amount[]" placeholder="Amount" class="ing-amount">
+            <input type="text" name="ingredient_unit[]" placeholder="Unit" class="ing-unit">
+            <input type="text" name="ingredient_item[]" placeholder="Ingredient *" class="ing-item">
+            <input type="text" name="ingredient_note[]" placeholder="Note" class="ing-note">
+            <button type="button" class="remove-row" aria-label="Remove ingredient">×</button>
+          </div>
+        {% endif %}
+      </div>
+      <button type="button" id="add-ingredient" class="btn-add-row">+ Add Ingredient</button>
+    </section>
+
+    <section class="form-section">
+      <h2>Directions</h2>
+      <ol id="directions-list" class="directions-edit-list">
+        {% if recipe and recipe.directions_list %}
+          {% for step in recipe.directions_list %}
+          <li class="direction-row">
+            <textarea name="direction[]" rows="2" placeholder="Step...">{{ step }}</textarea>
+            <button type="button" class="remove-row" aria-label="Remove step">×</button>
+          </li>
+          {% endfor %}
+        {% else %}
+          <li class="direction-row">
+            <textarea name="direction[]" rows="2" placeholder="Step..."></textarea>
+            <button type="button" class="remove-row" aria-label="Remove step">×</button>
+          </li>
+        {% endif %}
+      </ol>
+      <button type="button" id="add-direction" class="btn-add-row">+ Add Step</button>
+    </section>
+
+    <section class="form-section">
+      <h2>Notes</h2>
+      <textarea id="notes" name="notes" rows="4" placeholder="Any notes, variations, or tips...">{{ recipe.notes if recipe else '' }}</textarea>
+    </section>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">{% if recipe %}Save Changes{% else %}Create Recipe{% endif %}</button>
+      {% if recipe %}
+      <a href="{{ url_for('recipe.detail', username=username, recipe_id=recipe.recipeID) }}">Cancel</a>
+      {% else %}
+      <a href="{{ url_for('recipe.index', username=username) }}">Cancel</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if recipe %}
+  <section class="form-section recipe-images-manage">
+    <h2>Images</h2>
+    <div class="image-thumbs" id="image-thumbs">
+      {% for img in images %}
+      <div class="image-thumb" data-image-id="{{ img.imageID }}">
+        <img src="{{ img.url }}" alt="{{ img.caption or '' }}" loading="lazy">
+        <button type="button" class="image-thumb-delete" data-image-id="{{ img.imageID }}" title="Remove image">×</button>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="image-add-forms">
+      <div class="image-add-row">
+        <label>Upload file</label>
+        <input type="file" id="image-file-input" accept="image/*">
+        <input type="text" id="image-file-caption" placeholder="Caption (optional)">
+        <button type="button" id="image-upload-btn">Upload</button>
+      </div>
+      <div class="image-add-row">
+        <label>Paste URL</label>
+        <input type="url" id="image-url-input" placeholder="https://...">
+        <input type="text" id="image-url-caption" placeholder="Caption (optional)">
+        <button type="button" id="image-url-btn">Add URL</button>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+</article>
+
+<template id="ingredient-row-template">
+  <div class="ingredient-row">
+    <input type="text" name="ingredient_amount[]" placeholder="Amount" class="ing-amount">
+    <input type="text" name="ingredient_unit[]" placeholder="Unit" class="ing-unit">
+    <input type="text" name="ingredient_item[]" placeholder="Ingredient *" class="ing-item">
+    <input type="text" name="ingredient_note[]" placeholder="Note" class="ing-note">
+    <button type="button" class="remove-row" aria-label="Remove ingredient">×</button>
+  </div>
+</template>
+
+<template id="direction-row-template">
+  <li class="direction-row">
+    <textarea name="direction[]" rows="2" placeholder="Step..."></textarea>
+    <button type="button" class="remove-row" aria-label="Remove step">×</button>
+  </li>
+</template>
+{% endblock %}
+{% block js %}<script src="{{ url_for('static', filename='js/recipe.js') }}" defer></script>{% endblock %}

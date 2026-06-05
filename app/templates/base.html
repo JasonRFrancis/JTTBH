@@ -75,6 +75,9 @@
       {% if has_perm(16384) %}
       <a href="{{ url_for('quote.index', username=session.username) }}"{% if area == 'quote' %} aria-current="page"{% endif %}>Quotes</a>
       {% endif %}
+      {% if has_perm(32768) %}
+      <a href="{{ url_for('recipe.index', username=session.username) }}"{% if area == 'recipe' %} aria-current="page"{% endif %}>Recipes</a>
+      {% endif %}
       {% if has_perm(2) %}
       <a href="{{ url_for('podcast.subscription', username=session.username) }}"{% if area == 'podcast' %} aria-current="page"{% endif %}>Podcast</a>
       {% endif %}

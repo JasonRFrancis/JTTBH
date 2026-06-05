@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Recipes{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe.css') }}">{% endblock %}
+{% block content %}
+<header class="recipe-header">
+  <h1>Recipes</h1>
+  <div class="recipe-header-actions">
+    <a href="{{ url_for('recipe.add', username=username) }}" class="btn-primary">+ Add Recipe</a>
+  </div>
+</header>
+
+{% if groups %}
+<form id="pdf-form" method="post" action="{{ url_for('recipe.pdf', username=username) }}">
+  <div class="pdf-toolbar" id="pdf-toolbar" hidden>
+    <span id="pdf-count">0 selected</span>
+    <button type="submit" class="btn-primary">Download PDF</button>
+    <button type="button" id="pdf-cancel">Cancel</button>
+  </div>
+
+  {% for type_name, recipes in groups %}
+  <section class="recipe-group">
+    <h2 class="recipe-group-title">{{ type_name }}</h2>
+    <ul class="recipe-list">
+      {% for recipe in recipes %}
+      <li class="recipe-row">
+        <label class="recipe-checkbox" hidden>
+          <input type="checkbox" name="recipe_id" value="{{ recipe.recipeID }}" class="pdf-checkbox">
+        </label>
+        <a href="{{ url_for('recipe.detail', username=username, recipe_id=recipe.recipeID) }}" class="recipe-title">{{ recipe.title }}</a>
+        <span class="recipe-meta">
+          {% if recipe.servings %}<span>{{ recipe.servings }}</span>{% endif %}
+          {% if recipe.prep_time or recipe.cook_time %}
+          <span>
+            {% if recipe.prep_time %}{{ recipe.prep_time }} prep{% endif %}
+            {% if recipe.prep_time and recipe.cook_time %} · {% endif %}
+            {% if recipe.cook_time %}{{ recipe.cook_time }} cook{% endif %}
+          </span>
+          {% endif %}
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+</form>
+
+<div class="pdf-select-toggle">
+  <button type="button" id="pdf-select-btn">Select for PDF</button>
+</div>
+
+{% else %}
+<section class="recipe-empty">
+  <p>No recipes yet. <a href="{{ url_for('recipe.add', username=username) }}">Add your first recipe.</a></p>
+</section>
+{% endif %}
+{% endblock %}
+{% block js %}<script src="{{ url_for('static', filename='js/recipe.js') }}" defer></script>{% endblock %}

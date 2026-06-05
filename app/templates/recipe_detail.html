@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}{{ recipe.title }}{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe.css') }}">{% endblock %}
+{% block content %}
+<article class="recipe-detail">
+  <header class="recipe-detail-header">
+    <nav class="breadcrumb"><a href="{{ url_for('recipe.index', username=username) }}">← Recipes</a></nav>
+    <h1>{{ recipe.title }}</h1>
+    <div class="recipe-detail-meta">
+      {% if recipe.type %}<span class="recipe-type-badge">{{ recipe.type }}</span>{% endif %}
+      {% if recipe.servings %}<span>{{ recipe.servings }}</span>{% endif %}
+      {% if recipe.prep_time %}<span>Prep: {{ recipe.prep_time }}</span>{% endif %}
+      {% if recipe.cook_time %}<span>Cook: {{ recipe.cook_time }}</span>{% endif %}
+    </div>
+    {% if recipe.source %}
+    <p class="recipe-source">
+      Source:
+      {% if recipe.source.startswith('http') %}
+      <a href="{{ recipe.source }}" target="_blank" rel="noopener">{{ recipe.source }}</a>
+      {% else %}
+      {{ recipe.source }}
+      {% endif %}
+    </p>
+    {% endif %}
+    {% if has_write_perm(32768) %}
+    <div class="recipe-detail-actions">
+      <a href="{{ url_for('recipe.edit', username=username, recipe_id=recipe.recipeID) }}">Edit</a>
+      <form method="post" action="{{ url_for('recipe.delete', username=username, recipe_id=recipe.recipeID) }}" class="inline-form" onsubmit="return confirm('Delete this recipe?')">
+        <button type="submit" class="btn-danger-link">Delete</button>
+      </form>
+    </div>
+    {% endif %}
+  </header>
+
+  {% if images %}
+  <section class="recipe-images">
+    {% for img in images %}
+    <figure class="recipe-image-figure">
+      <img src="{{ img.url }}" alt="{{ img.caption or recipe.title }}" loading="lazy">
+      {% if img.caption %}<figcaption>{{ img.caption }}</figcaption>{% endif %}
+    </figure>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  {% if recipe.ingredients_list %}
+  <section class="recipe-section">
+    <h2>Ingredients</h2>
+    <ul class="ingredient-list">
+      {% for ing in recipe.ingredients_list %}
+      <li>
+        {% if ing.amount or ing.unit %}
+        <span class="ingredient-quantity">{{ ing.amount }}{% if ing.unit %} {{ ing.unit }}{% endif %}</span>
+        {% endif %}
+        <span class="ingredient-item">{{ ing.item }}</span>
+        {% if ing.note %}<span class="ingredient-note">({{ ing.note }})</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if recipe.directions_list %}
+  <section class="recipe-section">
+    <h2>Directions</h2>
+    <ol class="direction-list">
+      {% for step in recipe.directions_list %}
+      <li>{{ step }}</li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+
+  {% if recipe.notes %}
+  <section class="recipe-section recipe-notes">
+    <h2>Notes</h2>
+    <p>{{ recipe.notes }}</p>
+  </section>
+  {% endif %}
+
+  {% if has_write_perm(32768) %}
+  <section class="recipe-section recipe-images-manage">
+    <h2>Images</h2>
+    <div class="image-thumbs" id="image-thumbs">
+      {% for img in images %}
+      <div class="image-thumb" data-image-id="{{ img.imageID }}">
+        <img src="{{ img.url }}" alt="{{ img.caption or '' }}" loading="lazy">
+        <button type="button" class="image-thumb-delete" data-image-id="{{ img.imageID }}" title="Remove image">×</button>
+      </div>
+      {% endfor %}
+    </div>
+    <details class="image-add-panel">
+      <summary>Add image</summary>
+      <div class="image-add-forms">
+        <div>
+          <label>Upload file</label>
+          <input type="file" id="image-file-input" accept="image/*">
+          <input type="text" id="image-file-caption" placeholder="Caption (optional)">
+          <button type="button" id="image-upload-btn">Upload</button>
+        </div>
+        <div>
+          <label>Paste URL</label>
+          <input type="url" id="image-url-input" placeholder="https://...">
+          <input type="text" id="image-url-caption" placeholder="Caption (optional)">
+          <button type="button" id="image-url-btn">Add URL</button>
+        </div>
+      </div>
+    </details>
+  </section>
+  {% endif %}
+</article>
+{% endblock %}
+{% block js %}<script src="{{ url_for('static', filename='js/recipe.js') }}" defer></script>{% endblock %}

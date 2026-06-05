@@ -61,6 +61,13 @@ class DevelopmentConfig:
     TMDB_API_KEY       = os.environ.get('TMDB_API_KEY', '')
     IMPORT_API_KEY     = os.environ.get('IMPORT_API_KEY', '')
 
+    # ------------------------------------------------------------------ #
+    # File uploads                                                         #
+    # ------------------------------------------------------------------ #
+    _BASE_DIR      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    UPLOAD_FOLDER  = os.path.join(_BASE_DIR, 'app', 'static', 'uploads', 'recipes')
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
+
     SESSION_COOKIE_SECURE   = False   # Allow HTTP cookies in development
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
