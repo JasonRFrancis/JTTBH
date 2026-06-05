@@ -456,9 +456,9 @@ CREATE TABLE `fitness_exercise` (
   `name` varchar(255) DEFAULT NULL,  -- NULL = soft deleted
   `description` text,
   `equipment_type` enum('weight_machine','hand_weight','bodyweight','cable','other') NOT NULL DEFAULT 'weight_machine',
-  `type` enum('machine','hand_weight','bodyweight','cardio','video') NOT NULL DEFAULT 'machine',
   `muscle_group` varchar(100) DEFAULT NULL,
   `video_url` varchar(512) DEFAULT NULL,
+  `type` enum('machine','hand_weight','bodyweight','cardio','video') NOT NULL DEFAULT 'machine',
   `created` datetime NOT NULL,
   `created_by` varchar(36) DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -478,8 +478,8 @@ CREATE TABLE `fitness_program` (
   `exerciseID` varchar(36) DEFAULT NULL,  -- NULL = soft deleted
   `order_index` int NOT NULL DEFAULT 0,
   `recommended_weight` decimal(6,2) DEFAULT NULL,
-  `recommended_sets` int DEFAULT NULL,
-  `recommended_reps` int DEFAULT NULL,
+  `recommended_sets` int DEFAULT '3',
+  `recommended_reps` int DEFAULT '10',
   `rest_seconds` int DEFAULT 60,
   `notes` text,  -- machine adjustment notes (e.g. "Seat: 5")
   `location` enum('gym','home','other') NOT NULL DEFAULT 'gym',
@@ -889,6 +889,63 @@ CREATE TABLE `log_api` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `media`
+--
+
+DROP TABLE IF EXISTS `media`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `media` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `mediaID` varchar(36) NOT NULL,
+  `userID` varchar(36) NOT NULL,
+  `title` varchar(500) DEFAULT NULL,
+  `kind` enum('book','movie','show','podcast','videogame','boardgame') NOT NULL DEFAULT 'book',
+  `creator` varchar(255) DEFAULT NULL,
+  `status` enum('want','in_progress','done','dismiss') NOT NULL DEFAULT 'want',
+  `rating` tinyint DEFAULT NULL,
+  `review` text,
+  `external_id` varchar(500) DEFAULT NULL,
+  `cover_url` varchar(500) DEFAULT NULL,
+  `streaming` varchar(255) DEFAULT NULL,
+  `next_date` date DEFAULT NULL,
+  `started` date DEFAULT NULL,
+  `finished` date DEFAULT NULL,
+  `created` datetime NOT NULL,
+  `created_by` varchar(36) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `mediaID` (`mediaID`),
+  KEY `userID` (`userID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `media_episode`
+--
+
+DROP TABLE IF EXISTS `media_episode`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `media_episode` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `episodeID` varchar(36) NOT NULL,
+  `mediaID` varchar(36) NOT NULL,
+  `title` varchar(500) DEFAULT NULL,
+  `season` smallint DEFAULT NULL,
+  `episode_number` smallint DEFAULT NULL,
+  `air_date` date DEFAULT NULL,
+  `seen` tinyint NOT NULL DEFAULT '0',
+  `description` text,
+  `external_id` varchar(500) DEFAULT NULL,
+  `created` datetime NOT NULL,
+  `created_by` varchar(36) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `episodeID` (`episodeID`),
+  KEY `mediaID` (`mediaID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `podcast`
 --
 
@@ -1216,8 +1273,8 @@ DROP TABLE IF EXISTS `user_permission`;
 CREATE TABLE `user_permission` (
   `id` int NOT NULL AUTO_INCREMENT,
   `userID` varchar(36) NOT NULL,
-  `read` bigint(20) DEFAULT '0',  -- bitvector
-  `write` bigint(20) DEFAULT '0',  -- bitvector
+  `read` bigint DEFAULT '0',  -- bitvector
+  `write` bigint DEFAULT '0',  -- bitvector
   `created` datetime DEFAULT CURRENT_TIMESTAMP,
   `created_by` varchar(36) DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -1247,7 +1304,7 @@ DROP TABLE IF EXISTS `user_permissionAccess`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `user_permissionAccess` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `access` bigint(20),
+  `access` bigint DEFAULT NULL,
   `name` varchar(50),
   `resource` varchar(250),
   `description` varchar(250),
@@ -1290,7 +1347,7 @@ CREATE TABLE `user_preference` (
   `id` int NOT NULL AUTO_INCREMENT,
   `userID` varchar(36) NOT NULL,
   `preference` varchar(50),
-  `value` varchar(100),
+  `value` varchar(500) DEFAULT NULL,
   `created_by` varchar(40),
   `created` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -1350,6 +1407,131 @@ CREATE TABLE `quote` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+
+--
+-- Table structure for table `study_collection`
+--
+
+DROP TABLE IF EXISTS `study_collection`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `study_collection` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `collectionID` varchar(36) NOT NULL,
+  `userID` varchar(36) NOT NULL,
+  `name` varchar(200) DEFAULT NULL,
+  `description` text,
+  `mode` enum('rate','calendar') NOT NULL DEFAULT 'rate',
+  `created` datetime DEFAULT NULL,
+  `created_by` varchar(36) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_collection_id` (`collectionID`),
+  KEY `idx_collection_user` (`userID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `study_completion`
+--
+
+DROP TABLE IF EXISTS `study_completion`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `study_completion` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `completionID` varchar(36) NOT NULL,
+  `userID` varchar(36) NOT NULL,
+  `sourceID` varchar(36) NOT NULL,
+  `completed_date` date NOT NULL,
+  `created` datetime DEFAULT NULL,
+  `created_by` varchar(36) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_completion_id` (`completionID`),
+  UNIQUE KEY `uq_user_source_date` (`userID`,`sourceID`,`completed_date`),
+  KEY `idx_user_date` (`userID`,`completed_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `study_schedule`
+--
+
+DROP TABLE IF EXISTS `study_schedule`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `study_schedule` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `scheduleID` varchar(36) NOT NULL,
+  `userID` varchar(36) NOT NULL,
+  `sourceID` varchar(36) NOT NULL,
+  `scheduled_date` date NOT NULL,
+  `created` datetime NOT NULL,
+  `created_by` varchar(36) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_user_source` (`userID`,`sourceID`),
+  UNIQUE KEY `uq_schedule_id` (`scheduleID`),
+  KEY `idx_schedule_user_date` (`userID`,`scheduled_date`),
+  CONSTRAINT `fk_schedule_user` FOREIGN KEY (`userID`) REFERENCES `user` (`userID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `study_source`
+--
+
+DROP TABLE IF EXISTS `study_source`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `study_source` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `sourceID` varchar(36) NOT NULL,
+  `collectionID` varchar(36) NOT NULL,
+  `userID` varchar(36) NOT NULL,
+  `category` varchar(100) DEFAULT NULL,
+  `title` varchar(500) DEFAULT NULL,
+  `subtitle` varchar(500) DEFAULT NULL,
+  `author` varchar(200) DEFAULT NULL,
+  `url` varchar(1000) DEFAULT NULL,
+  `audio_url` varchar(1000) DEFAULT NULL,
+  `audio_length` varchar(20) DEFAULT NULL,
+  `order_by` int NOT NULL DEFAULT '0',
+  `scheduled_date` date DEFAULT NULL,
+  `created` datetime DEFAULT NULL,
+  `created_by` varchar(36) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_source_id` (`sourceID`),
+  KEY `idx_source_collection` (`collectionID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `study_subscription`
+--
+
+DROP TABLE IF EXISTS `study_subscription`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `study_subscription` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `subscriptionID` varchar(36) NOT NULL,
+  `userID` varchar(36) NOT NULL,
+  `collectionID` varchar(36) NOT NULL,
+  `per_day` int NOT NULL DEFAULT '1',
+  `start_date` date DEFAULT NULL,
+  `created` datetime DEFAULT NULL,
+  `created_by` varchar(36) DEFAULT NULL,
+  `filter_author` varchar(500) DEFAULT NULL,
+  `filter_category` varchar(500) DEFAULT NULL,
+  `sort_order` enum('natural','newest','oldest') NOT NULL DEFAULT 'natural',
+  `limit_count` int DEFAULT NULL,
+  `start_offset` int NOT NULL DEFAULT '0',
+  `repeat` tinyint NOT NULL DEFAULT '1',
+  `use_personal_schedule` tinyint NOT NULL DEFAULT '0',
+  `name` varchar(200) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_subscription_id` (`subscriptionID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

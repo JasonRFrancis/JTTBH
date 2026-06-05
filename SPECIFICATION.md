@@ -179,6 +179,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     4. Preference keys:
        1. `todo_list1_name` through `todo_list4_name` — custom todo list names
        2. `timezone` — IANA timezone string (e.g. `America/Chicago`); defaults to `UTC`; used by `timezone_utils.user_today()` to calculate "today" for all features
+       3. `steam_api_key`, `steam_id` — Steam Web API credentials for game library import (see §4.9)
   3. Habit Tracker
     1. Designated under the `habit` area using the `habit` database tables
     2. Allows the user to track daily habits
@@ -215,7 +216,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     1. Designated under the `admin` area; accessible only to users with `PERM_ADMIN` (bit 0, value 1)
     2. User Management: `GET /<username>/admin/users`
       1. Lists all users grouped by approval status (pending, approved, rejected)
-      2. Pending users can be approved or rejected; approval grants default permissions (`read=8190, write=8190`)
+      2. Pending users can be approved or rejected; approval grants default permissions (`read=32766, write=32766`)
       3. Approved users can have their permission bitvectors edited via a checkbox matrix
       4. Rejecting a user sets `approval_status='rejected'` and `active=0`
     3. Icon Management: `GET /<username>/admin/icons`
@@ -232,7 +233,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
       2. Columns displayed: id, username, resource (URL path), GET params, POST data, IP, timestamp
       3. Filter controls (query params): `q` (resource substring), `user` (exact username), `from`/`to` (date range). "Clear" link appears when any filter is active
       4. Below the request table: journalctl full output (last 150 lines) when running on Linux; absent on macOS dev
-      5. The `log` table schema uses: `userid`, `username`, `resource`, `get`, `post`, `ip`, `user_agent`, `created`
+      5. The `log` table columns: `userid`, `username`, `area`, `resource`, `presentation`, `parameters`, `history`, `get`, `post`, `ip`, `user_agent`, `created`
     5. Admin Dashboard: `GET /<username>/admin/dashboard`
       1. Stat cards: total users (with pending count), requests today / last 7 days / all-time
       2. Server health section: uptime, load average (1/5/15 min), memory %, disk % — read from `/proc/` on Linux; "Linux only" notice on macOS dev
@@ -283,7 +284,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
        4. "+ Add exercise" form per day: selects from the exercise catalog; shows strength or cardio fields based on exercise type
        5. Exercise catalog section: "+ New Exercise" form with name, type, muscle group, equipment type, description, and video URL
        6. `fitness_exercise` (the catalog) uses direct `UPDATE` — it is reference data shared across all users, not insert-only
-  7. Media Tracker
+  7. Project List
+    1. Designated under the `project` area using the `project` and `project_resource` tables; requires `PERM_PROJECT` (64)
+    2. A page for tracking and brainstorming about longer-term projects
+    3. Each project has a name, description, and `next_step` (the next action to take)
+    4. Each project has a "mood board" of associated resources (`project_resource` rows: name, URL, note)
+    5. A project's next step can be sent to today's todo list via `POST /send_to_todo/post/<project_id>`
+    6. Routes: `GET /index`, `GET /view/<project_id>`, `POST /create|update|delete/post`, `POST /resource/create|delete/post`, `POST /send_to_todo/post/<project_id>`
+  8. Media Tracker
     1. Designated under the `media` area using the `media` and `media_episode` database tables; requires `PERM_BOOK` (2048)
     2. Tracks media consumption across six kinds: shows, movies, podcasts, books, video games, board games
     3. Statuses: `want`, `in_progress`, `done`, `dismiss`
@@ -294,20 +302,57 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     8. Show/podcast detail page lists episodes grouped by season (shows) or flat (podcasts); each episode has a seen/unseen toggle
     9. The existing `podcast_bp` (RSS feed production) is a separate, unrelated feature
     10. Migrations: `20260529_media_tracker.sql` (creates tables, migrates book rows), `20260529_media_game_kinds.sql` (adds videogame/boardgame ENUM values), `20260529_user_preference_value_size.sql` (value column VARCHAR 100 → 500)
-  8. Study
+  9. Bookmarks
+    1. Designated under the `bookmark` area; requires `PERM_BOOKMARK` (256)
+    2. Index page (`GET /index`) shows bookmark cards in a responsive CSS grid
+    3. Cards
+       1. **★ Favorites** — system card, pinned first; shown only when at least one bookmark is favorited
+       2. **Named categories** — user-created, draggable for reorder; each has an optional URL auto-match criterion
+       3. **Uncategorized** — system card; bookmarks not assigned to any category
+       4. Each card shows up to 50 bookmarks; "View all" links to the full paginated category view
+    4. Row actions — revealed on hover in a fixed left-margin gutter: ★ Favorite, ⊘ Archive, ✎ Edit
+       1. All fire `fetch` POST and update the DOM without a page reload (optimistic UI)
+       2. Archive removes the row from the active list immediately; archived bookmarks move to `GET /archive`
+       3. Edit expands an inline panel: Title, Tags, Notes fields
+    5. Archive view (`GET /archive`) — lists `read=1` bookmarks with checkboxes; bulk hard-delete via `POST /delete/bulk/post`; individual restore via `POST /archive/post/<id>` (AJAX toggle)
+    6. Categories
+       1. Created with optional `url_contains` criterion — a case-insensitive substring matched against the URL
+       2. When criteria is saved, a sweep adds all matching active bookmarks to the category
+       3. New bookmarks (created or imported) are auto-assigned to any matching category
+       4. Category order stored in `bookmark_category.position`; item order in `bookmark_category_item.position`
+       5. Both are draggable for reorder via HTML5 DnD API; reorder fires JSON POSTs to persist order
+       6. Deleting a category removes it and its membership rows (FK cascade); bookmarks are kept
+    7. Sort — each card header has a `<select>` (Manual · Newest · Oldest · A→Z · Z→A · Domain)
+       1. On change, JS fetches `GET /items/json?cat=<id>&sort=<option>` and re-renders the full list
+       2. "Manual" respects drag order (`bci.position`); non-manual sorts disable drag-reorder until restored
+       3. The endpoint returns all matching items (no 50-item cap)
+    8. Import tools (`claude/safari_import.py`)
+       1. `--list` / `--device` / `--all` — import open iCloud tabs as Read Later bookmarks
+       2. `--bookmarks [--folder NAME]` — import from `Bookmarks.plist`; skips Reading List and bookmarklets
+       3. `--folders` — prints folder tree with counts
+       4. All imports strip leading `(N)` unread counts from titles
+       5. macOS Tahoe path: `~/Library/Containers/com.apple.Safari/Data/Library/Safari/CloudTabs.db`
+       6. Authenticated by `IMPORT_API_KEY` env var (`X-Api-Key` header)
+    9. Bookmarklet (in Settings) — opens a popup `GET /add?url=…&title=…`; strips `(N)` counts from the pre-filled title
+    10. Known gotchas
+        1. `cat.items` in Jinja2 resolves to `dict.items()` method — use `cat.bm_list` instead
+        2. Never nest `<form>` inside `<form>` — the delete form must be a sibling of the update form
+        3. `bookmark.css` includes `.bookmark [hidden] { display: none !important }` to ensure hidden panels stay hidden
+        4. ORDER BY in `/items/json` uses a strict whitelist dict (`_SORT_ORDER`), not parameterised SQL
+  10. Study
     1. Designated under the `study` area; requires `PERM_STUDY` (8192) — NOT in the default grant, must be assigned by admin
     2. Allows users to subscribe to curated collections of sources and work through them one or more per day
-    3. Four database tables: `study_collection`, `study_source` (both insert-only), `study_subscription`, `study_completion` (both direct INSERT/DELETE)
+    3. Database tables: `study_collection`, `study_source` (insert-only), `study_completion` (direct INSERT/DELETE), `study_subscription`, `study_schedule`
     4. Migrations: `20260530_study.sql`, `20260530_study_completion.sql`
     5. Routes:
        - `GET /index`, `GET /index/<date_str>` — daily reading view, grouped by subscription
        - `GET /collections` — browse all collections; subscribe / unsubscribe
        - `GET /collection/<collection_id>` — owner manages sources
        - `POST /collection/create|update|delete/post` and `POST /source/create|update|delete/post`
-       - `POST /subscribe/post/<collection_id>`, `POST /unsubscribe/post/<subscription_id>`
+       - `POST /subscribe/post/<collection_id>`, `POST /unsubscribe/post/<subscription_id>`, `POST /subscription/update/post/<id>`
        - `POST /source/complete/post/<source_id>` — toggle completion for a date
     6. Collections are pre-loaded via scraping scripts in `claude/`; see §4.8 for details on what is loaded
-    7. Audio: `source.audio_url` stores a direct MP3 URL; two CDNs in use:
+    7. Audio: `source.audio_url` stores a direct MP3 URL; CDNs in use:
        - `assets.churchofjesuschrist.org` — newer Church content (GC 2018+, hymns, CFM)
        - `media2.ldscdn.org` — scripture chapters (recorded 2015)
        - `mechon-mamre.org/mp3/` — Hebrew Bible (Tanakh collection)
@@ -320,55 +365,47 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
        - Come, Follow Me 2026 — Old Testament (68 entries with audio)
        - Sefaria.org: Tanakh (929 chapters, Hebrew audio), plus 13 other Jewish text collections
        - BYU Speeches for 257 General Conference speakers (1,225 talks, 87% with audio)
-5. Future Features
-  1. Show Tracker — **Implemented** as part of Media Tracker (§4.7)
-  2. Movie Tracker — **Implemented** as part of Media Tracker (§4.7)
-  3. Project List
-    1. Designated under the `project` area using the `project` database tables
-    2. A page that allows for tracking and brainstorming about longer-term projects
-    3. Each project should contain a "Next step" indicating what the next action should be
-    4. The project page should also allow for a "mood board" of resources and notes associated with the project
-    5. It should be possible for the user to assign a project's "next step" to a list in the Todo resource
-  4. Bookmarks
-    1. Designated under the `bookmark` area; similar in functionality to pinboard.in
-    2. Bookmarks can be added through form input or API
-    3. By default, bookmarks are grouped by day and then by URL
-    4. Bookmarks can be designated `read later`, added to a reference list, or tagged
-    5. Each bookmark link in the list should also be accompanied by an option to open the link in a tab and remove it from the list
-    6. A separate reference page lists any links added to the reference list. It should be possible to rearrange them, add a short description, and group them under headings
-  5. Triage
+    9. `study_subscription` has extended columns for filtering and ordering: `filter_author`, `filter_category`, `sort_order` (natural/newest/oldest), `limit_count`, `start_offset`, `repeat`, `use_personal_schedule`, `name`
+  11. Quote Tracker
+    1. Designated under the `quote` area using the `quote` table; requires `PERM_QUOTE` (16384)
+    2. Stores quotes with body, author, title (source work), source URL, and tags
+    3. Index page lists quotes with optional tag filter (`?tag=`)
+    4. Add page (`GET /add`) is bookmarklet-friendly — accepts `url`, `title`, `author`, `body` as query params for pre-filling
+    5. Routes: `GET /index`, `GET /add`, `POST /create|update|delete/post`
+    6. Insert-only pattern: `body IS NULL` = soft-deleted (no explicit sentinel documented; use `body`)
+5. Future / Stubbed Features
+  1. Triage
     1. Designated under `triage`; uses Google APIs to pull in the user's current gmail inbox and calendar items and allows the user to convert those to todo items
     2. API connections and permissions with Google will be set up separately; the Python code to connect to Google's APIs is needed
     3. The page lists the last three days of emails in the inbox, and allows conversion to todos. A button should populate a field with the subject line and content of the email for editing before adding as a todo to today's list
     4. The user should see a list of the next week's calendar events and push a button to convert them into todos
-  6. Vacation Mode
+  2. Vacation Mode
     1. The user is presented with a simple calendar on which they can mark individual days when they will be on vacation
     2. This triggers vacation mode for those days
     3. If the days are marked retroactively, the page will perform any necessary recalculations
-  7. Appointments
+  3. Appointments
     1. Designated by `appointment`; based on the functionality of calendly.com
     2. Appointments can be blocked out (recurring or one-off) and then email invitations can be sent with a link to view the blocks and select an appointment
     3. The appointment selection page (used by someone accepting a proposed appointment) should not require authentication except for a key in the URL
     4. For now, compose the email and stub in sending it. Create the public booking page and the ability to create recurring blocks
-  8. Podcast Feed
+  4. Podcast Feed
     1. Designated by `podcast`; a custom podcast XML feed subscribable by a podcast player
     2. The feed page needs to be accessible (no authentication required) by all popular podcast players
     3. Every user can create multiple feeds, kept in the `podcast` table and listed at `/[username]/podcast/subscription`
     4. A podcast is made up of subscriptions to "podcast lists" (groups of podcast episodes), stored in the `podcast_list` table and created at `/[username]/podcast/list`
     5. Rather than a recorded podcast, it is a collection of audio files from around the web that are linked to
-  9. Household Chores
+  5. Household Chores
     1. Designated by `chore`; manages household chores with optional user assignment, scheduling, and completion reporting
     2. Users can be grouped into a household, stored in the `household` and `household_member` tables
     3. Chores (in the `chore` table) are organized into lists, associated with a household (stored in the `chore_list` table)
     4. Frequency is designated in the `chore_listItemDay` and `chore_listItemMonth` tables
     5. Chores become available to perform when they enter the `chore_assigned` table. They can be assigned by household members, or completed by the user (whether or not it was assigned)
-  10. Book Tracker — **Implemented** as part of Media Tracker (§4.7); books are a `kind` within the `media` table
-  11. Daily Questions
+  6. Daily Questions
     1. Part of the `journal` designation, stored in the `journal_answer` and `journal_question` tables
     2. Provides a prompt per day and allows the user to input a response
     3. Questions are provided in the `journal_question` table, indexed per day
     4. If the table has more than one question for the day, serve them all up with corresponding textarea boxes
-  12. Mood Tracker
+  7. Mood Tracker
     1. Part of the `journal` designation, stored in the `journal_mood`, `journal_moodCategory`, and `journal_moodValue` tables
     2. Allows the user to capture their current mood across several categories
     3. If no categories exist, the user tracks their general mood. If no values exist, they track `happy` or `sad`
@@ -690,11 +727,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
       | 11  | 2048  | Book          | Book tracker (REQUIRED FEATURE)     |
       | 12  | 4096  | Journal       | Daily questions & mood tracking     |
       | 13  | 8192  | Study         | Daily study collections             |
+      | 14  | 16384 | Quote         | Quote tracker                       |
       ```
     3. Standard Permission Sets
       1. Admin: 4294967295 (All permissions)
-      2. Default: 8190 (Bits 1-12: All features except admin; Study bit 13 excluded — grant manually)
-        1. Calculation: 2 + 4 + 8 + 16 + 32 + 64 + 128 + 256 + 512 + 1024 + 2048 + 4096 = 8190
+      2. Default on approval: 32766 (Bits 1–14: all features except admin; Study bit 13 and Quote bit 14 included)
+        1. Calculation: 2 + 4 + 8 + 16 + 32 + 64 + 128 + 256 + 512 + 1024 + 2048 + 4096 + 8192 + 16384 = 32766
+        2. Note: Study and Quote are included in the default grant; admin must still manually verify as needed
     4. Permission Examples by Feature
       1. Admin: `read` = can see permissions and other admin functions; `write` = can change permissions and other admin functions
       2. Podcast: `read` = can access a podcast feed; `write` = can create and edit a podcast feed
