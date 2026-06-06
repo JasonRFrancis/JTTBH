@@ -81,6 +81,11 @@ def main():
                 skip += 1
                 continue
 
+            if url.startswith('https://www.thekitchn.com'):
+                from urllib.parse import urlparse, urlunparse
+                parsed = urlparse(url)
+                url = urlunparse(parsed._replace(query='', fragment=''))
+
             # Skip duplicates by source URL
             if not args.dry_run and RecipeModel.source_exists(user_id, url):
                 print(f"  SKIP (exists): {pb_title}")
