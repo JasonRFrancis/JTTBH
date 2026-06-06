@@ -27,7 +27,10 @@ from bs4 import BeautifulSoup
 # Add project root to path so we can import app modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-PINBOARD_FEED = 'https://feeds.pinboard.in/json/u:jasonfrancis/t:recipe/'
+PINBOARD_FEEDS = [
+    'https://feeds.pinboard.in/json/u:jasonfrancis/t:recipe/',
+    'https://feeds.pinboard.in/json/u:jasonfrancis/t:recipes/',
+]
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
 REQUEST_DELAY = 1.0  # seconds between recipe URL fetches
 
@@ -60,16 +63,21 @@ def main():
             user_id = users[int(choice) - 1]['userID']
             print(f"Using user: {user_id}")
 
-        print(f"\nFetching Pinboard feed: {PINBOARD_FEED}")
-        try:
-            r = requests.get(PINBOARD_FEED, headers=HEADERS, timeout=15)
-            r.raise_for_status()
-            entries = r.json()
-        except Exception as e:
-            print(f"ERROR fetching Pinboard feed: {e}")
-            sys.exit(1)
-
-        print(f"Found {len(entries)} entries.\n")
+        seen_urls = {}
+        for feed_url in PINBOARD_FEEDS:
+            print(f"\nFetching {feed_url}")
+            try:
+                r = requests.get(feed_url, headers=HEADERS, timeout=15)
+                r.raise_for_status()
+                for entry in r.json():
+                    u = entry.get('u', '').strip()
+                    if u and u not in seen_urls:
+                        seen_urls[u] = entry
+            except Exception as e:
+                print(f"ERROR: {e}")
+                sys.exit(1)
+        entries = list(seen_urls.values())
+        print(f"\nFound {len(entries)} unique entries across both tags.\n")
         ok = stub = skip = err = 0
 
         for entry in entries:
