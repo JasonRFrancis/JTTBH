@@ -131,10 +131,29 @@ def main():
         print(f"\n{'DRY RUN — ' if args.dry_run else ''}Done. OK={ok}  STUB={stub}  SKIP={skip}  ERR={err}")
 
 
+def _fetch_html(url: str) -> str:
+    """Fetch URL, falling back to Playwright on 403."""
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=15, allow_redirects=True)
+        r.raise_for_status()
+        return r.text
+    except requests.HTTPError as e:
+        if e.response is not None and e.response.status_code == 403:
+            print('    (403 — retrying with Playwright)')
+            from playwright.sync_api import sync_playwright
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page()
+                page.goto(url, timeout=30000)
+                content = page.content()
+                browser.close()
+            return content
+        raise
+
+
 def _extract_recipe(url: str) -> dict:
-    r = requests.get(url, headers=HEADERS, timeout=15, allow_redirects=True)
-    r.raise_for_status()
-    soup = BeautifulSoup(r.content, 'html.parser')
+    html = _fetch_html(url)
+    soup = BeautifulSoup(html, 'html.parser')
 
     for script in soup.find_all('script', {'type': 'application/ld+json'}):
         try:
