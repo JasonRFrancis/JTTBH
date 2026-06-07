@@ -25,6 +25,7 @@ import os
 import re
 import sys
 import time
+from datetime import datetime
 from urllib.parse import urlparse, urlunparse, urljoin
 
 import requests
@@ -35,6 +36,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 PINBOARD_API = 'https://api.pinboard.in/v1/posts/all'
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36'}
 REQUEST_DELAY = 1.0
+FAILURES_LOG = os.path.join(os.path.dirname(__file__), 'import_failures.json')
 
 # Domains to skip when extracting recipe links from roundup pages
 _SKIP_DOMAINS = {
@@ -45,6 +47,18 @@ _SKIP_DOMAINS = {
 
 # File extensions to skip when extracting recipe links
 _SKIP_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.zip', '.mp4', '.mp3', '.svg'}
+
+
+def _load_failures() -> dict:
+    if os.path.exists(FAILURES_LOG):
+        with open(FAILURES_LOG) as f:
+            return json.load(f)
+    return {}
+
+
+def _save_failures(failures: dict) -> None:
+    with open(FAILURES_LOG, 'w') as f:
+        json.dump(failures, f, indent=2)
 
 
 def main():
@@ -118,6 +132,14 @@ def main():
             except Exception as e:
                 print(f'    ERROR: {e}')
 
+        # Prepend previously failed URLs so they're retried first
+        failures = _load_failures()
+        if failures:
+            retry = {url: info.get('title', '') for url, info in failures.items() if url not in queue}
+            if retry:
+                print(f'\nLoading {len(retry)} previously failed URLs from {FAILURES_LOG}...')
+                queue = {**retry, **queue}
+
         print(f'\nTotal unique recipe URLs to process: {len(queue)}')
         if args.dry_run:
             print('(dry-run: skipping DB duplicate check)\n')
@@ -130,6 +152,7 @@ def main():
         for url, pb_title in queue.items():
             if not args.dry_run and RecipeModel.source_exists(user_id, url):
                 print(f'  SKIP (exists): {(pb_title or url)[:60]}')
+                failures.pop(url, None)
                 skip += 1
                 continue
 
@@ -138,8 +161,17 @@ def main():
             try:
                 data = _extract_recipe(url)
                 time.sleep(REQUEST_DELAY)
+                if url in failures:
+                    failures.pop(url)
+                    _save_failures(failures)
             except Exception as e:
                 print(f'    STUB (fetch error: {e})')
+                failures[url] = {
+                    'title': pb_title or url,
+                    'error': str(e),
+                    'timestamp': datetime.now().isoformat(timespec='seconds'),
+                }
+                _save_failures(failures)
                 data = {}
                 err += 1
 
