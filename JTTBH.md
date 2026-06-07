@@ -98,6 +98,7 @@ Dates in URLs: ISO `YYYY-MM-DD`. POST action names: `create`, `update`, `delete`
 | `journal_bp` | `/<u>/journal` | `GET /index[/<date>]`, `/questions`, `/mood/settings` · `POST /answer|mood|question/create/post` |
 | `study_bp` | `/<u>/study` | `GET /index[/<date>]`, `/collections`, `/collection/<id>` · `POST /collection|source /create|update|delete/post`, `/subscribe|unsubscribe|subscription/update/post`, `/source/complete/post/<id>` |
 | `quote_bp` | `/<u>/quote` | `GET /index`, `/add` · `POST /create|update|delete/post` |
+| `recipe_bp` | `/<u>/recipe` | `GET /index`, `/detail/<id>`, `/add`, `/edit/<id>` · `POST /extract/post` (JSON), `/create\|update\|delete/post`, `/image/add/post/<id>`, `/image/delete/post/<image_id>`, `/pdf/post` |
 | `triage_bp` | `/<u>/triage` | `GET /index` (stubbed) |
 | `vacation_bp` | `/<u>/vacation` | `GET /index` · `POST /create|delete/post` |
 | `appointment_bp` | `/<u>/appointment` | `GET /index` (stubbed) |
@@ -128,8 +129,9 @@ Dates in URLs: ISO `YYYY-MM-DD`. POST action names: `create`, `update`, `delete`
 | 12 | 4096 | `PERM_JOURNAL` | Journal/mood |
 | 13 | 8192 | `PERM_STUDY` | Study |
 | 14 | 16384 | `PERM_QUOTE` | Quotes |
+| 15 | 32768 | `PERM_RECIPE` | Recipe tracker |
 
-**Default on approval:** `read = write = 32766` (bits 1–14; admin bit 0 excluded)
+**Default on approval:** `read = write = 32766` (bits 1–14; admin bit 0 and Recipe bit 15 excluded)
 
 **Decorator usage:**
 ```python
@@ -166,9 +168,9 @@ WHERE t.thingID = %s
 # Delete: INSERT row with sentinel column = NULL
 ```
 
-Sentinel columns: `todo.title`, `habit.name`, `project.name`, `study_collection.name`, `study_source.title`
+Sentinel columns: `todo.title`, `habit.name`, `project.name`, `study_collection.name`, `study_source.title`, `recipe.title`
 
-**Exceptions** (direct UPDATE/DELETE): `user`, `svg`, `fitness_exercise`, `bookmark`, `bookmark_category`, `bookmark_category_item`, `study_subscription`, `study_completion`
+**Exceptions** (direct UPDATE/DELETE): `user`, `svg`, `fitness_exercise`, `bookmark`, `bookmark_category`, `bookmark_category_item`, `study_subscription`, `study_completion`, `recipe_image`
 
 #### `db_manager` API
 

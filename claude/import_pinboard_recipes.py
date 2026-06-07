@@ -158,7 +158,7 @@ def main():
             has_content = bool(data.get('ingredients') or data.get('directions'))
             if has_content:
                 ok += 1
-                print(f'    OK  : {recipe_data["title"][:60]}  ({len(data["ingredients"])} ing, {len(data.get("directions", []))} steps)')
+                print(f'    OK  : {recipe_data["title"][:60]}  ({len(data.get("ingredients", []))} ing, {len(data.get("directions", []))} steps)')
             else:
                 stub += 1
                 print(f'    STUB: {recipe_data["title"][:60]}')

@@ -1332,7 +1332,10 @@ INSERT INTO `user_permissionAccess` (access, name, resource, description, create
   (512, 'Fitness',     'fitness',      'Fitness program',        '2025-12-27 00:00:00', '58ec8c11-e060-4367-93cf-91a6cc28db8c'),
   (1024,'Chore',       'chore',        'Household chores',       '2025-12-27 00:00:00', '58ec8c11-e060-4367-93cf-91a6cc28db8c'),
   (2048,'Book',        'book',         'Book tracker',           '2025-12-27 00:00:00', '58ec8c11-e060-4367-93cf-91a6cc28db8c'),
-  (4096,'Journal',     'journal',      'Daily questions & mood', '2025-12-27 00:00:00', '58ec8c11-e060-4367-93cf-91a6cc28db8c');
+  (4096, 'Journal', 'journal', 'Daily questions & mood', '2025-12-27 00:00:00', '58ec8c11-e060-4367-93cf-91a6cc28db8c'),
+  (8192, 'Study',   'study',   'Daily study collections', '2025-12-27 00:00:00', '58ec8c11-e060-4367-93cf-91a6cc28db8c'),
+  (16384,'Quote',   'quote',   'Quote tracker',           '2025-12-27 00:00:00', '58ec8c11-e060-4367-93cf-91a6cc28db8c'),
+  (32768,'Recipe',  'recipe',  'Recipe tracker',          '2026-06-05 00:00:00', '58ec8c11-e060-4367-93cf-91a6cc28db8c');
 /*!40000 ALTER TABLE `user_permissionAccess` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1532,6 +1535,52 @@ CREATE TABLE `study_subscription` (
   UNIQUE KEY `uq_subscription_id` (`subscriptionID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `recipe`
+-- insert-only; soft-delete via title IS NULL
+--
+
+DROP TABLE IF EXISTS `recipe`;
+CREATE TABLE `recipe` (
+  `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `recipeID`    VARCHAR(36)  NOT NULL,
+  `userID`      VARCHAR(36)  NOT NULL,
+  `title`       VARCHAR(500) DEFAULT NULL COMMENT 'NULL = soft deleted',
+  `source`      TEXT,
+  `type`        VARCHAR(100),
+  `servings`    VARCHAR(100),
+  `prep_time`   VARCHAR(100),
+  `cook_time`   VARCHAR(100),
+  `ingredients` TEXT COMMENT 'JSON: [{"amount":"","unit":"","item":"","note":""}]',
+  `directions`  TEXT COMMENT 'JSON: ["Step 1.", "Step 2."]',
+  `notes`       TEXT,
+  `position`    INT NOT NULL DEFAULT 0,
+  `created`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_by`  VARCHAR(36),
+  PRIMARY KEY (`id`),
+  KEY `idx_recipe_user` (`userID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Table structure for table `recipe_image`
+-- direct INSERT/DELETE (not insert-only)
+--
+
+DROP TABLE IF EXISTS `recipe_image`;
+CREATE TABLE `recipe_image` (
+  `id`       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `imageID`  VARCHAR(36)  NOT NULL,
+  `recipeID` VARCHAR(36)  NOT NULL,
+  `userID`   VARCHAR(36)  NOT NULL,
+  `url`      TEXT         NOT NULL COMMENT 'External URL or /static/uploads/recipes/<uuid>.<ext>',
+  `caption`  VARCHAR(500),
+  `position` INT NOT NULL DEFAULT 0,
+  `created`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_image` (`imageID`),
+  KEY `idx_image_recipe` (`recipeID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

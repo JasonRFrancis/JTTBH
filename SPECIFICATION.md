@@ -373,6 +373,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     4. Add page (`GET /add`) is bookmarklet-friendly — accepts `url`, `title`, `author`, `body` as query params for pre-filling
     5. Routes: `GET /index`, `GET /add`, `POST /create|update|delete/post`
     6. Insert-only pattern: `body IS NULL` = soft-deleted (no explicit sentinel documented; use `body`)
+  12. Recipe Tracker
+    1. Designated under the `recipe` area; requires `PERM_RECIPE` (32768) — NOT included in the default grant (32766); must be assigned by admin
+    2. Stores recipes with: title, free-text type/category, source (URL or descriptive text), servings, prep time, cook time, ingredients, directions, notes, and multiple images
+    3. Ingredients stored as a JSON array in a TEXT column: `[{"amount":"2","unit":"cups","item":"flour","note":"sifted"}]`
+    4. Directions stored as a JSON array of step strings: `["Preheat oven to 375°F.", "Mix dry ingredients."]`
+    5. The model's `get_recipe()` parses these columns and attaches `ingredients_list` and `directions_list` keys to the returned dict; templates use those keys, not the raw JSON columns
+    6. Index page groups recipes alphabetically by `type`; "Uncategorized" pinned last
+    7. URL extraction (`POST /extract/post`): fetches a URL, parses JSON-LD `@type: Recipe` schema.org data (supported by AllRecipes, NYT Cooking, Epicurious, Food Network, etc.), returns structured data to pre-fill the add/edit form. Falls back to Open Graph tags for title/image only
+    8. PDF export: checkboxes on the index select recipes; `POST /pdf/post` → WeasyPrint renders `recipe_pdf.html` → `application/pdf` file download. WeasyPrint is already in `requirements.txt`
+    9. Images: stored in `recipe_image` (direct INSERT/DELETE); `url` column holds either an external URL or `/static/uploads/recipes/<uuid>.<ext>` for uploaded files. Upload directory: `app/static/uploads/recipes/`. Config keys `UPLOAD_FOLDER` and `MAX_CONTENT_LENGTH = 16 MB` added to both `config/dev.py` and `config/prod.py`
+    10. 403 responses from recipe sites fall back to a headless Playwright browser automatically (applies to both the in-app extract route and the import script)
+    11. Import tool (`claude/import_pinboard_recipes.py`): uses the authenticated Pinboard API (`/v1/posts/all`) to fetch all `recipe` and `recipes` tagged bookmarks. `recipes`-tagged URLs are treated as roundup pages — all links found in their main content are queued as individual recipe candidates. Requires `--api-token USER:TOKEN` or `PINBOARD_API_TOKEN` env var. Strips query strings from thekitchn.com URLs before processing
+    12. Routes: `GET /index`, `/detail/<recipe_id>`, `/add`, `/edit/<recipe_id>` · `POST /extract/post` (JSON), `/create|update|delete/post`, `/image/add/post/<recipe_id>`, `/image/delete/post/<image_id>`, `/pdf/post`
+    13. Database tables: `recipe` (insert-only, sentinel `title IS NULL`), `recipe_image` (direct INSERT/DELETE)
+    14. Migration: `migrations/20260605_recipe.sql`
 5. Future / Stubbed Features
   1. Triage
     1. Designated under `triage`; uses Google APIs to pull in the user's current gmail inbox and calendar items and allows the user to convert those to todo items
@@ -728,12 +743,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
       | 12  | 4096  | Journal       | Daily questions & mood tracking     |
       | 13  | 8192  | Study         | Daily study collections             |
       | 14  | 16384 | Quote         | Quote tracker                       |
+      | 15  | 32768 | Recipe        | Recipe tracker                      |
       ```
     3. Standard Permission Sets
       1. Admin: 4294967295 (All permissions)
-      2. Default on approval: 32766 (Bits 1–14: all features except admin; Study bit 13 and Quote bit 14 included)
+      2. Default on approval: 32766 (Bits 1–14; admin bit 0 and Recipe bit 15 excluded)
         1. Calculation: 2 + 4 + 8 + 16 + 32 + 64 + 128 + 256 + 512 + 1024 + 2048 + 4096 + 8192 + 16384 = 32766
-        2. Note: Study and Quote are included in the default grant; admin must still manually verify as needed
+        2. Note: Recipe (32768) is NOT in the default grant — admin must assign it explicitly
     4. Permission Examples by Feature
       1. Admin: `read` = can see permissions and other admin functions; `write` = can change permissions and other admin functions
       2. Podcast: `read` = can access a podcast feed; `write` = can create and edit a podcast feed
