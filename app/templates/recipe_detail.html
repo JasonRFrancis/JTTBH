@@ -50,13 +50,17 @@
     <h2>Ingredients</h2>
     <ul class="ingredient-list">
       {% for ing in recipe.ingredients_list %}
+      {% if ing.subtitle %}
+      <li class="ingredient-subtitle">{{ ing.subtitle }}</li>
+      {% else %}
       <li>
         {% if ing.amount or ing.unit %}
-        <span class="ingredient-quantity">{{ ing.amount }}{% if ing.unit %} {{ ing.unit }}{% endif %}</span>
+        <span class="ingredient-quantity">{{ ing.amount|format_amount }}{% if ing.unit %} {{ ing.unit }}{% endif %}</span>
         {% endif %}
         <span class="ingredient-item">{{ ing.item }}</span>
         {% if ing.note %}<span class="ingredient-note">({{ ing.note }})</span>{% endif %}
       </li>
+      {% endif %}
       {% endfor %}
     </ul>
   </section>

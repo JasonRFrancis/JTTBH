@@ -59,25 +59,44 @@
       <div id="ingredients-list">
         {% if recipe and recipe.ingredients_list %}
           {% for ing in recipe.ingredients_list %}
-          <div class="ingredient-row">
-            <input type="text" name="ingredient_amount[]" placeholder="Amount" value="{{ ing.amount }}" class="ing-amount">
+          {% if ing.subtitle %}
+          <div class="ingredient-row ingredient-subtitle-row" data-drag-row>
+            <span class="drag-handle" draggable="true">⠿</span>
+            <input type="hidden" name="ingredient_amount[]" value="">
+            <input type="hidden" name="ingredient_unit[]" value="">
+            <input type="text" name="ingredient_item[]" value="{{ ing.subtitle }}" class="ing-subtitle-text" placeholder="Section heading…">
+            <input type="hidden" name="ingredient_note[]" value="">
+            <input type="hidden" name="ingredient_is_subtitle[]" value="1">
+            <button type="button" class="remove-row" aria-label="Remove section">×</button>
+          </div>
+          {% else %}
+          <div class="ingredient-row" data-drag-row>
+            <span class="drag-handle" draggable="true">⠿</span>
+            <input type="text" name="ingredient_amount[]" placeholder="Amount" value="{{ ing.amount|format_amount }}" class="ing-amount">
             <input type="text" name="ingredient_unit[]" placeholder="Unit" value="{{ ing.unit }}" class="ing-unit">
             <input type="text" name="ingredient_item[]" placeholder="Ingredient *" value="{{ ing.item }}" class="ing-item">
             <input type="text" name="ingredient_note[]" placeholder="Note" value="{{ ing.note }}" class="ing-note">
+            <input type="hidden" name="ingredient_is_subtitle[]" value="">
             <button type="button" class="remove-row" aria-label="Remove ingredient">×</button>
           </div>
+          {% endif %}
           {% endfor %}
         {% else %}
-          <div class="ingredient-row">
+          <div class="ingredient-row" data-drag-row>
+            <span class="drag-handle" draggable="true">⠿</span>
             <input type="text" name="ingredient_amount[]" placeholder="Amount" class="ing-amount">
             <input type="text" name="ingredient_unit[]" placeholder="Unit" class="ing-unit">
             <input type="text" name="ingredient_item[]" placeholder="Ingredient *" class="ing-item">
             <input type="text" name="ingredient_note[]" placeholder="Note" class="ing-note">
+            <input type="hidden" name="ingredient_is_subtitle[]" value="">
             <button type="button" class="remove-row" aria-label="Remove ingredient">×</button>
           </div>
         {% endif %}
       </div>
-      <button type="button" id="add-ingredient" class="btn-add-row">+ Add Ingredient</button>
+      <div class="add-row-actions">
+        <button type="button" id="add-ingredient" class="btn-add-row">+ Add Ingredient</button>
+        <button type="button" id="add-subtitle" class="btn-add-row">+ Add Section</button>
+      </div>
     </section>
 
     <section class="form-section">
@@ -85,13 +104,15 @@
       <ol id="directions-list" class="directions-edit-list">
         {% if recipe and recipe.directions_list %}
           {% for step in recipe.directions_list %}
-          <li class="direction-row">
+          <li class="direction-row" data-drag-row>
+            <span class="drag-handle" draggable="true">⠿</span>
             <textarea name="direction[]" rows="2" placeholder="Step...">{{ step }}</textarea>
             <button type="button" class="remove-row" aria-label="Remove step">×</button>
           </li>
           {% endfor %}
         {% else %}
-          <li class="direction-row">
+          <li class="direction-row" data-drag-row>
+            <span class="drag-handle" draggable="true">⠿</span>
             <textarea name="direction[]" rows="2" placeholder="Step..."></textarea>
             <button type="button" class="remove-row" aria-label="Remove step">×</button>
           </li>
@@ -145,17 +166,32 @@
 </article>
 
 <template id="ingredient-row-template">
-  <div class="ingredient-row">
+  <div class="ingredient-row" data-drag-row>
+    <span class="drag-handle" draggable="true">⠿</span>
     <input type="text" name="ingredient_amount[]" placeholder="Amount" class="ing-amount">
     <input type="text" name="ingredient_unit[]" placeholder="Unit" class="ing-unit">
     <input type="text" name="ingredient_item[]" placeholder="Ingredient *" class="ing-item">
     <input type="text" name="ingredient_note[]" placeholder="Note" class="ing-note">
+    <input type="hidden" name="ingredient_is_subtitle[]" value="">
     <button type="button" class="remove-row" aria-label="Remove ingredient">×</button>
   </div>
 </template>
 
+<template id="ingredient-subtitle-row-template">
+  <div class="ingredient-row ingredient-subtitle-row" data-drag-row>
+    <span class="drag-handle" draggable="true">⠿</span>
+    <input type="hidden" name="ingredient_amount[]" value="">
+    <input type="hidden" name="ingredient_unit[]" value="">
+    <input type="text" name="ingredient_item[]" placeholder="Section heading…" class="ing-subtitle-text">
+    <input type="hidden" name="ingredient_note[]" value="">
+    <input type="hidden" name="ingredient_is_subtitle[]" value="1">
+    <button type="button" class="remove-row" aria-label="Remove section">×</button>
+  </div>
+</template>
+
 <template id="direction-row-template">
-  <li class="direction-row">
+  <li class="direction-row" data-drag-row>
+    <span class="drag-handle" draggable="true">⠿</span>
     <textarea name="direction[]" rows="2" placeholder="Step..."></textarea>
     <button type="button" class="remove-row" aria-label="Remove step">×</button>
   </li>

@@ -285,15 +285,27 @@ def pdf(username: str):
 # ---------------------------------------------------------------------------
 
 def _form_to_recipe_data() -> dict:
+    from app.services.recipe_utils import parse_amount_input, standardize_unit  # noqa: PLC0415
     amounts = request.form.getlist('ingredient_amount[]')
     units = request.form.getlist('ingredient_unit[]')
     items = request.form.getlist('ingredient_item[]')
     notes_list = request.form.getlist('ingredient_note[]')
-    ingredients = [
-        {'amount': a.strip(), 'unit': u.strip(), 'item': i.strip(), 'note': n.strip()}
-        for a, u, i, n in zip(amounts, units, items, notes_list)
-        if i.strip()
-    ]
+    is_subtitles = request.form.getlist('ingredient_is_subtitle[]')
+    # Pad is_subtitles to match items length for forms that predate this field
+    while len(is_subtitles) < len(items):
+        is_subtitles.append('')
+    ingredients = []
+    for a, u, i, n, sub in zip(amounts, units, items, notes_list, is_subtitles):
+        if sub:
+            if i.strip():
+                ingredients.append({'subtitle': i.strip()})
+        elif i.strip():
+            ingredients.append({
+                'amount': parse_amount_input(a),
+                'unit': standardize_unit(u.strip()),
+                'item': i.strip(),
+                'note': n.strip(),
+            })
     directions = [d.strip() for d in request.form.getlist('direction[]') if d.strip()]
     return {
         'title': request.form.get('title', '').strip(),
@@ -354,10 +366,9 @@ def _parse_jsonld(data: dict) -> dict:
 
     raw_ing = data.get('recipeIngredient')
     if raw_ing:
-        result['ingredients'] = [
-            {'amount': '', 'unit': '', 'item': str(i).strip(), 'note': ''}
-            for i in raw_ing if str(i).strip()
-        ]
+        from app.services.recipe_utils import parse_ingredient_text  # noqa: PLC0415
+        parsed = [parse_ingredient_text(str(i)) for i in raw_ing if str(i).strip()]
+        result['ingredients'] = [p for p in parsed if p]
 
     raw_instr = data.get('recipeInstructions')
     if raw_instr:

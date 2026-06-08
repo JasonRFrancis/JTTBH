@@ -56,6 +56,41 @@
   }
 
   // ----------------------------------------------------------------
+  // Drag-and-drop reordering for ingredient and direction rows
+  // ----------------------------------------------------------------
+  function _initDragSort(list) {
+    if (!list) return;
+    let dragRow = null;
+
+    list.addEventListener('dragstart', e => {
+      if (!e.target.classList.contains('drag-handle')) { e.preventDefault(); return; }
+      dragRow = e.target.closest('[data-drag-row]');
+      if (!dragRow) return;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', '');
+      setTimeout(() => { if (dragRow) dragRow.classList.add('dragging'); }, 0);
+    });
+
+    list.addEventListener('dragover', e => {
+      if (!dragRow) return;
+      e.preventDefault();
+      const target = e.target.closest('[data-drag-row]');
+      if (!target || target === dragRow) return;
+      const mid = target.getBoundingClientRect().top + target.getBoundingClientRect().height / 2;
+      if (e.clientY < mid) target.before(dragRow);
+      else target.after(dragRow);
+    });
+
+    list.addEventListener('dragend', () => {
+      if (dragRow) dragRow.classList.remove('dragging');
+      dragRow = null;
+    });
+  }
+
+  _initDragSort(document.getElementById('ingredients-list'));
+  _initDragSort(document.getElementById('directions-list'));
+
+  // ----------------------------------------------------------------
   // Form: extract from URL
   // ----------------------------------------------------------------
   const extractBtn = document.getElementById('extract-btn');
@@ -117,18 +152,26 @@
     const list = document.getElementById('ingredients-list');
     if (!list) return;
     const tmpl = document.getElementById('ingredient-row-template');
+    const subTmpl = document.getElementById('ingredient-subtitle-row-template');
     if (!tmpl) return;
-    // Clear existing empty rows first
+    // Clear existing empty rows
     list.querySelectorAll('.ingredient-row').forEach(row => {
-      if (!row.querySelector('.ing-item').value) row.remove();
+      const itemEl = row.querySelector('.ing-item, .ing-subtitle-text');
+      if (itemEl && !itemEl.value) row.remove();
     });
     ings.forEach(ing => {
-      const clone = tmpl.content.cloneNode(true);
-      clone.querySelector('.ing-amount').value = ing.amount || '';
-      clone.querySelector('.ing-unit').value = ing.unit || '';
-      clone.querySelector('.ing-item').value = ing.item || '';
-      clone.querySelector('.ing-note').value = ing.note || '';
-      list.appendChild(clone);
+      if (ing.subtitle !== undefined && subTmpl) {
+        const clone = subTmpl.content.cloneNode(true);
+        clone.querySelector('.ing-subtitle-text').value = ing.subtitle || '';
+        list.appendChild(clone);
+      } else {
+        const clone = tmpl.content.cloneNode(true);
+        clone.querySelector('.ing-amount').value = ing.amount || '';
+        clone.querySelector('.ing-unit').value = ing.unit || '';
+        clone.querySelector('.ing-item').value = ing.item || '';
+        clone.querySelector('.ing-note').value = ing.note || '';
+        list.appendChild(clone);
+      }
     });
     _bindRemoveRows();
   }
@@ -171,6 +214,17 @@
   if (addIngredient) {
     addIngredient.addEventListener('click', () => {
       const tmpl = document.getElementById('ingredient-row-template');
+      const clone = tmpl.content.cloneNode(true);
+      document.getElementById('ingredients-list').appendChild(clone);
+      _bindRemoveRows();
+    });
+  }
+
+  const addSubtitle = document.getElementById('add-subtitle');
+  if (addSubtitle) {
+    addSubtitle.addEventListener('click', () => {
+      const tmpl = document.getElementById('ingredient-subtitle-row-template');
+      if (!tmpl) return;
       const clone = tmpl.content.cloneNode(true);
       document.getElementById('ingredients-list').appendChild(clone);
       _bindRemoveRows();

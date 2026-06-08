@@ -152,6 +152,11 @@ def _register_template_filters(app: Flask) -> None:
             return ''
         return d.strftime('%A, %B %-d, %Y')
 
+    @app.template_filter('format_amount')
+    def format_amount_filter(value):
+        from app.services.recipe_utils import format_amount  # noqa: PLC0415
+        return format_amount(value)
+
     @app.template_filter('dayweek_label')
     def dayweek_label(bitmask):
         """Convert a dayweek bitmask to a human-readable string."""
