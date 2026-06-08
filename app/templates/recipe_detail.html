@@ -24,6 +24,8 @@
     {% endif %}
     {% if has_write_perm(32768) %}
     <div class="recipe-detail-actions">
+      <button type="button" class="recipe-flag fav-flag{% if recipe.favorite %} active{% endif %}" data-recipe="{{ recipe.recipeID }}" data-flag="favorite" data-label-on="Favorited" data-label-off="Favorite">★ <span class="flag-label">{% if recipe.favorite %}Favorited{% else %}Favorite{% endif %}</span></button>
+      <button type="button" class="recipe-flag try-flag{% if recipe.want_to_try %} active{% endif %}" data-recipe="{{ recipe.recipeID }}" data-flag="want_to_try" data-label-on="Want to Try" data-label-off="Want to Try"><span class="flag-label">{% if recipe.want_to_try %}✓ Want to Try{% else %}Want to Try{% endif %}</span></button>
       <a href="{{ url_for('recipe.edit', username=username, recipe_id=recipe.recipeID) }}">Edit</a>
       <form method="post" action="{{ url_for('recipe.delete', username=username, recipe_id=recipe.recipeID) }}" class="inline-form" onsubmit="return confirm('Delete this recipe?')">
         <button type="submit" class="btn-danger-link">Delete</button>

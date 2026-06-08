@@ -22,6 +22,14 @@ from app.services.decorators import (
 recipe_bp = Blueprint('recipe', __name__)
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
+_STOP_WORDS = frozenset({'a', 'an', 'the'})
+
+
+def _sort_key(title: str) -> str:
+    words = (title or '').strip().split()
+    if words and words[0].lower() in _STOP_WORDS:
+        words = words[1:]
+    return ' '.join(words).lower()
 
 
 # ---------------------------------------------------------------------------
@@ -33,12 +41,26 @@ ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
 @permission_required_read(PERM_RECIPE)
 def index(username: str):
     recipes = RecipeModel.get_recipes(session['user_id'])
-    groups = {}
+    groups: dict[str, list] = {}
     for r in recipes:
         key = (r['type'] or 'Uncategorized').strip()
         groups.setdefault(key, []).append(r)
-    sorted_groups = sorted(groups.items(), key=lambda x: (x[0] == 'Uncategorized', x[0].lower()))
+    sorted_groups = []
+    for type_name in sorted(groups.keys(), key=lambda x: (x == 'Uncategorized', x.lower())):
+        group = groups[type_name]
+        favorites = sorted([r for r in group if r.get('favorite')], key=lambda r: _sort_key(r['title']))
+        rest = sorted([r for r in group if not r.get('favorite')], key=lambda r: _sort_key(r['title']))
+        sorted_groups.append((type_name, favorites, rest))
     return render_template('recipe_index.html', username=username, area='recipe', groups=sorted_groups)
+
+
+@recipe_bp.route('/search')
+@login_required
+@permission_required_read(PERM_RECIPE)
+def search(username: str):
+    q = request.args.get('q', '').strip()
+    results = RecipeModel.search_recipes(session['user_id'], q) if q else []
+    return render_template('recipe_search.html', username=username, area='recipe', q=q, results=results)
 
 
 @recipe_bp.route('/detail/<recipe_id>')
@@ -119,6 +141,8 @@ def update(username: str, recipe_id: str):
     if not data.get('title'):
         flash('Title is required.', 'error')
         return redirect(url_for('recipe.edit', username=username, recipe_id=recipe_id))
+    data['favorite'] = recipe.get('favorite', 0)
+    data['want_to_try'] = recipe.get('want_to_try', 0)
     RecipeModel.update_recipe(recipe_id, session['user_id'], data)
     flash('Recipe updated.', 'success')
     return redirect(url_for('recipe.detail', username=username, recipe_id=recipe_id))
@@ -135,6 +159,28 @@ def delete(username: str, recipe_id: str):
     RecipeModel.delete_recipe(recipe_id, session['user_id'])
     flash('Recipe deleted.', 'success')
     return redirect(url_for('recipe.index', username=username))
+
+
+@recipe_bp.route('/favorite/toggle/post/<recipe_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_RECIPE)
+@permission_required_write(PERM_RECIPE)
+def favorite_toggle(username: str, recipe_id: str):
+    new_val = RecipeModel.toggle_favorite(recipe_id, session['user_id'])
+    if new_val is None:
+        return jsonify({'status': 'error', 'message': 'Recipe not found.'})
+    return jsonify({'status': 'ok', 'favorite': new_val})
+
+
+@recipe_bp.route('/want_to_try/toggle/post/<recipe_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_RECIPE)
+@permission_required_write(PERM_RECIPE)
+def want_to_try_toggle(username: str, recipe_id: str):
+    new_val = RecipeModel.toggle_want_to_try(recipe_id, session['user_id'])
+    if new_val is None:
+        return jsonify({'status': 'error', 'message': 'Recipe not found.'})
+    return jsonify({'status': 'ok', 'want_to_try': new_val})
 
 
 # ---------------------------------------------------------------------------

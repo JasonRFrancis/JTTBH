@@ -108,12 +108,15 @@ def main():
         # recipe entries → direct recipe URLs
         # recipes entries → fetch each page, extract recipe links within
         # ----------------------------------------------------------------
-        queue = {}  # url -> pinboard title (may be empty for extracted links)
+        queue = {}          # url -> pinboard title (may be empty for extracted links)
+        pinboard_notes = {}  # url -> extended notes from Pinboard bookmark
 
         for entry in recipe_entries:
             url = _normalize_url(entry.get('href', ''))
             if url:
                 queue[url] = entry.get('description', '') or url
+                if entry.get('extended', '').strip():
+                    pinboard_notes[url] = entry['extended'].strip()
 
         print(f'\nExpanding {len(recipes_entries)} "recipes" pages...')
         for entry in recipes_entries:
@@ -184,7 +187,7 @@ def main():
                 'cook_time':   data.get('cook_time', ''),
                 'ingredients': data.get('ingredients', []),
                 'directions':  data.get('directions', []),
-                'notes':       '',
+                'notes':       pinboard_notes.get(url, ''),
             }
 
             has_content = bool(data.get('ingredients') or data.get('directions'))
@@ -196,7 +199,9 @@ def main():
                 print(f'    STUB: {recipe_data["title"][:60]}')
 
             if not args.dry_run:
-                RecipeModel.create_recipe(user_id, recipe_data)
+                recipe_id = RecipeModel.create_recipe(user_id, recipe_data)
+                if data.get('image'):
+                    RecipeModel.add_image(recipe_id, user_id, data['image'])
 
         print(f'\n{"DRY RUN — " if args.dry_run else ""}Done.  OK={ok}  STUB={stub}  SKIP={skip}  ERR={err}')
 
@@ -326,9 +331,12 @@ def _extract_recipe(url: str) -> dict:
                 return _parse_jsonld(node)
 
     result = {}
-    og = soup.find('meta', {'property': 'og:title'})
-    if og:
-        result['title'] = og.get('content', '').strip()
+    og_title = soup.find('meta', {'property': 'og:title'})
+    if og_title:
+        result['title'] = og_title.get('content', '').strip()
+    og_image = soup.find('meta', {'property': 'og:image'})
+    if og_image:
+        result['image'] = og_image.get('content', '').strip()
     return result
 
 
@@ -371,6 +379,15 @@ def _parse_jsonld(data: dict) -> dict:
         if isinstance(cat, list):
             cat = cat[0] if cat else ''
         result['type'] = str(cat).strip()
+
+    raw_img = data.get('image')
+    if raw_img:
+        if isinstance(raw_img, list):
+            raw_img = raw_img[0] if raw_img else None
+        if isinstance(raw_img, dict):
+            raw_img = raw_img.get('url', '')
+        if raw_img and isinstance(raw_img, str):
+            result['image'] = raw_img.strip()
 
     return result
 

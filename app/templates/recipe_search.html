@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Recipe Search{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe.css') }}">{% endblock %}
+{% block content %}
+<header class="recipe-header">
+  <h1><a href="{{ url_for('recipe.index', username=username) }}" class="recipe-back-link">← Recipes</a></h1>
+</header>
+
+<form method="get" action="{{ url_for('recipe.search', username=username) }}" class="recipe-search-form" role="search">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search by title, ingredient, notes…" class="recipe-search-input" autocomplete="off" autofocus>
+  <button type="submit" class="btn-search">Search</button>
+</form>
+
+{% if q %}
+  {% if results %}
+  <p class="search-summary">{{ results|length }} result{{ 's' if results|length != 1 else '' }} for "<strong>{{ q }}</strong>"</p>
+  <ul class="recipe-list recipe-search-results">
+    {% for recipe in results %}
+    <li class="recipe-row{% if recipe.want_to_try %} recipe-row-try{% endif %}">
+      {% if has_write_perm(32768) %}
+      <button type="button" class="recipe-flag fav-flag{% if recipe.favorite %} active{% endif %}" data-recipe="{{ recipe.recipeID }}" data-flag="favorite" title="{% if recipe.favorite %}Unfavorite{% else %}Favorite{% endif %}">★</button>
+      <button type="button" class="recipe-flag try-flag{% if recipe.want_to_try %} active{% endif %}" data-recipe="{{ recipe.recipeID }}" data-flag="want_to_try" title="{% if recipe.want_to_try %}Remove from want-to-try{% else %}Mark as want to try{% endif %}">Try</button>
+      {% endif %}
+      <a href="{{ url_for('recipe.detail', username=username, recipe_id=recipe.recipeID) }}" class="recipe-title">{{ recipe.title }}</a>
+      <span class="recipe-meta">
+        {% if recipe.type %}<span class="recipe-type-badge-sm">{{ recipe.type }}</span>{% endif %}
+        {% if recipe.servings %}<span>{{ recipe.servings }}</span>{% endif %}
+        {% if recipe.prep_time or recipe.cook_time %}<span>{% if recipe.prep_time %}{{ recipe.prep_time }} prep{% endif %}{% if recipe.prep_time and recipe.cook_time %} · {% endif %}{% if recipe.cook_time %}{{ recipe.cook_time }} cook{% endif %}</span>{% endif %}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="search-empty">No recipes found for "<strong>{{ q }}</strong>".</p>
+  {% endif %}
+{% endif %}
+{% endblock %}
+{% block js %}<script src="{{ url_for('static', filename='js/recipe.js') }}" defer></script>{% endblock %}

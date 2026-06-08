@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const BASE = window.location.pathname.replace(/\/(index|detail\/[^/]+|add|edit\/[^/]+)$/, '');
+  const BASE = window.location.pathname.replace(/\/(index|detail\/[^/]+|add|edit\/[^/]+|search)$/, '');
 
   function postJSON(path, data) {
     return fetch(BASE + path, {
@@ -276,4 +276,78 @@
       }
     });
   }
+
+  // ----------------------------------------------------------------
+  // Flag toggles: ★ favorite and Try want-to-try
+  // ----------------------------------------------------------------
+  document.querySelectorAll('.recipe-flag').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const recipeId = btn.dataset.recipe;
+      const flag = btn.dataset.flag;
+      if (!recipeId || !flag) return;
+      btn.disabled = true;
+      try {
+        const res = await postJSON(`/${flag}/toggle/post/${recipeId}`, {});
+        if (res.status !== 'ok') return;
+        const active = flag === 'favorite' ? res.favorite : res.want_to_try;
+        btn.classList.toggle('active', active);
+        if (flag === 'favorite') {
+          btn.title = active ? 'Unfavorite' : 'Favorite';
+        } else {
+          btn.title = active ? 'Remove from want-to-try' : 'Mark as want to try';
+        }
+        // Update text label on detail page buttons
+        const label = btn.querySelector('.flag-label');
+        if (label) {
+          if (flag === 'favorite') {
+            label.textContent = active ? (btn.dataset.labelOn || 'Favorited') : (btn.dataset.labelOff || 'Favorite');
+          } else {
+            label.textContent = active ? '✓ ' + (btn.dataset.labelOn || 'Want to Try') : (btn.dataset.labelOff || 'Want to Try');
+          }
+        }
+        // Update want-to-try row class
+        if (flag === 'want_to_try') {
+          const row = btn.closest('.recipe-row');
+          if (row) row.classList.toggle('recipe-row-try', active);
+        }
+      } catch (_) {
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // ----------------------------------------------------------------
+  // Show more / See all within a recipe category
+  // ----------------------------------------------------------------
+  document.querySelectorAll('.recipe-more-controls').forEach(controls => {
+    const list = document.getElementById(controls.dataset.listId);
+    const showMoreBtn = controls.querySelector('.btn-show-more');
+    const showAllBtn = controls.querySelector('.btn-show-all');
+
+    function hiddenRows() {
+      return list ? Array.from(list.querySelectorAll('.recipe-row-hidden')) : [];
+    }
+
+    if (showMoreBtn) {
+      showMoreBtn.addEventListener('click', () => {
+        hiddenRows().slice(0, 10).forEach(r => r.classList.remove('recipe-row-hidden'));
+        const remaining = hiddenRows().length;
+        if (remaining === 0) {
+          controls.remove();
+        } else {
+          const span = showMoreBtn.querySelector('.remaining');
+          if (span) span.textContent = `(${remaining} remaining)`;
+        }
+      });
+    }
+
+    if (showAllBtn) {
+      showAllBtn.addEventListener('click', () => {
+        hiddenRows().forEach(r => r.classList.remove('recipe-row-hidden'));
+        controls.remove();
+      });
+    }
+  });
+
 })();

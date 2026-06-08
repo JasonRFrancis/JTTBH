@@ -9,6 +9,11 @@
   </div>
 </header>
 
+<form method="get" action="{{ url_for('recipe.search', username=username) }}" class="recipe-search-form" role="search">
+  <input type="search" name="q" placeholder="Search by title, ingredient, notes…" class="recipe-search-input" autocomplete="off">
+  <button type="submit" class="btn-search">Search</button>
+</form>
+
 {% if groups %}
 <form id="pdf-form" method="post" action="{{ url_for('recipe.pdf', username=username) }}">
   <div class="pdf-toolbar" id="pdf-toolbar" hidden>
@@ -17,29 +22,58 @@
     <button type="button" id="pdf-cancel">Cancel</button>
   </div>
 
-  {% for type_name, recipes in groups %}
+  {% for type_name, favorites, rest in groups %}
   <section class="recipe-group">
     <h2 class="recipe-group-title">{{ type_name }}</h2>
-    <ul class="recipe-list">
-      {% for recipe in recipes %}
-      <li class="recipe-row">
+
+    {% if favorites %}
+    <ul class="recipe-list recipe-list-favorites">
+      {% for recipe in favorites %}
+      <li class="recipe-row recipe-row-favorite">
         <label class="recipe-checkbox" hidden>
           <input type="checkbox" name="recipe_id" value="{{ recipe.recipeID }}" class="pdf-checkbox">
         </label>
+        {% if has_write_perm(32768) %}
+        <button type="button" class="recipe-flag fav-flag active" data-recipe="{{ recipe.recipeID }}" data-flag="favorite" title="Unfavorite">★</button>
+        <button type="button" class="recipe-flag try-flag{% if recipe.want_to_try %} active{% endif %}" data-recipe="{{ recipe.recipeID }}" data-flag="want_to_try" title="{% if recipe.want_to_try %}Remove from want-to-try{% else %}Mark as want to try{% endif %}">Try</button>
+        {% endif %}
         <a href="{{ url_for('recipe.detail', username=username, recipe_id=recipe.recipeID) }}" class="recipe-title">{{ recipe.title }}</a>
         <span class="recipe-meta">
           {% if recipe.servings %}<span>{{ recipe.servings }}</span>{% endif %}
-          {% if recipe.prep_time or recipe.cook_time %}
-          <span>
-            {% if recipe.prep_time %}{{ recipe.prep_time }} prep{% endif %}
-            {% if recipe.prep_time and recipe.cook_time %} · {% endif %}
-            {% if recipe.cook_time %}{{ recipe.cook_time }} cook{% endif %}
-          </span>
-          {% endif %}
+          {% if recipe.prep_time or recipe.cook_time %}<span>{% if recipe.prep_time %}{{ recipe.prep_time }} prep{% endif %}{% if recipe.prep_time and recipe.cook_time %} · {% endif %}{% if recipe.cook_time %}{{ recipe.cook_time }} cook{% endif %}</span>{% endif %}
         </span>
       </li>
       {% endfor %}
     </ul>
+    {% endif %}
+
+    {% if rest %}
+    <ul class="recipe-list" id="rest-{{ loop.index }}">
+      {% for recipe in rest %}
+      <li class="recipe-row{% if recipe.want_to_try %} recipe-row-try{% endif %}{% if loop.index > 10 %} recipe-row-hidden{% endif %}">
+        <label class="recipe-checkbox" hidden>
+          <input type="checkbox" name="recipe_id" value="{{ recipe.recipeID }}" class="pdf-checkbox">
+        </label>
+        {% if has_write_perm(32768) %}
+        <button type="button" class="recipe-flag fav-flag" data-recipe="{{ recipe.recipeID }}" data-flag="favorite" title="Favorite">★</button>
+        <button type="button" class="recipe-flag try-flag{% if recipe.want_to_try %} active{% endif %}" data-recipe="{{ recipe.recipeID }}" data-flag="want_to_try" title="{% if recipe.want_to_try %}Remove from want-to-try{% else %}Mark as want to try{% endif %}">Try</button>
+        {% endif %}
+        <a href="{{ url_for('recipe.detail', username=username, recipe_id=recipe.recipeID) }}" class="recipe-title">{{ recipe.title }}</a>
+        <span class="recipe-meta">
+          {% if recipe.servings %}<span>{{ recipe.servings }}</span>{% endif %}
+          {% if recipe.prep_time or recipe.cook_time %}<span>{% if recipe.prep_time %}{{ recipe.prep_time }} prep{% endif %}{% if recipe.prep_time and recipe.cook_time %} · {% endif %}{% if recipe.cook_time %}{{ recipe.cook_time }} cook{% endif %}</span>{% endif %}
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% if rest|length > 10 %}
+    <div class="recipe-more-controls" data-list-id="rest-{{ loop.index }}">
+      <button type="button" class="btn-show-more">Show 10 more <span class="remaining">({{ rest|length - 10 }} remaining)</span></button>
+      <button type="button" class="btn-show-all">See all {{ rest|length }}</button>
+    </div>
+    {% endif %}
+    {% endif %}
+
   </section>
   {% endfor %}
 </form>
