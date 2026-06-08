@@ -163,7 +163,7 @@ def main():
               AND r.id = (SELECT MAX(r2.id) FROM recipe r2 WHERE r2.recipeID = r.recipeID)
               AND r.title IS NOT NULL
               AND r.source IS NOT NULL AND r.source != ''
-              AND r.source LIKE 'http%'
+              AND r.source LIKE 'http%%'
               AND NOT EXISTS (
                   SELECT 1 FROM recipe_image ri WHERE ri.recipeID = r.recipeID AND ri.userID = %s
               )
