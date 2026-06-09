@@ -64,6 +64,13 @@
       const cats = getSelected('category-cb');
       if (cats.size) r = r.filter(s => s.category && cats.has(s.category.toLowerCase()));
 
+      if ((document.getElementById('filter_has_audio') || {}).checked) {
+        r = r.filter(s => s.has_audio);
+      }
+
+      const titleQ = ((document.getElementById('filter_title') || {}).value || '').toLowerCase().trim();
+      if (titleQ) r = r.filter(s => s.title && s.title.toLowerCase().includes(titleQ));
+
       const sort = (document.querySelector('input[name="sort_order"]:checked') || {}).value || 'natural';
       if (sort === 'newest') r.sort((a, b) => b.order_by - a.order_by);
       else if (sort === 'oldest') r.sort((a, b) => a.order_by - b.order_by);
@@ -297,6 +304,12 @@
       const el = document.getElementById(id);
       if (el) el.addEventListener('change', onFilterChange);
     });
+
+    const hasAudioCb = document.getElementById('filter_has_audio');
+    if (hasAudioCb) hasAudioCb.addEventListener('change', onFilterChange);
+
+    const titleInput = document.getElementById('filter_title');
+    if (titleInput) titleInput.addEventListener('input', onFilterChange);
     document.querySelectorAll('input[name="sort_order"]').forEach(r => r.addEventListener('change', onFilterChange));
     const repeatCb = document.getElementById('repeat');
     if (repeatCb) repeatCb.addEventListener('change', updatePreview);

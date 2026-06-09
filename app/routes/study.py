@@ -208,11 +208,12 @@ def subscription_edit(username: str, subscription_id: str):
     all_sources_json = json.dumps({
         'sources': [
             {
-                'sourceID': s['sourceID'],
-                'title':    s['title'] or '',
-                'author':   s['author'] or '',
-                'category': s['category'] or '',
-                'order_by': s.get('order_by') or 0,
+                'sourceID':  s['sourceID'],
+                'title':     s['title'] or '',
+                'author':    s['author'] or '',
+                'category':  s['category'] or '',
+                'order_by':  s.get('order_by') or 0,
+                'has_audio': bool(s.get('audio_url')),
             }
             for s in all_sources
         ],
@@ -469,6 +470,8 @@ def subscription_update(username: str, subscription_id: str):
 
     filter_author   = _normalise_csv(request.form.get('filter_author', ''))
     filter_category = _normalise_csv(request.form.get('filter_category', ''))
+    filter_has_audio = 1 if request.form.get('filter_has_audio') else 0
+    filter_title = request.form.get('filter_title', '').strip()
 
     sort_order = request.form.get('sort_order', 'natural')
     if sort_order not in ('natural', 'newest', 'oldest'):
@@ -490,6 +493,7 @@ def subscription_update(username: str, subscription_id: str):
     StudyModel.update_subscription(
         subscription_id, name, per_day, start_date,
         filter_author, filter_category,
+        filter_has_audio, filter_title,
         sort_order, limit_count, start_offset,
         repeat, use_personal_schedule,
     )
