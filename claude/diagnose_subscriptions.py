@@ -27,10 +27,14 @@ def main():
     app = create_app()
     with app.app_context():
         admin = db_manager.execute_one(
-            "SELECT userID, username, timezone FROM `user` WHERE admin=1 LIMIT 1", ()
+            "SELECT userID, username FROM `user` WHERE admin=1 LIMIT 1", ()
         )
-        user_id  = admin['userID']
-        tz       = admin['timezone'] or 'UTC'
+        user_id = admin['userID']
+        pref = db_manager.execute_one(
+            "SELECT value FROM user_preference WHERE userID=%s AND `key`='timezone' LIMIT 1",
+            (user_id,)
+        )
+        tz = (pref['value'] if pref else None) or 'UTC'
         today    = today_for_tz(tz)
         print(f"User: {admin['username']}  today: {today}  tz: {tz}\n")
 
