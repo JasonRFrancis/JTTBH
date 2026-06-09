@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Archived Recipes{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe.css') }}">{% endblock %}
+{% block content %}
+<header class="recipe-header">
+  <div>
+    <nav class="breadcrumb"><a href="{{ url_for('recipe.index', username=username) }}">← Recipes</a></nav>
+    <h1>Archived Recipes</h1>
+  </div>
+</header>
+
+{% if recipes %}
+<ul class="recipe-list">
+  {% for recipe in recipes %}
+  <li class="recipe-row recipe-row-archived" data-recipe-id="{{ recipe.recipeID }}">
+    <a href="{{ url_for('recipe.detail', username=username, recipe_id=recipe.recipeID) }}" class="recipe-title">{{ recipe.title }}</a>
+    <span class="recipe-meta">
+      {% if recipe.type %}<span class="recipe-type-badge-sm">{{ recipe.type }}</span>{% endif %}
+    </span>
+    {% if has_write_perm(32768) %}
+    <button type="button" class="recipe-archive-btn btn-text-link active" data-recipe="{{ recipe.recipeID }}" data-label-on="Restore" data-label-off="Archive">Restore</button>
+    <form method="post" action="{{ url_for('recipe.delete', username=username, recipe_id=recipe.recipeID) }}" class="inline-form" onsubmit="return confirm('Permanently delete this recipe?')">
+      <button type="submit" class="btn-danger-link">Delete</button>
+    </form>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<section class="recipe-empty">
+  <p>No archived recipes.</p>
+</section>
+{% endif %}
+{% endblock %}
+{% block js %}<script src="{{ url_for('static', filename='js/recipe.js') }}" defer></script>{% endblock %}

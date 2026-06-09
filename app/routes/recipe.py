@@ -54,6 +54,14 @@ def index(username: str):
     return render_template('recipe_index.html', username=username, area='recipe', groups=sorted_groups)
 
 
+@recipe_bp.route('/archive')
+@login_required
+@permission_required_read(PERM_RECIPE)
+def archive_view(username: str):
+    recipes = RecipeModel.get_archived_recipes(session['user_id'])
+    return render_template('recipe_archive.html', username=username, area='recipe', recipes=recipes)
+
+
 @recipe_bp.route('/search')
 @login_required
 @permission_required_read(PERM_RECIPE)
@@ -143,6 +151,7 @@ def update(username: str, recipe_id: str):
         return redirect(url_for('recipe.edit', username=username, recipe_id=recipe_id))
     data['favorite'] = recipe.get('favorite', 0)
     data['want_to_try'] = recipe.get('want_to_try', 0)
+    data['archived'] = recipe.get('archived', 0)
     RecipeModel.update_recipe(recipe_id, session['user_id'], data)
     flash('Recipe updated.', 'success')
     return redirect(url_for('recipe.detail', username=username, recipe_id=recipe_id))
@@ -181,6 +190,17 @@ def want_to_try_toggle(username: str, recipe_id: str):
     if new_val is None:
         return jsonify({'status': 'error', 'message': 'Recipe not found.'})
     return jsonify({'status': 'ok', 'want_to_try': new_val})
+
+
+@recipe_bp.route('/archive/toggle/post/<recipe_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_RECIPE)
+@permission_required_write(PERM_RECIPE)
+def archive_toggle(username: str, recipe_id: str):
+    new_val = RecipeModel.toggle_archive(recipe_id, session['user_id'])
+    if new_val is None:
+        return jsonify({'status': 'error', 'message': 'Recipe not found.'})
+    return jsonify({'status': 'ok', 'archived': new_val})
 
 
 # ---------------------------------------------------------------------------

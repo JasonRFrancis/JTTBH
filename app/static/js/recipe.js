@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const BASE = window.location.pathname.replace(/\/(index|detail\/[^/]+|add|edit\/[^/]+|search)$/, '');
+  const BASE = window.location.pathname.replace(/\/(index|detail\/[^/]+|add|edit\/[^/]+|search|archive)$/, '');
 
   function postJSON(path, data) {
     return fetch(BASE + path, {
@@ -363,6 +363,46 @@
         if (flag === 'want_to_try') {
           const row = btn.closest('.recipe-row');
           if (row) row.classList.toggle('recipe-row-try', active);
+        }
+      } catch (_) {
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+
+  // ----------------------------------------------------------------
+  // Archive toggle
+  // ----------------------------------------------------------------
+  document.querySelectorAll('.recipe-archive-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const recipeId = btn.dataset.recipe;
+      if (!recipeId) return;
+      btn.disabled = true;
+      try {
+        const res = await postJSON(`/archive/toggle/post/${recipeId}`, {});
+        if (res.status !== 'ok') return;
+        const isArchived = res.archived;
+        if (isArchived) {
+          // Archived: remove row from index list, or update detail button
+          const row = btn.closest('.recipe-row');
+          if (row) {
+            row.remove();
+          } else {
+            // Detail page: update button label and redirect
+            btn.textContent = btn.dataset.labelOn || 'Restore';
+            btn.classList.add('active');
+            window.location.href = BASE + '/index';
+          }
+        } else {
+          // Restored: remove row from archive list, or update detail button
+          const row = btn.closest('.recipe-row');
+          if (row) {
+            row.remove();
+          } else {
+            btn.textContent = btn.dataset.labelOff || 'Archive';
+            btn.classList.remove('active');
+          }
         }
       } catch (_) {
       } finally {

@@ -110,10 +110,10 @@ def main():
                     db_manager.execute_insert("""
                         INSERT INTO recipe
                           (recipeID, userID, title, source, type, servings, prep_time, cook_time,
-                           ingredients, directions, notes, position, favorite, want_to_try, created, created_by)
+                           ingredients, directions, notes, position, favorite, want_to_try, archived, created, created_by)
                         SELECT
                           recipeID, userID, title, source, type, servings, prep_time, cook_time,
-                          %s, directions, notes, position, favorite, want_to_try, NOW(), created_by
+                          %s, directions, notes, position, favorite, want_to_try, archived, NOW(), created_by
                         FROM recipe WHERE id = %s
                     """, (json.dumps(new_ings, ensure_ascii=False), row['id']))
 

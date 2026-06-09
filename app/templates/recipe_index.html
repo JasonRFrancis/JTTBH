@@ -42,6 +42,7 @@
           {% if recipe.servings %}<span>{{ recipe.servings }}</span>{% endif %}
           {% if recipe.prep_time or recipe.cook_time %}<span>{% if recipe.prep_time %}{{ recipe.prep_time }} prep{% endif %}{% if recipe.prep_time and recipe.cook_time %} · {% endif %}{% if recipe.cook_time %}{{ recipe.cook_time }} cook{% endif %}</span>{% endif %}
         </span>
+        {% if has_write_perm(32768) %}<button type="button" class="recipe-archive-btn" data-recipe="{{ recipe.recipeID }}" title="Archive">Archive</button>{% endif %}
       </li>
       {% endfor %}
     </ul>
@@ -63,6 +64,7 @@
           {% if recipe.servings %}<span>{{ recipe.servings }}</span>{% endif %}
           {% if recipe.prep_time or recipe.cook_time %}<span>{% if recipe.prep_time %}{{ recipe.prep_time }} prep{% endif %}{% if recipe.prep_time and recipe.cook_time %} · {% endif %}{% if recipe.cook_time %}{{ recipe.cook_time }} cook{% endif %}</span>{% endif %}
         </span>
+        {% if has_write_perm(32768) %}<button type="button" class="recipe-archive-btn" data-recipe="{{ recipe.recipeID }}" title="Archive">Archive</button>{% endif %}
       </li>
       {% endfor %}
     </ul>
@@ -78,8 +80,15 @@
   {% endfor %}
 </form>
 
-<div class="pdf-select-toggle">
-  <button type="button" id="pdf-select-btn">Select for PDF</button>
+<div class="recipe-index-footer">
+  <div class="pdf-select-toggle">
+    <button type="button" id="pdf-select-btn">Select for PDF</button>
+  </div>
+  {% if has_write_perm(32768) %}
+  <div class="recipe-archive-link">
+    <a href="{{ url_for('recipe.archive_view', username=username) }}">View archived recipes</a>
+  </div>
+  {% endif %}
 </div>
 
 {% else %}
