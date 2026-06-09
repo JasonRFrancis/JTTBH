@@ -71,6 +71,9 @@
       const titleQ = ((document.getElementById('filter_title') || {}).value || '').toLowerCase().trim();
       if (titleQ) r = r.filter(s => s.title && s.title.toLowerCase().includes(titleQ));
 
+      const authorQ = ((document.getElementById('filter_author_text') || {}).value || '').toLowerCase().trim();
+      if (authorQ) r = r.filter(s => s.author && s.author.toLowerCase().includes(authorQ));
+
       const sort = (document.querySelector('input[name="sort_order"]:checked') || {}).value || 'natural';
       if (sort === 'newest') r.sort((a, b) => b.order_by - a.order_by);
       else if (sort === 'oldest') r.sort((a, b) => a.order_by - b.order_by);
@@ -310,6 +313,9 @@
 
     const titleInput = document.getElementById('filter_title');
     if (titleInput) titleInput.addEventListener('input', onFilterChange);
+
+    const authorTextInput = document.getElementById('filter_author_text');
+    if (authorTextInput) authorTextInput.addEventListener('input', onFilterChange);
     document.querySelectorAll('input[name="sort_order"]').forEach(r => r.addEventListener('change', onFilterChange));
     const repeatCb = document.getElementById('repeat');
     if (repeatCb) repeatCb.addEventListener('change', updatePreview);

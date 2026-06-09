@@ -94,6 +94,14 @@
              placeholder="e.g. Nephi, Faith">
     </div>
 
+    {# Author contains #}
+    <div class="form-row">
+      <label for="filter_author_text">Author contains</label>
+      <input type="text" id="filter_author_text" name="filter_author_text"
+             value="{{ sub.filter_author_text or '' }}"
+             placeholder="e.g. Holland, Smith">
+    </div>
+
     {# Sort order #}
     <fieldset class="form-fieldset">
       <legend>Sort order</legend>

@@ -226,16 +226,16 @@ def source_exists(collection_id, url):
 
 
 def add_source(collection_id, *, title, url, order_by,
-               subtitle=None, audio_url=None):
+               subtitle=None, audio_url=None, author=None):
     if source_exists(collection_id, url):
         return False
     db_manager.execute_insert("""
         INSERT INTO study_source
-          (sourceID, collectionID, userID, title, subtitle,
+          (sourceID, collectionID, userID, title, subtitle, author,
            url, audio_url, order_by, created, created_by)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s)
     """, (str(uuid.uuid4()), collection_id, ADMIN_USER_ID,
-          title, subtitle, url, audio_url, order_by, ADMIN_USER_ID))
+          title, subtitle, author, url, audio_url, order_by, ADMIN_USER_ID))
     return True
 
 
@@ -297,7 +297,7 @@ def main():
             for order_by, title, talk_url, date_str, mp3_url in talks:
                 if add_source(cid, title=title, url=talk_url,
                               order_by=order_by, subtitle=date_str or None,
-                              audio_url=mp3_url or None):
+                              audio_url=mp3_url or None, author=gc_name):
                     added += 1
 
             total_sources += added

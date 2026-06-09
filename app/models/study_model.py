@@ -207,6 +207,7 @@ class StudyModel:
     def update_subscription(subscription_id: str, name: str, per_day: int, start_date,
                             filter_author: str, filter_category: str,
                             filter_has_audio: int, filter_title: str,
+                            filter_author_text: str,
                             sort_order: str, limit_count, start_offset: int,
                             repeat: int, use_personal_schedule: int):
         db_manager.execute_update(
@@ -214,12 +215,14 @@ class StudyModel:
                SET name=%s, per_day=%s, start_date=%s,
                    filter_author=%s, filter_category=%s,
                    filter_has_audio=%s, filter_title=%s,
+                   filter_author_text=%s,
                    sort_order=%s, limit_count=%s, start_offset=%s,
                    `repeat`=%s, use_personal_schedule=%s
                WHERE subscriptionID=%s""",
             (name or None, per_day, start_date,
              filter_author or None, filter_category or None,
              filter_has_audio, filter_title or None,
+             filter_author_text or None,
              sort_order, limit_count or None, start_offset,
              repeat, use_personal_schedule,
              subscription_id),
@@ -258,6 +261,11 @@ class StudyModel:
         if filter_title:
             q = filter_title.lower()
             result = [s for s in result if q in (s.get('title') or '').lower()]
+
+        filter_author_text = subscription.get('filter_author_text')
+        if filter_author_text:
+            q = filter_author_text.lower()
+            result = [s for s in result if q in (s.get('author') or '').lower()]
 
         sort_order = subscription.get('sort_order', 'natural')
         if sort_order == 'newest':
