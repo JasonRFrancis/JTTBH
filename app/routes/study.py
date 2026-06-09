@@ -212,6 +212,7 @@ def subscription_edit(username: str, subscription_id: str):
                 'title':     s['title'] or '',
                 'author':    s['author'] or '',
                 'category':  s['category'] or '',
+                'subtitle':  s['subtitle'] or '',
                 'order_by':  s.get('order_by') or 0,
                 'has_audio': bool(s.get('audio_url')),
             }
@@ -474,6 +475,7 @@ def subscription_update(username: str, subscription_id: str):
     filter_title = request.form.get('filter_title', '').strip()
     filter_author_text = request.form.get('filter_author_text', '').strip()
     filter_category_text = request.form.get('filter_category_text', '').strip()
+    filter_subtitle_text = request.form.get('filter_subtitle_text', '').strip()
 
     sort_order = request.form.get('sort_order', 'natural')
     if sort_order not in ('natural', 'newest', 'oldest'):
@@ -496,6 +498,7 @@ def subscription_update(username: str, subscription_id: str):
         subscription_id, name, per_day, start_date,
         filter_author, filter_category,
         filter_has_audio, filter_title, filter_author_text, filter_category_text,
+        filter_subtitle_text,
         sort_order, limit_count, start_offset,
         repeat, use_personal_schedule,
     )

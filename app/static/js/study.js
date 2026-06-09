@@ -77,6 +77,9 @@
       const categoryQ = ((document.getElementById('filter_category_text') || {}).value || '').toLowerCase().trim();
       if (categoryQ) r = r.filter(s => s.category && s.category.toLowerCase().includes(categoryQ));
 
+      const subtitleQ = ((document.getElementById('filter_subtitle_text') || {}).value || '').toLowerCase().trim();
+      if (subtitleQ) r = r.filter(s => s.subtitle && s.subtitle.toLowerCase().includes(subtitleQ));
+
       const sort = (document.querySelector('input[name="sort_order"]:checked') || {}).value || 'natural';
       if (sort === 'newest') r.sort((a, b) => b.order_by - a.order_by);
       else if (sort === 'oldest') r.sort((a, b) => a.order_by - b.order_by);
@@ -322,6 +325,9 @@
 
     const categoryTextInput = document.getElementById('filter_category_text');
     if (categoryTextInput) categoryTextInput.addEventListener('input', onFilterChange);
+
+    const subtitleTextInput = document.getElementById('filter_subtitle_text');
+    if (subtitleTextInput) subtitleTextInput.addEventListener('input', onFilterChange);
     document.querySelectorAll('input[name="sort_order"]').forEach(r => r.addEventListener('change', onFilterChange));
     const repeatCb = document.getElementById('repeat');
     if (repeatCb) repeatCb.addEventListener('change', updatePreview);

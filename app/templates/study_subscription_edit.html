@@ -107,7 +107,15 @@
       <label for="filter_category_text">Category contains</label>
       <input type="text" id="filter_category_text" name="filter_category_text"
              value="{{ sub.filter_category_text or '' }}"
-             placeholder="e.g. Saturday Morning, October 2025">
+             placeholder="e.g. Saturday Morning, Priesthood">
+    </div>
+
+    {# Subtitle contains #}
+    <div class="form-row">
+      <label for="filter_subtitle_text">Subtitle contains</label>
+      <input type="text" id="filter_subtitle_text" name="filter_subtitle_text"
+             value="{{ sub.filter_subtitle_text or '' }}"
+             placeholder="e.g. October 2025, April 2019">
     </div>
 
     {# Sort order #}
