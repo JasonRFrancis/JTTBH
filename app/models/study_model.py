@@ -166,9 +166,12 @@ class StudyModel:
             SELECT sub.subscriptionID, sub.userID, sub.collectionID,
                    sub.name AS subscription_name,
                    sub.per_day, sub.start_date,
-                   sub.filter_author, sub.filter_category, sub.sort_order,
-                   sub.limit_count, sub.start_offset, sub.`repeat`,
-                   sub.use_personal_schedule,
+                   sub.filter_author, sub.filter_category,
+                   sub.filter_has_audio, sub.filter_title,
+                   sub.filter_author_text, sub.filter_category_text,
+                   sub.filter_subtitle_text,
+                   sub.sort_order, sub.limit_count, sub.start_offset,
+                   sub.`repeat`, sub.use_personal_schedule,
                    sc.name AS collection_name, sc.description AS collection_description,
                    sc.mode
             FROM study_subscription sub
