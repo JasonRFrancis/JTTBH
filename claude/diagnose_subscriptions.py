@@ -20,8 +20,8 @@ def main():
     load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
     from app import create_app
-    from app.services.database import db_manager
     from app.models.study_model import StudyModel
+    from app.services.database import db_manager
     from app.services.timezone_utils import today_for_tz
 
     app = create_app()
@@ -30,13 +30,8 @@ def main():
             "SELECT userID, username FROM `user` WHERE admin=1 LIMIT 1", ()
         )
         user_id = admin['userID']
-        pref = db_manager.execute_one(
-            "SELECT value FROM user_preference WHERE userID=%s AND `key`='timezone' LIMIT 1",
-            (user_id,)
-        )
-        tz = (pref['value'] if pref else None) or 'UTC'
-        today    = today_for_tz(tz)
-        print(f"User: {admin['username']}  today: {today}  tz: {tz}\n")
+        today   = today_for_tz('America/Denver')
+        print(f"User: {admin['username']}  today: {today}\n")
 
         subs = StudyModel.get_user_subscriptions(user_id)
         if keyword:
