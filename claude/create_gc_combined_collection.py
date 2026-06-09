@@ -68,10 +68,11 @@ def main():
             sys.exit(1)
         admin_id = admin['userID']
 
+        # Broad match — filter in Python to avoid dash-encoding issues
         gc_cols = db_manager.execute_query(
             """SELECT sc.collectionID, sc.name
                FROM study_collection sc
-               WHERE sc.name LIKE 'General Conference — %%'
+               WHERE sc.name LIKE 'General Conference%%'
                  AND sc.id = (SELECT MAX(sc2.id) FROM study_collection sc2
                               WHERE sc2.collectionID = sc.collectionID)
                  AND sc.name IS NOT NULL
@@ -79,12 +80,26 @@ def main():
             ()
         )
 
+        print(f"Raw matches for 'General Conference%': {len(gc_cols)}")
+        for col in gc_cols[:5]:
+            # Show repr so we can see exact characters (dashes, spaces)
+            print(f"  {repr(col['name'])}")
+        if len(gc_cols) > 5:
+            print(f"  ... and {len(gc_cols) - 5} more")
+
         parsed = []
         for col in gc_cols:
-            result = parse_conference_label(col['name'])
-            if result:
-                label, year, month = result
-                parsed.append((col['collectionID'], label, year, month))
+            # Try em-dash first, then en-dash, then hyphen-minus
+            for sep in (' — ', ' – ', ' - '):
+                prefix = 'General Conference' + sep
+                if col['name'].startswith(prefix):
+                    tail = col['name'][len(prefix):]
+                    m = re.match(r'^(\w+)\s+(\d{4})$', tail)
+                    if m:
+                        month = MONTHS.get(m.group(1))
+                        if month:
+                            parsed.append((col['collectionID'], tail, int(m.group(2)), month))
+                    break
 
         print(f"Found {len(parsed)} General Conference collections")
 
