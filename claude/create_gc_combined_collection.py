@@ -50,6 +50,8 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--inspect', action='store_true',
+                        help='Show category/subtitle structure of existing GC collection')
     args = parser.parse_args()
 
     from dotenv import load_dotenv
@@ -102,6 +104,56 @@ def main():
                     break
 
         print(f"Found {len(parsed)} General Conference collections")
+
+        if args.inspect or (len(parsed) == 0 and len(gc_cols) > 0):
+            # Show the structure of the existing 'General Conference' collection
+            existing = db_manager.execute_one(
+                """SELECT sc.collectionID FROM study_collection sc
+                   WHERE sc.name = %s
+                     AND sc.id = (SELECT MAX(sc2.id) FROM study_collection sc2
+                                  WHERE sc2.collectionID = sc.collectionID)
+                     AND sc.name IS NOT NULL LIMIT 1""",
+                (COMBINED_NAME,)
+            )
+            if existing:
+                cid = existing['collectionID']
+                total = db_manager.execute_one(
+                    "SELECT COUNT(*) AS n FROM study_source WHERE collectionID = %s AND title IS NOT NULL",
+                    (cid,)
+                )['n']
+                print(f"\n'General Conference' collection already exists ({total} sources)")
+
+                cats = db_manager.execute_query(
+                    """SELECT DISTINCT category FROM study_source
+                       WHERE collectionID = %s AND title IS NOT NULL AND category IS NOT NULL
+                       ORDER BY category LIMIT 30""",
+                    (cid,)
+                )
+                print(f"\nDistinct category values ({len(cats)} shown, max 30):")
+                for r in cats:
+                    print(f"  {repr(r['category'])}")
+
+                subs = db_manager.execute_query(
+                    """SELECT DISTINCT subtitle FROM study_source
+                       WHERE collectionID = %s AND title IS NOT NULL AND subtitle IS NOT NULL
+                       ORDER BY subtitle LIMIT 20""",
+                    (cid,)
+                )
+                print(f"\nDistinct subtitle values ({len(subs)} shown, max 20):")
+                for r in subs:
+                    print(f"  {repr(r['subtitle'])}")
+
+                sample = db_manager.execute_query(
+                    """SELECT title, author, category, subtitle, order_by FROM study_source
+                       WHERE collectionID = %s AND title IS NOT NULL
+                       ORDER BY order_by LIMIT 5""",
+                    (cid,)
+                )
+                print(f"\nFirst 5 sources by order_by:")
+                for s in sample:
+                    print(f"  title={repr(s['title'])}")
+                    print(f"    author={repr(s['author'])}  category={repr(s['category'])}  subtitle={repr(s['subtitle'])}  order_by={s['order_by']}")
+            return
 
         if args.dry_run:
             for cid, label, year, month in sorted(parsed, key=lambda x: (x[2], x[3])):
