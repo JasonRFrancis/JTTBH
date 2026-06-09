@@ -473,6 +473,7 @@ def subscription_update(username: str, subscription_id: str):
     filter_has_audio = 1 if request.form.get('filter_has_audio') else 0
     filter_title = request.form.get('filter_title', '').strip()
     filter_author_text = request.form.get('filter_author_text', '').strip()
+    filter_category_text = request.form.get('filter_category_text', '').strip()
 
     sort_order = request.form.get('sort_order', 'natural')
     if sort_order not in ('natural', 'newest', 'oldest'):
@@ -494,7 +495,7 @@ def subscription_update(username: str, subscription_id: str):
     StudyModel.update_subscription(
         subscription_id, name, per_day, start_date,
         filter_author, filter_category,
-        filter_has_audio, filter_title, filter_author_text,
+        filter_has_audio, filter_title, filter_author_text, filter_category_text,
         sort_order, limit_count, start_offset,
         repeat, use_personal_schedule,
     )

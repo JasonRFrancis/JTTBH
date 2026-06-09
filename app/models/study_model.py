@@ -207,7 +207,7 @@ class StudyModel:
     def update_subscription(subscription_id: str, name: str, per_day: int, start_date,
                             filter_author: str, filter_category: str,
                             filter_has_audio: int, filter_title: str,
-                            filter_author_text: str,
+                            filter_author_text: str, filter_category_text: str,
                             sort_order: str, limit_count, start_offset: int,
                             repeat: int, use_personal_schedule: int):
         db_manager.execute_update(
@@ -215,14 +215,14 @@ class StudyModel:
                SET name=%s, per_day=%s, start_date=%s,
                    filter_author=%s, filter_category=%s,
                    filter_has_audio=%s, filter_title=%s,
-                   filter_author_text=%s,
+                   filter_author_text=%s, filter_category_text=%s,
                    sort_order=%s, limit_count=%s, start_offset=%s,
                    `repeat`=%s, use_personal_schedule=%s
                WHERE subscriptionID=%s""",
             (name or None, per_day, start_date,
              filter_author or None, filter_category or None,
              filter_has_audio, filter_title or None,
-             filter_author_text or None,
+             filter_author_text or None, filter_category_text or None,
              sort_order, limit_count or None, start_offset,
              repeat, use_personal_schedule,
              subscription_id),
@@ -253,6 +253,11 @@ class StudyModel:
         if filter_category:
             allowed = {c.strip().lower() for c in filter_category.split(',') if c.strip()}
             result = [s for s in result if s.get('category') and s['category'].lower() in allowed]
+
+        filter_category_text = subscription.get('filter_category_text')
+        if filter_category_text:
+            q = filter_category_text.lower()
+            result = [s for s in result if q in (s.get('category') or '').lower()]
 
         if subscription.get('filter_has_audio'):
             result = [s for s in result if s.get('audio_url')]
