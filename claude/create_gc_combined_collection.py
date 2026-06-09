@@ -143,16 +143,15 @@ def main():
                 for r in subs:
                     print(f"  {repr(r['subtitle'])}")
 
-                sample = db_manager.execute_query(
-                    """SELECT title, author, category, subtitle, order_by FROM study_source
-                       WHERE collectionID = %s AND title IS NOT NULL
-                       ORDER BY order_by LIMIT 5""",
+                url_sample = db_manager.execute_query(
+                    """SELECT url FROM study_source
+                       WHERE collectionID = %s AND title IS NOT NULL AND url IS NOT NULL
+                       ORDER BY id LIMIT 10""",
                     (cid,)
                 )
-                print(f"\nFirst 5 sources by order_by:")
-                for s in sample:
-                    print(f"  title={repr(s['title'])}")
-                    print(f"    author={repr(s['author'])}  category={repr(s['category'])}  subtitle={repr(s['subtitle'])}  order_by={s['order_by']}")
+                print(f"\nSample URLs:")
+                for s in url_sample:
+                    print(f"  {s['url']}")
             return
 
         if args.dry_run:
