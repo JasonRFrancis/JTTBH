@@ -25,11 +25,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    5. [Triage](#55-triage)
    6. [Vacation Mode](#56-vacation-mode)
    7. [Appointments](#57-appointments)
-   8. [Podcast Feed](#58-podcast-feed)
-   9. [Household Chores](#59-household-chores)
-   10. [Book Tracker](#510-book-tracker)
-   11. [Daily Questions](#511-daily-questions)
-   12. [Mood Tracker](#512-mood-tracker)
+   8. [Household Chores](#58-household-chores)
+   9. [Book Tracker](#59-book-tracker)
+   10. [Daily Questions](#510-daily-questions)
+   11. [Mood Tracker](#511-mood-tracker)
 6. [Site Details](#6-site-details)
    1. [Habit Tracker Details](#61-habit-tracker-details)
    2. [Todo List Details](#62-todo-list-details)
@@ -300,7 +299,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     6. Podcast kind: RSS feed URL stored as `external_id`; title/creator/cover fetched automatically from the feed on create. Episodes stored in `media_episode`
     7. Steam sync (`app/services/steam.py`): `POST /steam/sync/post` imports the user's Steam library; credentials (`steam_api_key`, `steam_id`) saved in `user_preference`. Games with play time → `in_progress`; unplayed → `want`. Skips games already present. First error text included in flash message if any imports fail
     8. Show/podcast detail page lists episodes grouped by season (shows) or flat (podcasts); each episode has a seen/unseen toggle
-    9. The existing `podcast_bp` (RSS feed production) is a separate, unrelated feature
     10. Migrations: `20260529_media_tracker.sql` (creates tables, migrates book rows), `20260529_media_game_kinds.sql` (adds videogame/boardgame ENUM values), `20260529_user_preference_value_size.sql` (value column VARCHAR 100 → 500)
   9. Bookmarks
     1. Designated under the `bookmark` area; requires `PERM_BOOKMARK` (256)
@@ -348,6 +346,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
        - `GET /index`, `GET /index/<date_str>` — daily reading view, grouped by subscription
        - `GET /collections` — browse all collections; subscribe / unsubscribe
        - `GET /collection/<collection_id>` — owner manages sources
+       - `GET /feed.xml` — **public** RSS podcast feed of today's audio sources (no auth required); link shown in study index header nav
        - `POST /collection/create|update|delete/post` and `POST /source/create|update|delete/post`
        - `POST /subscribe/post/<collection_id>`, `POST /unsubscribe/post/<subscription_id>`, `POST /subscription/update/post/<id>`
        - `POST /source/complete/post/<source_id>` — toggle completion for a date
@@ -359,7 +358,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
        - `speeches.byu.edu/wp-content/uploads/` — BYU devotional talks
     8. Pre-loaded content (all exported to `study_data.sql` for production import):
        - LDS scriptures (all 5 standard works, 1,584 chapters with audio)
-       - General Conference 1971–April 2026 (110 conferences; audio for 2018+ only)
+       - General Conference 1971–April 2026 (110 conferences; audio for all years via Church content API — run `python3 claude/backfill_gc_audio_api.py --concurrency 15` to fill pre-2018 audio in production)
        - Hymns for Home and Church (72 hymns with audio)
        - General Handbook (41 chapters, no audio)
        - Come, Follow Me 2026 — Old Testament (68 entries with audio)
@@ -403,13 +402,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     2. Appointments can be blocked out (recurring or one-off) and then email invitations can be sent with a link to view the blocks and select an appointment
     3. The appointment selection page (used by someone accepting a proposed appointment) should not require authentication except for a key in the URL
     4. For now, compose the email and stub in sending it. Create the public booking page and the ability to create recurring blocks
-  4. Podcast Feed
-    1. Designated by `podcast`; a custom podcast XML feed subscribable by a podcast player
-    2. The feed page needs to be accessible (no authentication required) by all popular podcast players
-    3. Every user can create multiple feeds, kept in the `podcast` table and listed at `/[username]/podcast/subscription`
-    4. A podcast is made up of subscriptions to "podcast lists" (groups of podcast episodes), stored in the `podcast_list` table and created at `/[username]/podcast/list`
-    5. Rather than a recorded podcast, it is a collection of audio files from around the web that are linked to
-  5. Household Chores
+  4. Household Chores
     1. Designated by `chore`; manages household chores with optional user assignment, scheduling, and completion reporting
     2. Users can be grouped into a household, stored in the `household` and `household_member` tables
     3. Chores (in the `chore` table) are organized into lists, associated with a household (stored in the `chore_list` table)
@@ -729,7 +722,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
       | Bit | Value | Permission    | Description                         |
       |-----|-------|---------------|-------------------------------------|
       | 0   | 1     | Admin         | Admin functions                     |
-      | 1   | 2     | Podcast       | Access podcast feed                 |
+      | 1   | 2     | Podcast       | Reserved (podcast blueprint removed; bit retained for DB compatibility) |
       | 2   | 4     | Appointment   | Scheduling                          |
       | 3   | 8     | Dashboard     | Dashboard view                      |
       | 4   | 16    | Todo          | Todo lists                          |

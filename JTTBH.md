@@ -96,13 +96,12 @@ Dates in URLs: ISO `YYYY-MM-DD`. POST action names: `create`, `update`, `delete`
 | `fitness_bp` | `/<u>/fitness` | `GET /index`, `/log`, `/settings` · `POST /program/*`, `/exercise/create/post`, `/log/set/post` (JSON), `/weight/post` (JSON) |
 | `media_bp` | `/<u>/media` | `GET /index`, `/detail/<id>`, `/settings`, `/search/json` · `POST /create|update|delete|sync/post`, `/episode/seen/post/<id>`, `/steam/sync/post` |
 | `journal_bp` | `/<u>/journal` | `GET /index[/<date>]`, `/questions`, `/mood/settings` · `POST /answer|mood|question/create/post` |
-| `study_bp` | `/<u>/study` | `GET /index[/<date>]`, `/collections`, `/collection/<id>` · `POST /collection|source /create|update|delete/post`, `/subscribe|unsubscribe|subscription/update/post`, `/source/complete/post/<id>` |
+| `study_bp` | `/<u>/study` | `GET /index[/<date>]`, `/collections`, `/collection/<id>`, `/feed.xml` (public RSS) · `POST /collection|source /create|update|delete/post`, `/subscribe|unsubscribe|subscription/update/post`, `/source/complete/post/<id>` |
 | `quote_bp` | `/<u>/quote` | `GET /index`, `/add` · `POST /create|update|delete/post` |
 | `recipe_bp` | `/<u>/recipe` | `GET /index`, `/detail/<id>`, `/add`, `/edit/<id>` · `POST /extract/post` (JSON), `/create\|update\|delete/post`, `/image/add/post/<id>`, `/image/delete/post/<image_id>`, `/pdf/post` |
 | `triage_bp` | `/<u>/triage` | `GET /index` (stubbed) |
 | `vacation_bp` | `/<u>/vacation` | `GET /index` · `POST /create|delete/post` |
 | `appointment_bp` | `/<u>/appointment` | `GET /index` (stubbed) |
-| `podcast_bp` | `/<u>/podcast` | `GET /subscription`, `/list`, `/feed/<id>.xml` |
 | `chore_bp` | `/<u>/chore` | `GET /index` (stubbed) |
 | `book_bp` | `/<u>/book` | `GET /index` · `POST /create|update|finish/post` (legacy) |
 
@@ -115,7 +114,7 @@ Dates in URLs: ISO `YYYY-MM-DD`. POST action names: `create`, `update`, `delete`
 | Bit | Value | Constant | Feature |
 |-----|-------|----------|---------|
 | 0 | 1 | `PERM_ADMIN` | Admin |
-| 1 | 2 | `PERM_PODCAST` | Podcast feed |
+| 1 | 2 | `PERM_PODCAST` | Podcast feed (blueprint removed; bit reserved) |
 | 2 | 4 | `PERM_APPOINTMENT` | Scheduling |
 | 3 | 8 | `PERM_DASHBOARD` | Dashboard |
 | 4 | 16 | `PERM_TODO` | Todo |

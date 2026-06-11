@@ -1531,6 +1531,11 @@ CREATE TABLE `study_subscription` (
   `repeat` tinyint NOT NULL DEFAULT '1',
   `use_personal_schedule` tinyint NOT NULL DEFAULT '0',
   `name` varchar(200) DEFAULT NULL,
+  `filter_has_audio` tinyint NOT NULL DEFAULT '0',
+  `filter_title` varchar(300) DEFAULT NULL,
+  `filter_author_text` varchar(300) DEFAULT NULL,
+  `filter_category_text` varchar(300) DEFAULT NULL,
+  `filter_subtitle_text` varchar(300) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_subscription_id` (`subscriptionID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
