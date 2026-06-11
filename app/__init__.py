@@ -215,7 +215,6 @@ def _register_blueprints(app: Flask) -> None:
         ('app.routes.triage',      'triage_bp',      '/<username>/triage'),
         ('app.routes.vacation',    'vacation_bp',    '/<username>/vacation'),
         ('app.routes.appointment', 'appointment_bp', '/<username>/appointment'),
-        ('app.routes.podcast',     'podcast_bp',     '/<username>/podcast'),
         ('app.routes.chore',       'chore_bp',       '/<username>/chore'),
         ('app.routes.book',        'book_bp',        '/<username>/book'),
         ('app.routes.media',       'media_bp',       '/<username>/media'),

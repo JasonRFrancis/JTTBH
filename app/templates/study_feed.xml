@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+     xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Daily Study — {{ username | e }}</title>
+    <description>Daily study feed for {{ username | e }}</description>
+    <link>{{ url_for('study.index', username=username, _external=True) | e }}</link>
+    <language>en-us</language>
+    {% for source in sources %}
+    <item>
+      <title>{{ source.title | e }}</title>
+      {% if source.author %}
+      <itunes:author>{{ source.author | e }}</itunes:author>
+      {% endif %}
+      {% if source.category or source.subtitle %}
+      <description>{{ (source.category or source.subtitle) | e }}</description>
+      {% endif %}
+      <enclosure url="{{ source.audio_url | e }}" length="0" type="audio/mpeg" />
+      <guid isPermaLink="false">{{ source.sourceID }}</guid>
+      <pubDate>{{ today.strftime('%a, %d %b %Y 00:00:00 +0000') }}</pubDate>
+      {% if source.audio_length %}
+      <itunes:duration>{{ source.audio_length | e }}</itunes:duration>
+      {% endif %}
+    </item>
+    {% endfor %}
+  </channel>
+</rss>

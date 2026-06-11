@@ -32,6 +32,7 @@ from datetime import date, timedelta
 from flask import (
     Blueprint,
     flash,
+    make_response,
     redirect,
     render_template,
     request,
@@ -40,6 +41,7 @@ from flask import (
 )
 
 from app.models.study_model import StudyModel
+from app.services.database import db_manager
 from app.services.decorators import (
     login_required,
     permission_required_read,
@@ -569,3 +571,41 @@ def schedule_clear(username: str, subscription_id: str, source_id: str):
         return redirect(url_for('study.collections', username=username))
     StudyModel.clear_personal_schedule(session['user_id'], source_id)
     return redirect(url_for('study.subscription_schedule', username=username, subscription_id=subscription_id))
+
+
+# ---------------------------------------------------------------------------
+# Public RSS feed — today's study items that have audio
+# ---------------------------------------------------------------------------
+
+@study_bp.route('/feed.xml')
+def feed_xml(username: str):
+    user = db_manager.execute_one(
+        "SELECT userID FROM `user` WHERE username = %s", (username,))
+    if not user:
+        return make_response('<error>User not found</error>', 404,
+                             {'Content-Type': 'text/xml'})
+
+    user_id = user['userID']
+    tz_row = db_manager.execute_one(
+        "SELECT value FROM user_preference WHERE userID = %s AND preference = 'timezone'",
+        (user_id,))
+    timezone = tz_row['value'] if tz_row else 'UTC'
+
+    today = today_for_tz(timezone)
+    subscriptions = StudyModel.get_user_subscriptions(user_id)
+
+    seen = set()
+    sources = []
+    for sub in subscriptions:
+        all_sources = StudyModel.get_sources(sub['collectionID'])
+        items = StudyModel.sources_for_date(sub, all_sources, today, user_id)
+        for item in items:
+            sid = item['sourceID']
+            if sid not in seen and item.get('audio_url') and item['audio_url'] not in ('', 'none'):
+                seen.add(sid)
+                sources.append(item)
+
+    rss = render_template('study_feed.xml', username=username, today=today, sources=sources)
+    response = make_response(rss)
+    response.headers['Content-Type'] = 'application/rss+xml; charset=utf-8'
+    return response
