@@ -7,6 +7,7 @@
   <h1>Study</h1>
   <nav class="study-nav" aria-label="Study navigation">
     <a href="{{ url_for('study.collections', username=username) }}">Collections</a>
+    <a href="{{ url_for('study.feed_xml', username=username, _external=True) }}">Podcast Feed</a>
   </nav>
   <nav class="date-nav" aria-label="Date navigation">
     <a class="btn-nav" href="{{ url_for('study.index', username=username, date_str=prev_date.isoformat()) }}" aria-label="Previous day">&#8592;</a>
