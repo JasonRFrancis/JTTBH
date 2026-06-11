@@ -80,7 +80,7 @@
   <p>Select text on any page, then click this link to save it as a quote.
      On General Conference pages it also captures the speaker and talk title.</p>
   <p>Drag this link to your bookmarks bar:</p>
-  {% set bm_js %}javascript:(function(){var t=window.getSelection().toString().trim();var s=location.href;var a='',ti='';if(location.hostname==='www.churchofjesuschrist.org'&&location.pathname.indexOf('/general-conference/')>-1){var ae=document.querySelector('.author-name')||document.querySelector('[class*="byLine"]')||document.querySelector('[class*="author"]');if(ae)a=ae.textContent.trim().replace(/^\s*By\s+/i,'');var te=document.querySelector('h1');if(te)ti=te.textContent.trim();}window.open('https://jttbh.com/{{ username }}/quote/add?'+new URLSearchParams({text:t,source:s,author:a,title:ti}).toString(),'_blank');})();{% endset %}
+  {% set bm_js %}javascript:(function(){var t=window.getSelection().toString().trim();var s=location.href;var a='',ti='';if(location.hostname==='www.churchofjesuschrist.org'&&location.pathname.indexOf('/general-conference/')>-1){var ae=document.querySelector('.author-name')||document.querySelector('[class*=byLine]')||document.querySelector('[class*=author]');if(ae)a=ae.textContent.trim().replace(/^\s*By\s+/i,'');var te=document.querySelector('h1');if(te)ti=te.textContent.trim();}window.open('https://jttbh.com/{{ username }}/quote/add?'+new URLSearchParams({text:t,source:s,author:a,title:ti}).toString(),'_blank');})();{% endset %}
   <a href="{{ bm_js }}" class="bookmarklet-link">📌 Save Quote</a>
   <p class="bookmarklet-note">Right-click → Bookmark Link, or drag to your bookmarks bar.</p>
 </section>
