@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Join Household – jttbh{% endblock %}
+
+{% set area = 'chore' %}
+
+{% block content %}
+<main class="chore">
+  <header class="chore-header">
+    <h1>Join Household</h1>
+  </header>
+
+  <section class="chore-join">
+    <p>You have been invited to join <strong>{{ household_name }}</strong>.</p>
+    <form method="post" action="{{ url_for('chore.join_household_post', username=username) }}">
+      <input type="hidden" name="household_id" value="{{ household_id }}">
+      <input type="hidden" name="token" value="{{ token }}">
+      <button type="submit">Accept Invite</button>
+      <a href="{{ url_for('chore.index', username=username) }}">Cancel</a>
+    </form>
+  </section>
+</main>
+{% endblock %}

@@ -926,3 +926,8 @@
   color: var(--color-text-secondary, #777);
   font-size: 0.78rem;
 }
+
+/* Subscription drag-to-reorder */
+.study-collection-section[draggable="true"] { cursor: grab; }
+.study-collection-section--drag-over { outline: 2px dashed var(--color-accent, #1a73e8); border-radius: 4px; }
+.study-collection-section--dragging { opacity: 0.4; }

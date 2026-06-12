@@ -23,14 +23,20 @@ shared across households.  User membership is tracked via household_member.
 This means the household lookup is required before querying chores.
 """
 
+import secrets
+import uuid
 from datetime import date
 
 from app.services.timezone_utils import user_today
 
 from flask import (
     Blueprint,
+    flash,
+    redirect,
     render_template,
+    request,
     session,
+    url_for,
 )
 
 from app.services.database import db_manager
@@ -101,6 +107,23 @@ def _get_all_chores(household_id: str) -> list[dict]:
     )
 
 
+def _get_invite_token(household_id: str, user_id: str) -> str:
+    """Get or create a stable invite token for the household, stored in user_preference."""
+    pref_key = f'hh_invite_{household_id}'
+    row = db_manager.execute_one(
+        "SELECT value FROM user_preference WHERE preference = %s ORDER BY id DESC LIMIT 1",
+        (pref_key,),
+    )
+    if row:
+        return row['value']
+    token = secrets.token_urlsafe(24)
+    db_manager.execute_insert(
+        "INSERT INTO user_preference (userID, preference, value, created, created_by) VALUES (%s, %s, %s, NOW(), %s)",
+        (user_id, pref_key, token, user_id),
+    )
+    return token
+
+
 # Day bitmask mapping: Python weekday() Monday=0, but chore schema Sunday=1.
 _DAY_BITMASK = {
     6: 1,   # Sunday
@@ -141,9 +164,25 @@ def index(username: str):
     todays_chores = []
     all_chores = []
 
+    if not household:
+        # Auto-create a household for this user
+        household_id = str(uuid.uuid4())
+        db_manager.execute_insert(
+            "INSERT INTO household (householdID, name, created, created_by) VALUES (%s, %s, NOW(), %s)",
+            (household_id, f"{username}'s Household", user_id),
+        )
+        db_manager.execute_insert(
+            "INSERT INTO household_member (householdID, userID, created, created_by) VALUES (%s, %s, NOW(), %s)",
+            (household_id, user_id, user_id),
+        )
+        household = _get_user_household(user_id)
+        flash('A household was created for you.', 'success')
+
     if household:
         todays_chores = _get_todays_chores(household['householdID'], day_of_week_bit)
         all_chores = _get_all_chores(household['householdID'])
+
+    invite_token = _get_invite_token(household['householdID'], user_id) if household else None
 
     return render_template(
         'chore_index.html',
@@ -153,4 +192,72 @@ def index(username: str):
         today=today,
         day_name=today.strftime('%A'),
         username=username,
+        invite_token=invite_token,
     )
+
+
+@chore_bp.route('/join/<token>')
+@login_required
+def join_household(username: str, token: str):
+    """Show confirmation page for joining a household via invite link."""
+    user_id = session['user_id']
+    row = db_manager.execute_one(
+        "SELECT userID, preference FROM user_preference WHERE value = %s AND preference LIKE 'hh_invite_%' ORDER BY id DESC LIMIT 1",
+        (token,),
+    )
+    if not row:
+        flash('Invalid or expired invite link.', 'error')
+        return redirect(url_for('chore.index', username=username))
+
+    household_id = row['preference'].replace('hh_invite_', '')
+
+    existing = db_manager.execute_one(
+        "SELECT id FROM household_member WHERE householdID = %s AND userID = %s",
+        (household_id, user_id),
+    )
+    if existing:
+        flash('You are already in this household.', 'message')
+        return redirect(url_for('chore.index', username=username))
+
+    household = db_manager.execute_one(
+        "SELECT name FROM household WHERE householdID = %s ORDER BY id LIMIT 1",
+        (household_id,),
+    )
+    return render_template(
+        'chore_join.html',
+        username=username,
+        household_id=household_id,
+        household_name=household['name'] if household else 'Unknown Household',
+        token=token,
+    )
+
+
+@chore_bp.route('/join/post', methods=['POST'])
+@login_required
+def join_household_post(username: str):
+    """Accept a household invite."""
+    user_id = session['user_id']
+    household_id = request.form.get('household_id', '').strip()
+    token = request.form.get('token', '').strip()
+
+    # Verify token
+    row = db_manager.execute_one(
+        "SELECT id FROM user_preference WHERE value = %s AND preference = %s",
+        (token, f'hh_invite_{household_id}'),
+    )
+    if not row:
+        flash('Invalid invite link.', 'error')
+        return redirect(url_for('chore.index', username=username))
+
+    # Add user to household (ignore if already a member)
+    existing = db_manager.execute_one(
+        "SELECT id FROM household_member WHERE householdID = %s AND userID = %s",
+        (household_id, user_id),
+    )
+    if not existing:
+        db_manager.execute_insert(
+            "INSERT INTO household_member (householdID, userID, created, created_by) VALUES (%s, %s, NOW(), %s)",
+            (household_id, user_id, user_id),
+        )
+    flash('You joined the household!', 'success')
+    return redirect(url_for('chore.index', username=username))

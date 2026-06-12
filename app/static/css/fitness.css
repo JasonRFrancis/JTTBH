@@ -679,3 +679,35 @@
   .log-exercise strong { min-width: 14rem; }
   .weight-list { gap: 0.75rem; }
 }
+
+/* ── Session notes ───────────────────────────────────────────────────── */
+
+.fitness-notes { margin-top: 1.5rem; }
+.fitness-notes h2 { font-size: 1rem; margin: 0 0 0.5rem; }
+.fitness-notes textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 4rem;
+  margin-bottom: 0.4rem;
+}
+.fitness-notes button[type="submit"] {
+  padding: 0.35rem 0.9rem;
+  background: var(--color-link, #1a73e8);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+/* ── Weight schedule (settings) ─────────────────────────────────────── */
+
+.dow-checkboxes { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin-bottom: 0.75rem; }
+.dow-label { display: flex; align-items: center; gap: 0.3rem; font-size: 0.875rem; cursor: pointer; }
+.field-hint { font-size: 0.8rem; color: var(--color-text-muted, #888); margin: 0 0 0.5rem; }

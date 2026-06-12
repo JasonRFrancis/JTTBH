@@ -591,6 +591,14 @@ class TodoModel:
 
         count = 0
         for todo in todos:
+            # Count how many times this todo has been pushed before today
+            prior_sql = """
+                SELECT COUNT(*) AS cnt FROM todo_pushedForward
+                WHERE todoID = %s AND DATE(created) < %s
+            """
+            prior_result = db_manager.execute_one(prior_sql, (todo['todoID'], today))
+            prior_count = prior_result['cnt'] if prior_result else 0
+
             # Skip if already pushed today
             check_sql = """
                 SELECT id FROM todo_pushedForward
@@ -600,7 +608,19 @@ class TodoModel:
             if already:
                 continue
 
-            # Insert new todo record with today's due date
+            # Determine target list based on prior push count
+            if prior_count == 0:
+                # First push: keep in daily list, move to today
+                target_due = today
+                target_type = 'daily'
+                target_name = None
+            else:
+                # Subsequent push: move to Someday planning list
+                target_due = None
+                target_type = 'planning'
+                target_name = 'someday_soon'
+
+            # Insert new todo record
             insert_sql = """
                 INSERT INTO todo (todoID, userID, title, content, due, list_type,
                                   list_name, position, added, created, created_by)
@@ -609,7 +629,7 @@ class TodoModel:
             db_manager.execute_insert(insert_sql, (
                 todo['todoID'], user_id,
                 todo['title'], todo['content'],
-                today, todo['list_type'], todo['list_name'],
+                target_due, target_type, target_name,
                 todo['position'],
                 todo['added'] or yesterday,
                 user_id,

@@ -116,6 +116,16 @@ def _get_bookmark(bookmark_id: str, user_id: str) -> dict | None:
     return db_manager.execute_one(_BOOKMARK_BY_ID_SQL, (bookmark_id, user_id))
 
 
+def _normalise_tags(raw: str) -> str | None:
+    """Strip spaces from each tag; deduplicate; return None if empty."""
+    parts = [p.replace(' ', '').strip(',') for p in raw.split(',') if p.strip()]
+    seen = []
+    for p in parts:
+        if p and p not in seen:
+            seen.append(p)
+    return ','.join(seen) or None
+
+
 def _get_category(category_id: str, user_id: str) -> dict | None:
     return db_manager.execute_one(_CATEGORY_BY_ID_SQL, (category_id, user_id))
 
@@ -336,6 +346,55 @@ def items_json(username: str):
     return jsonify({'items': [dict(r) for r in rows]})
 
 
+@bookmark_bp.route('/recent')
+@login_required
+@permission_required_read(PERM_BOOKMARK)
+def recent(username: str):
+    from datetime import timedelta
+    user_id = session['user_id']
+    cutoff = datetime.now() - timedelta(hours=24)
+
+    bookmarks = db_manager.execute_query(
+        """SELECT bookmarkID, url, title, tags, favorite, read_later, notes, created
+           FROM bookmark
+           WHERE userID = %s AND `read` = 0 AND created >= %s
+           ORDER BY created DESC
+           LIMIT 100""",
+        (user_id, cutoff)
+    )
+
+    favorites = db_manager.execute_query(
+        """SELECT bookmarkID, url, title, tags, favorite, read_later, notes, created
+           FROM bookmark
+           WHERE userID = %s AND `read` = 0 AND favorite = 1 AND created < %s
+           ORDER BY created DESC
+           LIMIT 20""",
+        (user_id, cutoff)
+    )
+
+    def classify(bm):
+        url = bm['url'].lower()
+        if any(x in url for x in ('youtube.com', 'youtu.be', 'vimeo.com', 'twitch.tv')):
+            return 'Videos'
+        if bm.get('read_later'):
+            return 'Read Later'
+        if any(x in url for x in ('twitter.com', 'x.com', 'reddit.com', 'facebook.com', 'instagram.com')):
+            return 'Social'
+        return 'Articles'
+
+    groups = {}
+    for bm in bookmarks:
+        cat = classify(bm)
+        groups.setdefault(cat, []).append(bm)
+
+    return render_template(
+        'bookmark_recent.html',
+        username=username,
+        groups=groups,
+        favorites=favorites,
+    )
+
+
 @bookmark_bp.route('/archive')
 @login_required
 @permission_required_read(PERM_BOOKMARK)
@@ -439,7 +498,7 @@ def create(username: str):
 
     title       = _UNREAD_COUNT_RE.sub('', request.form.get('title', '').strip()) or None
     description = request.form.get('description', '').strip() or None
-    tags        = request.form.get('tags', '').strip() or None
+    tags        = _normalise_tags(request.form.get('tags', ''))
     notes       = request.form.get('notes', '').strip() or None
     read_later  = 1 if request.form.get('read_later') == '1' else 0
 
@@ -470,7 +529,7 @@ def update(username: str, bookmark_id: str):
         return jsonify({'status': 'error', 'message': 'Not found'}), 404
 
     title = _UNREAD_COUNT_RE.sub('', request.form.get('title', '').strip()) or bm['title']
-    tags  = request.form.get('tags', '').strip() or None
+    tags  = _normalise_tags(request.form.get('tags', ''))
     notes = request.form.get('notes', '').strip() or None
 
     db_manager.execute_update(
@@ -758,6 +817,43 @@ def category_item_reorder(username: str, category_id: str):
 # Bookmarklet / add form
 # ---------------------------------------------------------------------------
 
+@bookmark_bp.route('/quick-save')
+@login_required
+@permission_required_read(PERM_BOOKMARK)
+@permission_required_write(PERM_BOOKMARK)
+def quick_save(username: str):
+    """Quick-save a URL as Read Later without showing a form."""
+    user_id = session['user_id']
+    url = request.args.get('url', '').strip()
+    title = _UNREAD_COUNT_RE.sub('', request.args.get('title', '').strip()) or url[:100]
+
+    if not url:
+        flash('No URL provided.', 'error')
+        return _redirect_to_index(username)
+
+    # Check for duplicate
+    existing = db_manager.execute_one(
+        "SELECT bookmarkID FROM bookmark WHERE userID = %s AND url = %s AND `read` = 0 LIMIT 1",
+        (user_id, url)
+    )
+    if existing:
+        db_manager.execute_update(
+            "UPDATE bookmark SET read_later = 1 WHERE bookmarkID = %s AND userID = %s",
+            (existing['bookmarkID'], user_id)
+        )
+        return render_template('bookmark_added.html', username=username, message='Already saved — marked as Read Later.')
+
+    bookmark_id = str(uuid.uuid4())
+    db_manager.execute_insert(
+        """INSERT INTO bookmark
+               (bookmarkID, userID, url, title, description, tags, read_later, `read`, notes, favicon, created, created_by)
+           VALUES (%s, %s, %s, %s, NULL, NULL, 1, 0, NULL, NULL, %s, %s)""",
+        (bookmark_id, user_id, url, title or None, datetime.now(), user_id),
+    )
+    _auto_assign_new_bookmark(user_id, bookmark_id, url)
+    return render_template('bookmark_added.html', username=username, message='Saved to Read Later!')
+
+
 @bookmark_bp.route('/add')
 @login_required
 @permission_required_read(PERM_BOOKMARK)
@@ -788,7 +884,14 @@ def settings(username: str):
         "var u=encodeURIComponent(location.href);"
         "var t=encodeURIComponent(document.title);"
         "window.open('https://jttbh.com/{username}/bookmark/add?url='+u+'&title='+t,"
-        "'jttbh_bm','width=620,height=480,menubar=no,toolbar=no,scrollbars=yes');"
+        "'jttbh_bm','width=620,height=580,menubar=no,toolbar=no,scrollbars=no');"
+        "}})();"
+    ).format(username=username)
+    quick_bookmarklet = (
+        "javascript:(function(){{"
+        "var u=encodeURIComponent(location.href);"
+        "var t=encodeURIComponent(document.title);"
+        "window.open('https://jttbh.com/{username}/bookmark/quick-save?url='+u+'&title='+t,'_blank');"
         "}})();"
     ).format(username=username)
     return render_template(
@@ -796,7 +899,65 @@ def settings(username: str):
         username=username,
         token=token,
         bookmarklet=bookmarklet,
+        quick_bookmarklet=quick_bookmarklet,
     )
+
+
+@bookmark_bp.route('/summary/<bookmark_id>/json')
+@login_required
+@permission_required_read(PERM_BOOKMARK)
+def summary_json(username: str, bookmark_id: str):
+    """Generate an AI summary of the bookmarked page using Claude."""
+    user_id = session['user_id']
+    bm = _get_bookmark(bookmark_id, user_id)
+    if not bm:
+        return jsonify({'error': 'Not found'}), 404
+
+    url = bm['url']
+
+    # Fetch the page
+    try:
+        import requests as _req
+        resp = _req.get(url, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
+        resp.raise_for_status()
+        html = resp.text
+    except Exception as e:
+        return jsonify({'error': f'Could not fetch page: {e}'}), 502
+
+    # Extract text
+    try:
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html, 'html.parser')
+        for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'aside']):
+            tag.decompose()
+        text = soup.get_text(separator=' ', strip=True)[:8000]
+    except Exception:
+        text = html[:8000]
+
+    if not text.strip():
+        return jsonify({'error': 'No text content found'}), 422
+
+    # Call Claude
+    try:
+        import anthropic
+        import json as _json
+        client = anthropic.Anthropic()
+        msg = client.messages.create(
+            model='claude-haiku-4-5-20251001',
+            max_tokens=800,
+            messages=[{
+                'role': 'user',
+                'content': (
+                    f'Summarize this web page in three formats. Respond with ONLY valid JSON, no other text.\n'
+                    f'Format: {{"one":"<one sentence>","three":"<three sentences>","long":"<two paragraphs>"}}\n\n'
+                    f'Page title: {bm.get("title","")}\nURL: {url}\n\nContent:\n{text}'
+                )
+            }]
+        )
+        result = _json.loads(msg.content[0].text)
+        return jsonify({'status': 'ok', 'summary': result})
+    except Exception as e:
+        return jsonify({'error': f'Summary failed: {e}'}), 500
 
 
 @bookmark_bp.route('/token/regenerate/post', methods=['POST'])

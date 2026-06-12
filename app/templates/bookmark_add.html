@@ -44,8 +44,12 @@
     </div>
 
     <div class="field">
-      <label for="bm-tags">Tags</label>
-      <input type="text" id="bm-tags" name="tags" placeholder="comma-separated" autocomplete="off">
+      <label for="bm-tags-input">Tags <span style="font-weight:400;text-transform:none;">(press comma or space to add)</span></label>
+      <div class="bm-tag-chips-field" onclick="this.querySelector('.bm-tag-chips-input').focus()">
+        <span class="bm-tag-chips-list"></span>
+        <input class="bm-tag-chips-input" type="text" id="bm-tags-input" placeholder="Add tag…" autocomplete="off" spellcheck="false">
+        <input type="hidden" id="bm-tags" name="tags" class="bm-tags-hidden" value="">
+      </div>
     </div>
 
     <div class="field">
@@ -72,5 +76,27 @@
       <button type="button" onclick="window.close()">Cancel</button>
     </div>
   </form>
+<style>
+  .bm-tag-chips-field { display:flex; flex-wrap:wrap; align-items:center; gap:0.4rem; padding:0.35rem 0.5rem; border:1px solid #ccc; border-radius:4px; min-height:2.2rem; cursor:text; }
+  .bm-tag-chip-item { display:inline-flex; align-items:center; gap:0.2rem; padding:0.15rem 0.5rem; background:#e8f0fe; color:#2563eb; border-radius:999px; font-size:0.8rem; font-weight:500; }
+  .bm-tag-chip-remove { background:none; border:none; cursor:pointer; color:inherit; padding:0 0.1rem; font-size:0.9rem; }
+  .bm-tag-chips-input { border:none; outline:none; padding:0; font-size:14px; flex:1; min-width:80px; background:transparent; }
+  .bm-tag-chips-list { display:contents; }
+</style>
+<script>
+(function(){
+  const field = document.querySelector('.bm-tag-chips-field');
+  if(!field) return;
+  const hidden = field.querySelector('.bm-tags-hidden');
+  const input = field.querySelector('.bm-tag-chips-input');
+  const list = field.querySelector('.bm-tag-chips-list');
+  function getTags(){ return hidden.value ? hidden.value.split(',').map(t=>t.trim()).filter(Boolean) : []; }
+  function render(tags){ list.innerHTML=''; tags.forEach(t=>{ const c=document.createElement('span'); c.className='bm-tag-chip-item'; c.textContent=t; const b=document.createElement('button'); b.type='button'; b.className='bm-tag-chip-remove'; b.textContent='×'; b.onclick=()=>{ update(getTags().filter(x=>x!==t)); }; c.appendChild(b); list.appendChild(c); }); }
+  function update(tags){ const u=[...new Set(tags.map(t=>t.replace(/\s+/g,'').trim()).filter(Boolean))]; hidden.value=u.join(','); render(u); }
+  update(getTags());
+  input.addEventListener('keydown', e=>{ if(e.key===','||e.key===' '||e.key==='Enter'){ e.preventDefault(); const v=input.value.replace(/[, ]+/g,'').trim(); if(v){ const t=getTags(); if(!t.includes(v))t.push(v); update(t); input.value=''; } } if(e.key==='Backspace'&&!input.value){ const t=getTags(); if(t.length)update(t.slice(0,-1)); } });
+  input.addEventListener('blur', ()=>{ const v=input.value.replace(/[, ]+/g,'').trim(); if(v){ const t=getTags(); if(!t.includes(v))t.push(v); update(t); input.value=''; } });
+})();
+</script>
 </body>
 </html>

@@ -310,3 +310,46 @@
   color: var(--color-text-secondary, #999);
   margin-top: 0.25rem;
 }
+
+/* Tag chips input widget */
+.tag-chips-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-height: 2.2rem;
+  cursor: text;
+}
+.tag-chip-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.5rem;
+  background: var(--color-accent-light, #e8f0fe);
+  color: var(--color-accent, #1a73e8);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.tag-chip-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  padding: 0 0.1rem;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+.tag-chips-input {
+  border: none;
+  outline: none;
+  padding: 0;
+  font-size: 0.875rem;
+  flex: 1;
+  min-width: 80px;
+  background: transparent;
+}
+.tag-chips-list { display: contents; }

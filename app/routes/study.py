@@ -574,6 +574,33 @@ def schedule_clear(username: str, subscription_id: str, source_id: str):
 
 
 # ---------------------------------------------------------------------------
+# Subscription reorder (JSON endpoint)
+# ---------------------------------------------------------------------------
+
+@study_bp.route('/subscription/reorder/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_STUDY)
+@permission_required_write(PERM_STUDY)
+def subscription_reorder(username: str):
+    from flask import jsonify
+    user_id = session['user_id']
+    items = request.get_json(silent=True) or []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        sub_id = item.get('subscriptionID')
+        pos = item.get('position')
+        if sub_id and pos is not None:
+            sub = StudyModel.get_subscription_by_id(sub_id)
+            if sub and sub['userID'] == user_id:
+                db_manager.execute_update(
+                    'UPDATE study_subscription SET position=%s WHERE subscriptionID=%s',
+                    (int(pos), sub_id),
+                )
+    return jsonify({'status': 'ok'})
+
+
+# ---------------------------------------------------------------------------
 # Public RSS feed — today's study items that have audio
 # ---------------------------------------------------------------------------
 
@@ -594,16 +621,25 @@ def feed_xml(username: str):
     today = today_for_tz(timezone)
     subscriptions = StudyModel.get_user_subscriptions(user_id)
 
-    seen = set()
+    seen_ids = set()
+    seen_urls = set()
     sources = []
     for sub in subscriptions:
         all_sources = StudyModel.get_sources(sub['collectionID'])
         items = StudyModel.sources_for_date(sub, all_sources, today, user_id)
         for item in items:
             sid = item['sourceID']
-            if sid not in seen and item.get('audio_url') and item['audio_url'] not in ('', 'none'):
-                seen.add(sid)
+            aurl = item.get('audio_url') or ''
+            if sid not in seen_ids and aurl and aurl not in ('', 'none') and aurl not in seen_urls:
+                seen_ids.add(sid)
+                seen_urls.add(aurl)
                 sources.append(item)
+    sources = sources[:100]
+
+    # Stagger pubDate times so podcast apps display in feed order (first = newest).
+    for idx, item in enumerate(sources):
+        secs = max(0, 86399 - idx)
+        item['_pub_time'] = f'{secs // 3600:02d}:{(secs % 3600) // 60:02d}:{secs % 60:02d}'
 
     rss = render_template('study_feed.xml', username=username, today=today, sources=sources)
     response = make_response(rss)

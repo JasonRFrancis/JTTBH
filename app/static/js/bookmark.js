@@ -355,6 +355,117 @@ function initSelectAll() {
 }
 
 // ---------------------------------------------------------------------------
+// Tag chips
+// ---------------------------------------------------------------------------
+
+function initTagChips() {
+  document.querySelectorAll('.bm-tag-chips-field').forEach(field => {
+    const hidden = field.querySelector('input[type="hidden"].bm-tags-hidden');
+    const input = field.querySelector('.bm-tag-chips-input');
+    const chipList = field.querySelector('.bm-tag-chips-list');
+    if (!hidden || !input || !chipList) return;
+
+    function renderChips(tags) {
+      chipList.innerHTML = '';
+      tags.forEach(tag => {
+        if (!tag.trim()) return;
+        const chip = document.createElement('span');
+        chip.className = 'bm-tag-chip-item';
+        chip.textContent = tag.trim();
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'bm-tag-chip-remove';
+        btn.textContent = '×';
+        btn.addEventListener('click', () => {
+          const current = getTags();
+          updateTags(current.filter(t => t !== tag.trim()));
+        });
+        chip.appendChild(btn);
+        chipList.appendChild(chip);
+      });
+    }
+
+    function getTags() {
+      return hidden.value ? hidden.value.split(',').map(t => t.trim()).filter(Boolean) : [];
+    }
+
+    function updateTags(tags) {
+      const unique = [...new Set(tags.map(t => t.replace(/\s+/g, '').trim()).filter(Boolean))];
+      hidden.value = unique.join(',');
+      renderChips(unique);
+    }
+
+    updateTags(getTags());
+
+    input.addEventListener('keydown', e => {
+      if (e.key === ',' || e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        const val = input.value.replace(/[, ]+/g, '').trim();
+        if (val) {
+          const tags = getTags();
+          if (!tags.includes(val)) tags.push(val);
+          updateTags(tags);
+          input.value = '';
+        }
+      }
+      if (e.key === 'Backspace' && !input.value) {
+        const tags = getTags();
+        if (tags.length) updateTags(tags.slice(0, -1));
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      const val = input.value.replace(/[, ]+/g, '').trim();
+      if (val) {
+        const tags = getTags();
+        if (!tags.includes(val)) tags.push(val);
+        updateTags(tags);
+        input.value = '';
+      }
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Summarize
+// ---------------------------------------------------------------------------
+
+function initSummarize() {
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.btn-summarize');
+    if (!btn) return;
+    const url = btn.dataset.url;
+    const id = btn.dataset.bookmarkId;
+    const output = document.getElementById('summary-' + id);
+    if (!output) return;
+    btn.disabled = true;
+    btn.textContent = 'Summarizing…';
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          output.textContent = 'Error: ' + data.error;
+        } else {
+          const s = data.summary;
+          output.innerHTML =
+            '<div class="bm-summary-section"><strong>In brief:</strong> ' + s.one + '</div>' +
+            '<div class="bm-summary-section"><strong>Summary:</strong> ' + s.three + '</div>' +
+            '<details class="bm-summary-long"><summary>Full summary</summary>' + s.long + '</details>';
+        }
+        output.hidden = false;
+        btn.textContent = '✨ Summarize';
+        btn.disabled = false;
+      })
+      .catch(() => {
+        output.textContent = 'Failed to load summary.';
+        output.hidden = false;
+        btn.textContent = '✨ Summarize';
+        btn.disabled = false;
+      });
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Init
 // ---------------------------------------------------------------------------
 
@@ -363,3 +474,5 @@ initCardDrag();
 initRowDrag();
 initSelectAll();
 initSort();
+initTagChips();
+initSummarize();

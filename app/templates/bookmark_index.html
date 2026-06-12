@@ -9,6 +9,7 @@
   <header class="bm-header">
     <h1>Bookmarks</h1>
     <nav class="bm-nav">
+      <a href="{{ url_for('bookmark.recent', username=username) }}">Recent</a>
       <a href="{{ url_for('bookmark.archive', username=username) }}">Archive</a>
       <a href="{{ url_for('bookmark.read_later', username=username) }}">Read Later</a>
       <a href="{{ url_for('bookmark.settings', username=username) }}">Settings</a>
@@ -76,7 +77,10 @@
             <span class="bm-edit-row-actions">
               <button class="bm-edit-save" data-bm-id="{{ bm.bookmarkID }}">Save</button>
               <button class="bm-edit-cancel">Cancel</button>
+              <button type="button" class="btn-summarize" data-bookmark-id="{{ bm.bookmarkID }}"
+                      data-url="{{ url_for('bookmark.summary_json', username=username, bookmark_id=bm.bookmarkID) }}">✨ Summarize</button>
             </span>
+            <div class="bm-summary-output" id="summary-{{ bm.bookmarkID }}" hidden></div>
           </div>
         </li>
         {% endfor %}
@@ -147,7 +151,10 @@
             <span class="bm-edit-row-actions">
               <button class="bm-edit-save" data-bm-id="{{ bm.bookmarkID }}">Save</button>
               <button class="bm-edit-cancel">Cancel</button>
+              <button type="button" class="btn-summarize" data-bookmark-id="{{ bm.bookmarkID }}"
+                      data-url="{{ url_for('bookmark.summary_json', username=username, bookmark_id=bm.bookmarkID) }}">✨ Summarize</button>
             </span>
+            <div class="bm-summary-output" id="summary-{{ bm.bookmarkID }}" hidden></div>
           </div>
         </li>
         {% else %}
@@ -197,7 +204,10 @@
             <span class="bm-edit-row-actions">
               <button class="bm-edit-save" data-bm-id="{{ bm.bookmarkID }}">Save</button>
               <button class="bm-edit-cancel">Cancel</button>
+              <button type="button" class="btn-summarize" data-bookmark-id="{{ bm.bookmarkID }}"
+                      data-url="{{ url_for('bookmark.summary_json', username=username, bookmark_id=bm.bookmarkID) }}">✨ Summarize</button>
             </span>
+            <div class="bm-summary-output" id="summary-{{ bm.bookmarkID }}" hidden></div>
           </div>
         </li>
         {% else %}

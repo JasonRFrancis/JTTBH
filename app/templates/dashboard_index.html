@@ -95,7 +95,41 @@
 </section>
 {% endif %}
 
-{% if not (session.get('perm_read') is not none and (has_perm(32) or has_perm(16))) %}
+{% if has_perm(512) and fitness %}
+<section class="widget fitness-widget" aria-labelledby="fitness-widget-heading">
+  <header class="widget-header">
+    <h2 id="fitness-widget-heading">
+      <a href="{{ url_for('fitness.index', username=username) }}">Fitness</a>
+    </h2>
+    {% if fitness.program %}
+    <span class="widget-meta">{{ fitness.exercise_count }} exercise{% if fitness.exercise_count != 1 %}s{% endif %} today</span>
+    {% endif %}
+  </header>
+  {% if fitness.program %}
+  <p class="widget-body">{{ fitness.program.name }}</p>
+  {% else %}
+  <p class="widget-empty">No active program. <a href="{{ url_for('fitness.settings', username=username) }}">Set one up</a>.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if has_perm(8192) and study %}
+<section class="widget study-widget" aria-labelledby="study-widget-heading">
+  <header class="widget-header">
+    <h2 id="study-widget-heading">
+      <a href="{{ url_for('study.index', username=username) }}">Study</a>
+    </h2>
+    <span class="widget-meta">{{ study.completed }}/{{ study.total }} today</span>
+  </header>
+  {% if study.total > 0 %}
+  <p class="widget-body">{{ study.total - study.completed }} item{% if (study.total - study.completed) != 1 %}s{% endif %} remaining</p>
+  {% else %}
+  <p class="widget-empty">Nothing scheduled for today.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if not (session.get('perm_read') is not none and (has_perm(32) or has_perm(16) or has_perm(512) or has_perm(8192))) %}
 <p>No widgets available. Check your account permissions.</p>
 {% endif %}
 {% endblock %}

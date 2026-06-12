@@ -179,7 +179,7 @@ class StudyModel:
               AND sc.id = (SELECT MAX(sc2.id) FROM study_collection sc2 WHERE sc2.collectionID = sc.collectionID)
               AND sc.name IS NOT NULL
             WHERE sub.userID = %s
-            ORDER BY COALESCE(sub.name, sc.name)
+            ORDER BY sub.position, COALESCE(sub.name, sc.name)
         """, (user_id,))
 
     @staticmethod

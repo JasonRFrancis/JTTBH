@@ -7,18 +7,23 @@
     <description>Daily study feed for {{ username | e }}</description>
     <link>{{ url_for('study.index', username=username, _external=True) | e }}</link>
     <language>en-us</language>
+    <itunes:image href="{{ url_for('static', filename='img/study_artwork.svg', _external=True) | e }}"/>
     {% for source in sources %}
     <item>
-      <title>{{ source.title | e }}</title>
+      <title>{% if source.author %}{{ source.author | e }}: {% endif %}{{ source.title | e }}</title>
       {% if source.author %}
       <itunes:author>{{ source.author | e }}</itunes:author>
+      {% endif %}
+      {% if source.subtitle or source.category %}
+      <itunes:subtitle>{{ (source.subtitle or source.category) | e }}</itunes:subtitle>
       {% endif %}
       {% if source.category or source.subtitle %}
       <description>{{ (source.category or source.subtitle) | e }}</description>
       {% endif %}
-      <enclosure url="{{ source.audio_url | e }}" length="0" type="audio/mpeg" />
+      <enclosure url="{{ source.audio_url | e }}" length="1" type="audio/mpeg" />
+      <itunes:image href="{{ url_for('static', filename='img/study_artwork.svg', _external=True) | e }}"/>
       <guid isPermaLink="false">{{ source.sourceID }}</guid>
-      <pubDate>{{ today.strftime('%a, %d %b %Y 00:00:00 +0000') }}</pubDate>
+      <pubDate>{{ today.strftime('%a, %d %b %Y') }} {{ source._pub_time }} +0000</pubDate>
       {% if source.audio_length %}
       <itunes:duration>{{ source.audio_length | e }}</itunes:duration>
       {% endif %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Recent Bookmarks{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/bookmark.css') }}">{% endblock %}
+
+{% block content %}
+<main class="bookmark">
+  <header class="bm-header">
+    <h1>Recent</h1>
+    <nav class="bm-nav">
+      <a href="{{ url_for('bookmark.index', username=username) }}">All</a>
+      <a href="{{ url_for('bookmark.read_later', username=username) }}">Read Later</a>
+    </nav>
+  </header>
+
+  {% if favorites %}
+  <section class="bm-group" aria-labelledby="fav-heading">
+    <h2 id="fav-heading" class="bm-group-heading">Favorites</h2>
+    <ul class="bm-card-list">
+      {% for bm in favorites %}
+      <li class="bm-card bm-card--favorite">
+        <a href="{{ bm.url }}" class="bm-card-title" target="_blank" rel="noopener">{{ bm.title or bm.url }}</a>
+        {% if bm.tags %}
+        <span class="bm-card-tags">{% for t in bm.tags.split(',') %}<span class="tag-chip">{{ t.strip() }}</span>{% endfor %}</span>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% for group_name, items in groups.items() %}
+  <section class="bm-group" aria-labelledby="grp-{{ loop.index }}">
+    <h2 id="grp-{{ loop.index }}" class="bm-group-heading">{{ group_name }} <span class="bm-count">({{ items|length }})</span></h2>
+    <ul class="bm-card-list">
+      {% for bm in items %}
+      <li class="bm-card">
+        <a href="{{ bm.url }}" class="bm-card-title" target="_blank" rel="noopener">{{ bm.title or bm.url }}</a>
+        {% if bm.notes %}<p class="bm-card-notes">{{ bm.notes }}</p>{% endif %}
+        {% if bm.tags %}
+        <span class="bm-card-tags">{% for t in bm.tags.split(',') %}<span class="tag-chip">{{ t.strip() }}</span>{% endfor %}</span>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+
+  {% if not groups and not favorites %}
+  <p class="bm-empty">Nothing saved in the last 24 hours.</p>
+  {% endif %}
+</main>
+{% endblock %}

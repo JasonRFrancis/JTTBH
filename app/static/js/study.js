@@ -371,4 +371,47 @@
   if (scheduleSearch) scheduleSearch.addEventListener('input', filterSchedule);
   if (showScheduled)  showScheduled.addEventListener('change', filterSchedule);
 
+  /* ── Study index: subscription drag-to-reorder ────────────── */
+  (function() {
+    const sections = [...document.querySelectorAll('.study-collection-section[data-sub-id]')];
+    if (sections.length < 2) return;
+    const container = sections[0].parentElement;
+    let dragging = null;
+
+    sections.forEach(sec => {
+      sec.addEventListener('dragstart', e => {
+        dragging = sec;
+        sec.classList.add('study-collection-section--dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      sec.addEventListener('dragend', () => {
+        sec.classList.remove('study-collection-section--dragging');
+        document.querySelectorAll('.study-collection-section--drag-over').forEach(el => el.classList.remove('study-collection-section--drag-over'));
+        dragging = null;
+      });
+      sec.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        document.querySelectorAll('.study-collection-section--drag-over').forEach(el => el.classList.remove('study-collection-section--drag-over'));
+        if (sec !== dragging) sec.classList.add('study-collection-section--drag-over');
+      });
+      sec.addEventListener('drop', e => {
+        e.preventDefault();
+        sec.classList.remove('study-collection-section--drag-over');
+        if (!dragging || dragging === sec) return;
+        const all = [...container.querySelectorAll('.study-collection-section[data-sub-id]')];
+        const fromIdx = all.indexOf(dragging), toIdx = all.indexOf(sec);
+        if (fromIdx < toIdx) sec.after(dragging); else sec.before(dragging);
+        const updated = [...container.querySelectorAll('.study-collection-section[data-sub-id]')];
+        const payload = updated.map((el, i) => ({ subscriptionID: el.dataset.subId, position: i }));
+        const username = window.location.pathname.split('/')[1];
+        fetch('/' + username + '/study/subscription/reorder/post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          body: JSON.stringify(payload)
+        }).catch(() => {});
+      });
+    });
+  }());
+
 }());

@@ -474,3 +474,53 @@
 .bookmark-read-later .bookmark-header { margin-bottom: 1.5rem; }
 .bookmark-read-later .bookmark-item { flex-direction: column; align-items: stretch; }
 .bookmark-description { font-size: 0.875rem; color: var(--color-text-secondary, #666); margin: 0.25rem 0 0; }
+
+/* Tag chips */
+.bm-tag-chips-field {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;
+  padding: 0.35rem 0.5rem; border: 1px solid #ccc; border-radius: 4px;
+  min-height: 2.2rem; cursor: text;
+}
+.bm-tag-chip-item {
+  display: inline-flex; align-items: center; gap: 0.2rem;
+  padding: 0.15rem 0.5rem;
+  background: var(--color-accent-light, #e8f0fe);
+  color: var(--color-accent, #1a73e8);
+  border-radius: 999px; font-size: 0.8rem; font-weight: 500;
+}
+.bm-tag-chip-remove {
+  background: none; border: none; cursor: pointer; color: inherit;
+  padding: 0 0.1rem; font-size: 0.9rem; line-height: 1;
+}
+.bm-tag-chips-input {
+  border: none; outline: none; padding: 0; font-size: 0.875rem;
+  flex: 1; min-width: 80px; background: transparent;
+}
+.bm-tag-chips-list { display: contents; }
+
+/* Recent / card view */
+.bm-group { margin-bottom: 2rem; }
+.bm-group-heading { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-muted, #888); margin-bottom: 0.75rem; }
+.bm-count { font-weight: 400; }
+.bm-card-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem; }
+.bm-card--favorite { border-left: 3px solid #f59e0b; }
+.bm-card-notes { font-size: 0.8rem; color: var(--color-muted, #666); margin: 0; }
+.bm-card-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.tag-chip { display: inline-block; padding: 0.1rem 0.45rem; background: var(--color-accent-light, #e8f0fe); color: var(--color-accent, #1a73e8); border-radius: 999px; font-size: 0.75rem; }
+
+/* AI summary */
+.btn-summarize {
+  display: inline-block; padding: 0.25rem 0.6rem; font-size: 0.8rem;
+  border: 1px solid var(--color-border, #ddd); border-radius: 3px;
+  background: var(--color-bg, #fff); cursor: pointer;
+}
+.btn-summarize:hover { background: var(--color-bg-alt, #f0f0f0); }
+.btn-summarize:disabled { opacity: 0.6; cursor: default; }
+.bm-summary-output {
+  margin-top: 0.5rem; padding: 0.5rem 0.75rem;
+  background: var(--color-bg-alt, #f9fafb);
+  border: 1px solid var(--color-border, #e5e5e5);
+  border-radius: 4px; font-size: 0.8rem;
+}
+.bm-summary-section { margin-bottom: 0.4rem; }
+.bm-summary-long { margin-top: 0.4rem; font-size: 0.8rem; }

@@ -149,7 +149,7 @@ function initInlineEditing() {
     const updateForm = item.querySelector('.todo-item__form');
     if (!updateForm) return;
 
-    titleEl.addEventListener('click', () => {
+    titleEl.addEventListener('dblclick', () => {
       if (titleEl.contentEditable === 'true') return; // already editing
       titleEl.contentEditable = 'true';
       titleEl.focus();
@@ -273,11 +273,13 @@ function observeLastSlot(listEl) {
   if (!input || input.dataset.growWired) return;
   input.dataset.growWired = '1';
 
-  input.addEventListener('input', () => {
+  const onInput = () => {
     if (input.value.trim()) {
+      input.removeEventListener('input', onInput);
       addBlankSlot(listEl, lastBlank);
     }
-  });
+  };
+  input.addEventListener('input', onInput);
 }
 
 /**
@@ -325,12 +327,15 @@ function addBlankSlot(listEl, lastBlank) {
 
 
 /* =========================================================================
-   7. Drag-and-drop reordering
+   7. Drag-and-drop reordering (within-list) + cross-list move
    ========================================================================= */
 
+let _globalDragging = null;
+let _dragSourceList = null;
+
 /**
- * Enable HTML5 drag-and-drop reordering within each todo-list.
- * On a successful drop, POST the new order to the reorder endpoint.
+ * Enable HTML5 drag-and-drop reordering within each todo-list,
+ * and cross-list moves between lists.
  */
 function initDragDrop() {
   document.querySelectorAll('todo-list').forEach((listEl) => {
@@ -339,76 +344,109 @@ function initDragDrop() {
 }
 
 function initListDragDrop(listEl) {
-  let dragging = null;
-
   listEl.addEventListener('dragstart', (e) => {
     const item = e.target.closest('todo-item[data-id]');
     if (!item) return;
-    dragging = item;
+    _globalDragging = item;
+    _dragSourceList = listEl;
     item.classList.add('todo-item--dragging');
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', item.dataset.id);
   });
 
   listEl.addEventListener('dragend', () => {
-    if (dragging) {
-      dragging.classList.remove('todo-item--dragging');
-      dragging = null;
+    if (_globalDragging) {
+      _globalDragging.classList.remove('todo-item--dragging');
+      _globalDragging = null;
+      _dragSourceList = null;
     }
-    listEl.querySelectorAll('.todo-item--drag-over').forEach((el) => {
+    document.querySelectorAll('.todo-item--drag-over').forEach((el) => {
       el.classList.remove('todo-item--drag-over');
+    });
+    document.querySelectorAll('todo-list.todo-list--drag-target').forEach((el) => {
+      el.classList.remove('todo-list--drag-target');
     });
   });
 
   listEl.addEventListener('dragover', (e) => {
+    if (!_globalDragging) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     const target = e.target.closest('todo-item[data-id]');
-    listEl.querySelectorAll('.todo-item--drag-over').forEach((el) => {
+    document.querySelectorAll('.todo-item--drag-over').forEach((el) => {
       el.classList.remove('todo-item--drag-over');
     });
-    if (target && target !== dragging) {
+    document.querySelectorAll('todo-list.todo-list--drag-target').forEach((el) => {
+      el.classList.remove('todo-list--drag-target');
+    });
+    if (target && target !== _globalDragging) {
       target.classList.add('todo-item--drag-over');
+    } else if (!target) {
+      listEl.classList.add('todo-list--drag-target');
     }
   });
 
   listEl.addEventListener('drop', (e) => {
     e.preventDefault();
-    const target = e.target.closest('todo-item[data-id]');
-    if (!dragging || !target || dragging === target) return;
-
-    target.classList.remove('todo-item--drag-over');
-
-    // Re-order in the DOM
-    const allItems = [...listEl.querySelectorAll('todo-item[data-id]')];
-    const fromIdx = allItems.indexOf(dragging);
-    const toIdx   = allItems.indexOf(target);
-
-    if (fromIdx < toIdx) {
-      target.after(dragging);
-    } else {
-      target.before(dragging);
-    }
-
-    // Calculate new positions and POST to reorder endpoint
-    const updatedItems = [...listEl.querySelectorAll('todo-item[data-id]')];
-    const payload = {
-      todos: updatedItems.map((el, idx) => ({
-        todoID:   el.dataset.id,
-        position: idx,
-      })),
-    };
-
-    fetch(todoUrl('reorder/post'), {
-      method: 'POST',
-      headers: {
-        'Content-Type':    'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-      },
-      body: JSON.stringify(payload),
-    }).catch(() => {
-      // Reorder failed silently; page reload would restore DB order
+    document.querySelectorAll('.todo-item--drag-over, todo-list.todo-list--drag-target').forEach((el) => {
+      el.classList.remove('todo-item--drag-over');
+      el.classList.remove('todo-list--drag-target');
     });
+    if (!_globalDragging) return;
+
+    const target = e.target.closest('todo-item[data-id]');
+    const isSameList = listEl === _dragSourceList;
+
+    if (isSameList) {
+      // Within-list reorder
+      if (!target || _globalDragging === target) return;
+      const allItems = [...listEl.querySelectorAll('todo-item[data-id]')];
+      const fromIdx = allItems.indexOf(_globalDragging);
+      const toIdx   = allItems.indexOf(target);
+      if (fromIdx < toIdx) target.after(_globalDragging);
+      else target.before(_globalDragging);
+
+      const updatedItems = [...listEl.querySelectorAll('todo-item[data-id]')];
+      const payload = {
+        todos: updatedItems.map((el, idx) => ({ todoID: el.dataset.id, position: idx })),
+      };
+      fetch(todoUrl('reorder/post'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify(payload),
+      }).catch(() => {});
+    } else {
+      // Cross-list move
+      const todoId = _globalDragging.dataset.id;
+      const listType = listEl.dataset.type || 'daily';
+      // data-name may be url-encoded (custom lists); decode it for the POST
+      const listName = listEl.dataset.name ? decodeURIComponent(listEl.dataset.name) : '';
+      const listDate = listEl.dataset.date || '';
+
+      // Append to target list (before blank slots)
+      const firstBlank = listEl.querySelector('todo-item.todo-item--blank');
+      if (firstBlank) firstBlank.before(_globalDragging);
+      else listEl.appendChild(_globalDragging);
+
+      // POST to move endpoint using field names the route expects
+      const form = document.createElement('form');
+      const params = { new_list_type: listType, new_list_name: listName, new_due: listDate };
+      Object.entries(params).forEach(([k, v]) => {
+        if (v) {
+          const i = document.createElement('input');
+          i.name = k;
+          i.value = v;
+          form.appendChild(i);
+        }
+      });
+      const fd = new FormData(form);
+      fetch(todoUrl('move/post', todoId), {
+        method: 'POST',
+        body: fd,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        redirect: 'follow',
+      }).catch(() => {});
+    }
   });
 }
 
@@ -440,7 +478,43 @@ function initDatePicker() {
 
 
 /* =========================================================================
-   9. Checkbox toggle: auto-submit on change
+   9. Click-to-toggle: single click on a todo item toggles completion
+   ========================================================================= */
+
+/**
+ * Single click anywhere on a todo-item (except links, buttons, inputs, and
+ * the details panel) toggles completion via the hidden checkbox.
+ * Optimistically flips the completed class for instant visual feedback.
+ */
+function initClickToToggle() {
+  document.addEventListener('click', (e) => {
+    // Ignore clicks on interactive elements and links
+    if (e.target.tagName === 'A' || e.target.closest('a')) return;
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.target.closest('details')) return;
+
+    const item = e.target.closest('todo-item[data-id]');
+    if (!item) return;
+
+    // Don't toggle while the title is in edit mode
+    const title = item.querySelector('.todo-item__title');
+    if (title && title.contentEditable === 'true') return;
+
+    const checkbox = item.querySelector('.todo-item__checkbox');
+    if (!checkbox) return;
+
+    // Optimistic UI: flip completed class immediately
+    checkbox.checked = !checkbox.checked;
+    item.classList.toggle('todo-item--completed', checkbox.checked);
+
+    checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+}
+
+
+/* =========================================================================
+   10. Checkbox toggle: auto-submit on change
    ========================================================================= */
 
 /**
@@ -468,7 +542,7 @@ function initCheckboxToggle() {
 
 
 /* =========================================================================
-   10. Detail panel: close when clicking outside
+   11. Detail panel: close when clicking outside
    ========================================================================= */
 
 /**
@@ -487,7 +561,7 @@ function initDetailPanels() {
 
 
 /* =========================================================================
-   10. Initialisation
+   12. Initialisation
    ========================================================================= */
 
 /**
@@ -502,6 +576,7 @@ function init() {
     initAutoGrow,
     initDragDrop,
     initDatePicker,
+    initClickToToggle,
     initCheckboxToggle,
     initDetailPanels,
   ];

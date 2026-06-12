@@ -284,6 +284,24 @@
   </section>
   {% endif %}
 
+  <section class="settings-section" aria-labelledby="weight-sched-heading">
+    <h3 id="weight-sched-heading">Weight Recording Days</h3>
+    <form method="post" action="{{ url_for('fitness.weight_schedule_post', username=username) }}">
+      <p class="field-hint">Select which days to show the weight recording form:</p>
+      {% set days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] %}
+      <div class="dow-checkboxes">
+        {% for i in range(7) %}
+        <label class="dow-label">
+          <input type="checkbox" name="weight_day" value="{{ i }}"
+                 {% if weight_days is none or i|string in (weight_days or set()) %}checked{% endif %}>
+          {{ days[i] }}
+        </label>
+        {% endfor %}
+      </div>
+      <button type="submit">Save</button>
+    </form>
+  </section>
+
   <section aria-labelledby="catalog-heading">
     <h2 id="catalog-heading">Exercise Catalog</h2>
     <details class="create-form">

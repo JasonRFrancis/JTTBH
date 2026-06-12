@@ -2,6 +2,7 @@
 {% set area = 'quote' %}
 {% block title %}Quotes{% endblock %}
 {% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/quote.css') }}">{% endblock %}
+{% block js %}<script src="{{ url_for('static', filename='js/quote.js') }}" defer></script>{% endblock %}
 
 {% block content %}
 <header class="quote-header">
@@ -53,8 +54,13 @@
           <input id="title-{{ q.quoteID }}" name="title" type="text" value="{{ q.title or '' }}">
           <label for="source-{{ q.quoteID }}">Source URL</label>
           <input id="source-{{ q.quoteID }}" name="source" type="url" value="{{ q.source or '' }}">
-          <label for="tags-{{ q.quoteID }}">Tags (comma-separated)</label>
-          <input id="tags-{{ q.quoteID }}" name="tags" type="text" value="{{ q.tags or '' }}">
+          <label for="tags-{{ q.quoteID }}">Tags <span class="field-hint">(press comma or space to add)</span></label>
+          <div class="tag-chips-field" onclick="this.querySelector('.tag-chips-input').focus()">
+            <span class="tag-chips-list"></span>
+            <input class="tag-chips-input" type="text" placeholder="Add tag…"
+                   autocomplete="off" list="quote-tag-suggestions" spellcheck="false">
+            <input type="hidden" id="tags-{{ q.quoteID }}" name="tags" value="{{ q.tags or '' }}">
+          </div>
           <div class="quote-edit-actions">
             <button type="submit" class="btn-save">Save</button>
           </div>

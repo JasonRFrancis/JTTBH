@@ -37,8 +37,13 @@ from app.services.decorators import (
     PERM_DASHBOARD,
     PERM_HABIT,
     PERM_TODO,
+    PERM_FITNESS,
+    PERM_STUDY,
 )
 from app.models.habit_model import HabitModel
+from app.models.fitness_model import FitnessModel
+from app.models.study_model import StudyModel
+from app.services.database import db_manager
 
 
 # ---------------------------------------------------------------------------
@@ -103,6 +108,31 @@ def _get_today_todos(user_id: str) -> list[dict]:
     return rows
 
 
+def _get_fitness_summary(user_id: str) -> dict:
+    program = FitnessModel.get_active_program(user_id)
+    if not program:
+        return {'program': None, 'exercise_count': 0}
+    from app.services.timezone_utils import user_today
+    today = user_today()
+    from datetime import date as date_cls
+    dow = (today.weekday() + 1) % 7
+    exercises = FitnessModel.get_day_exercises(program['fitnessID'], dow)
+    return {'program': program, 'exercise_count': len(exercises)}
+
+
+def _get_study_summary(user_id: str) -> dict:
+    from app.services.timezone_utils import user_today
+    today = user_today()
+    subs = StudyModel.get_user_subscriptions(user_id)
+    total = 0
+    for sub in subs:
+        sources = StudyModel.get_sources(sub['collectionID'])
+        items = StudyModel.sources_for_date(sub, sources, today, user_id)
+        total += len(items)
+    completions = StudyModel.get_completions_for_date(user_id, today)
+    return {'total': total, 'completed': len(completions)}
+
+
 def _gather_dashboard_data(user_id: str, perm_read: int) -> dict:
     """
     Collect all dashboard widget data, gating each query behind the
@@ -115,6 +145,8 @@ def _gather_dashboard_data(user_id: str, perm_read: int) -> dict:
         'habit_completed': 0,
         'habit_total':     0,
         'todos':           [],
+        'fitness':         None,
+        'study':           None,
     }
 
     if perm_read & PERM_HABIT:
@@ -131,6 +163,18 @@ def _gather_dashboard_data(user_id: str, perm_read: int) -> dict:
             data['todos'] = _get_today_todos(user_id)
         except Exception as exc:
             current_app.logger.warning('Dashboard: failed to load todos: %s', exc)
+
+    if perm_read & PERM_FITNESS:
+        try:
+            data['fitness'] = _get_fitness_summary(user_id)
+        except Exception as exc:
+            current_app.logger.warning('Dashboard: failed to load fitness: %s', exc)
+
+    if perm_read & PERM_STUDY:
+        try:
+            data['study'] = _get_study_summary(user_id)
+        except Exception as exc:
+            current_app.logger.warning('Dashboard: failed to load study: %s', exc)
 
     return data
 
@@ -158,6 +202,8 @@ def index(username: str):
         habit_completed=data['habit_completed'],
         habit_total=data['habit_total'],
         todos=data['todos'],
+        fitness=data['fitness'],
+        study=data['study'],
     )
 
 

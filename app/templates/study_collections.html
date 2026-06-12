@@ -59,7 +59,7 @@
             <div class="form-row">
               <label for="new-name-{{ col.collectionID }}">Name <span class="field-hint">(optional)</span></label>
               <input type="text" id="new-name-{{ col.collectionID }}" name="name"
-                     maxlength="200" placeholder="e.g. Neal A. Maxwell talks">
+                     maxlength="200" placeholder="{{ col.name }}">
             </div>
             {% if col.mode == 'rate' %}
             <div class="form-row">

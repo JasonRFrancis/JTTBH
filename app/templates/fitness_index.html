@@ -25,6 +25,7 @@
   </header>
 
   {# ── Body weight ─────────────────────────────────────────────────────── #}
+  {% if not weight_days or day_of_week|string in weight_days %}
   <section class="body-weight" aria-labelledby="bw-heading">
     <h2 id="bw-heading">Body Weight</h2>
     <form class="bw-form" id="bw-form" aria-label="Log body weight">
@@ -42,6 +43,7 @@
     <p class="bw-saved" id="bw-saved" hidden></p>
     {% endif %}
   </section>
+  {% endif %}
 
   {# ── No program ──────────────────────────────────────────────────────── #}
   {% if not program %}
@@ -211,6 +213,16 @@
   </p>
   {% endif %}
   {% endif %}
+
+  {# ── Session Notes ───────────────────────────────────────────────────────── #}
+  <section class="fitness-notes" aria-labelledby="notes-heading">
+    <h2 id="notes-heading">Session Notes</h2>
+    <form method="post" action="{{ url_for('fitness.log_notes_post', username=username) }}">
+      <input type="hidden" name="log_date" value="{{ viewed_date.isoformat() }}">
+      <textarea name="notes" rows="3" placeholder="Add notes for this session…">{{ todays_log.notes if todays_log and todays_log.notes else '' }}</textarea>
+      <button type="submit">Save Notes</button>
+    </form>
+  </section>
 
 </main>
 

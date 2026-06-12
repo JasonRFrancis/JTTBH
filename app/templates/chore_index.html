@@ -21,6 +21,17 @@
     <p class="household-name">Household: <strong>{{ household.name }}</strong></p>
   </section>
 
+  {% if invite_token %}
+  <section class="chore-invite" aria-labelledby="invite-heading">
+    <h2 id="invite-heading">Invite Someone</h2>
+    <p>Share this link to invite someone to your household:</p>
+    <p class="invite-link">
+      <a href="{{ url_for('chore.join_household', username=username, token=invite_token, _external=True) }}"
+         class="invite-url">{{ url_for('chore.join_household', username=username, token=invite_token, _external=True) }}</a>
+    </p>
+  </section>
+  {% endif %}
+
   <section class="chore-today">
     <h2>Today's Chores <span class="count">({{ todays_chores | length }})</span></h2>
     {% if todays_chores %}

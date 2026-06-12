@@ -25,7 +25,10 @@
 <p class="study-empty">Nothing scheduled for this day.</p>
 {% else %}
 {% for group in day_sources %}
-<section class="study-collection-section" aria-labelledby="col-{{ loop.index }}">
+<section class="study-collection-section"
+         aria-labelledby="col-{{ loop.index }}"
+         data-sub-id="{{ group.subscription_id }}"
+         draggable="true">
   <h2 id="col-{{ loop.index }}">
     {{ group.display_name }}
     <span class="collection-section-actions">

@@ -37,6 +37,7 @@ from flask import (
 )
 
 from app.models.fitness_model import FitnessModel, DAY_NAMES
+from app.services.database import db_manager
 from app.services.decorators import (
     PERM_FITNESS,
     login_required,
@@ -101,6 +102,12 @@ def index(username: str, date_str: str = None):
 
     body_weight = FitnessModel.get_todays_body_weight(user_id, viewed_date)
 
+    weight_days_row = db_manager.execute_one(
+        "SELECT value FROM user_preference WHERE userID = %s AND preference = 'fitness_weight_days' ORDER BY id DESC LIMIT 1",
+        (user_id,)
+    )
+    weight_days = set(weight_days_row['value'].split(',')) if weight_days_row and weight_days_row['value'] else None
+
     return render_template(
         'fitness_index.html',
         username=username,
@@ -115,6 +122,8 @@ def index(username: str, date_str: str = None):
         next_date=next_date,
         day_name=DAY_NAMES.get(day_of_week, ''),
         location=location,
+        day_of_week=day_of_week,
+        weight_days=weight_days,
     )
 
 
@@ -155,6 +164,11 @@ def log(username: str):
 def settings(username: str):
     user_id = session['user_id']
     programs = FitnessModel.get_programs(user_id)
+    weight_days_row = db_manager.execute_one(
+        "SELECT value FROM user_preference WHERE userID = %s AND preference = 'fitness_weight_days' ORDER BY id DESC LIMIT 1",
+        (user_id,)
+    )
+    weight_days = set(weight_days_row['value'].split(',')) if weight_days_row and weight_days_row['value'] else None
     return render_template(
         'fitness_settings.html',
         username=username,
@@ -165,6 +179,7 @@ def settings(username: str):
         catalog=None,
         dow_order=_DOW_ORDER,
         day_names=DAY_NAMES,
+        weight_days=weight_days,
     )
 
 
@@ -183,6 +198,11 @@ def settings_program(username: str, fitness_id: str):
 
     schedule = FitnessModel.get_program_schedule(fitness_id)
     catalog = FitnessModel.get_exercise_catalog()
+    weight_days_row = db_manager.execute_one(
+        "SELECT value FROM user_preference WHERE userID = %s AND preference = 'fitness_weight_days' ORDER BY id DESC LIMIT 1",
+        (user_id,)
+    )
+    weight_days = set(weight_days_row['value'].split(',')) if weight_days_row and weight_days_row['value'] else None
 
     return render_template(
         'fitness_settings.html',
@@ -194,6 +214,7 @@ def settings_program(username: str, fitness_id: str):
         catalog=catalog,
         dow_order=_DOW_ORDER,
         day_names=DAY_NAMES,
+        weight_days=weight_days,
     )
 
 
@@ -472,9 +493,65 @@ def log_end(username: str, log_id: str):
                             date_str=log_date.isoformat()))
 
 
+@fitness_bp.route('/log/notes/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def log_notes_post(username: str):
+    user_id = session['user_id']
+    log_date_str = request.form.get('log_date', '')
+    notes = request.form.get('notes', '').strip()
+    try:
+        log_date = date.fromisoformat(log_date_str)
+    except (ValueError, AttributeError):
+        log_date = user_today()
+    program = FitnessModel.get_active_program(user_id)
+    fitness_id = program['fitnessID'] if program else None
+    log_id = FitnessModel.get_or_create_log(user_id, fitness_id, log_date)
+    # Insert a new row with updated notes (insert-only pattern)
+    db_manager.execute_insert("""
+        INSERT INTO fitness_log
+          (logID, userID, fitnessID, log_date, start_time, end_time, location, notes, created)
+        SELECT logID, userID, fitnessID, log_date, start_time, end_time, location, %s, NOW()
+        FROM fitness_log
+        WHERE logID = %s
+          AND id = (SELECT MAX(id) FROM fitness_log fl2 WHERE fl2.logID = %s)
+    """, (notes or None, log_id, log_id))
+    flash('Notes saved.', 'success')
+    if log_date == user_today():
+        return redirect(url_for('fitness.index', username=username))
+    return redirect(url_for('fitness.index', username=username, date_str=log_date.isoformat()))
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # POST — body weight (JSON)
 # ─────────────────────────────────────────────────────────────────────────────
+
+@fitness_bp.route('/weight-schedule/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def weight_schedule_post(username: str):
+    user_id = session['user_id']
+    days = request.form.getlist('weight_day')  # list of '0'-'6' values
+    value = ','.join(sorted(days))
+    existing = db_manager.execute_one(
+        "SELECT id FROM user_preference WHERE userID = %s AND preference = 'fitness_weight_days'",
+        (user_id,)
+    )
+    if existing:
+        db_manager.execute_update(
+            "UPDATE user_preference SET value = %s WHERE userID = %s AND preference = 'fitness_weight_days'",
+            (value, user_id)
+        )
+    else:
+        db_manager.execute_insert(
+            "INSERT INTO user_preference (userID, preference, value, created, created_by) VALUES (%s, %s, %s, NOW(), %s)",
+            (user_id, 'fitness_weight_days', value, user_id)
+        )
+    flash('Weight schedule saved.', 'success')
+    return redirect(url_for('fitness.settings', username=username))
+
 
 @fitness_bp.route('/weight/post', methods=['POST'])
 @login_required
