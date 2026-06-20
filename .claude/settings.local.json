@@ -52,7 +52,15 @@
       "Bash(sqlite3 \"/Users/jason/Library/Containers/com.apple.Safari/Data/Library/Safari/CloudTabs.db\" \".tables\")",
       "Bash(sqlite3 \"/Users/jason/Library/Containers/com.apple.Safari/Data/Library/Safari/CloudTabs.db\" \".schema\")",
       "Bash(plutil -p ~/Library/Safari/Bookmarks.plist)",
-      "Skill(run)"
+      "Skill(run)",
+      "Bash(say --version)",
+      "Bash(ffmpeg -version)",
+      "Bash(say -v '?')",
+      "Bash(tee /tmp/handbook_dryrun.txt)",
+      "Bash(awk -F'\\(' '{print $2}')",
+      "Bash(awk -F'w\\)' '{print $1}')",
+      "Bash(awk '{sum+=$1} END {print \"Total words:\", sum, \"— est. audio time:\", int\\(sum/140\\), \"min\"}')",
+      "Bash(sort -t'\\(' -k2 -rn)"
     ],
     "deny": [],
     "ask": []
