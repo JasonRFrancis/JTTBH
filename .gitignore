@@ -109,5 +109,9 @@ site/
 # Production deployment files (if needed)
 *.pid
 *.sock
+
+# big Handbook audio files
+app/static/audio/handbook
+
 user.sql
 test.html
