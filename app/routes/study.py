@@ -636,9 +636,18 @@ def feed_xml(username: str):
                 sources.append(item)
     sources = sources[:100]
 
+    # Resolve relative audio_url paths to absolute URLs for valid RSS enclosures.
+    base_url = request.url_root.rstrip('/')
+    for item in sources:
+        aurl = item.get('audio_url') or ''
+        if aurl.startswith('/'):
+            item['audio_url'] = base_url + aurl
+
     # Stagger pubDate times so podcast apps display in feed order (first = newest).
+    # Use 60-second intervals so apps that parse pubDate to minute precision still
+    # see distinct values.
     for idx, item in enumerate(sources):
-        secs = max(0, 86399 - idx)
+        secs = max(0, 86399 - idx * 60)
         item['_pub_time'] = f'{secs // 3600:02d}:{(secs % 3600) // 60:02d}:{secs % 60:02d}'
 
     rss = render_template('study_feed.xml', username=username, today=today, sources=sources)
