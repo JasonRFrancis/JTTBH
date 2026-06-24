@@ -90,6 +90,16 @@
 
 /* --- Forms ---------------------------------------------------------- */
 
+.reference-row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.reference-row input {
+  flex: 1;
+}
+
 .check-label {
   display: grid;
   grid-template-columns: auto 1fr;

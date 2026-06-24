@@ -15,19 +15,23 @@
   <form method="post" action="{{ url_for('scripture.create', username=username) }}">
     <div class="form-field">
       <label for="reference">Reference <span aria-hidden="true">*</span></label>
-      <input type="text" id="reference" name="reference" required
-             placeholder="e.g. John 3:16"
-             autocomplete="off">
+      <div class="reference-row">
+        <input type="text" id="reference" name="reference" required
+               placeholder="e.g. John 3:16"
+               autocomplete="off">
+        <button type="button" id="fetch-btn" class="btn btn--secondary btn--sm">Fetch Text</button>
+      </div>
+      <span class="form-note" id="fetch-status"></span>
     </div>
 
     <div class="form-field">
-      <label for="text">Full text</label>
+      <label for="text">Full text <span class="form-note">(optional)</span></label>
       <textarea id="text" name="text" rows="5"
                 placeholder="For God so loved the world…"></textarea>
     </div>
 
     <div class="form-field">
-      <label for="summary">Summary <span class="form-note">(be-familiar-with notes)</span></label>
+      <label for="summary">Summary <span class="form-note">(be-familiar-with notes, optional)</span></label>
       <textarea id="summary" name="summary" rows="3"
                 placeholder="God's love expressed through the Atonement of Christ."></textarea>
     </div>
@@ -56,4 +60,38 @@
     </div>
   </form>
 </section>
+{% endblock %}
+
+{% block js %}
+<script>
+(function () {
+  var LOOKUP_URL = {{ url_for('scripture.lookup', username=username) | tojson }};
+  var btn    = document.getElementById('fetch-btn');
+  var refEl  = document.getElementById('reference');
+  var textEl = document.getElementById('text');
+  var status = document.getElementById('fetch-status');
+
+  btn.addEventListener('click', function () {
+    var ref = refEl.value.trim();
+    if (!ref) { status.textContent = 'Enter a reference first.'; return; }
+    btn.disabled = true;
+    status.textContent = 'Looking up…';
+    fetch(LOOKUP_URL + '?ref=' + encodeURIComponent(ref), {
+      credentials: 'same-origin',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.status === 'ok') {
+        textEl.value = data.text;
+        status.textContent = 'Text fetched.';
+      } else {
+        status.textContent = 'Not found — check the reference and try again.';
+      }
+    })
+    .catch(function () { status.textContent = 'Error fetching text.'; })
+    .finally(function () { btn.disabled = false; });
+  });
+}());
+</script>
 {% endblock %}

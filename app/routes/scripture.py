@@ -4,6 +4,7 @@ from flask import (
 )
 
 from app.models.scripture_model import ScriptureModel
+from app.services.scripture_lookup import lookup as scripture_text_lookup
 from app.services.decorators import (
     login_required,
     permission_required_read,
@@ -105,6 +106,23 @@ def review(username: str):
         cards_json=cards_json,
         total=len(due),
     )
+
+
+# ---------------------------------------------------------------------------
+# Lookup
+# ---------------------------------------------------------------------------
+
+@scripture_bp.route('/lookup/json')
+@login_required
+@permission_required_read(PERM_SCRIPTURE)
+def lookup(username: str):
+    ref = (request.args.get('ref') or '').strip()
+    if not ref:
+        return jsonify({'status': 'error', 'message': 'No reference provided.'}), 400
+    text = scripture_text_lookup(ref)
+    if text is None:
+        return jsonify({'status': 'not_found', 'message': 'Reference not found.'}), 404
+    return jsonify({'status': 'ok', 'text': text})
 
 
 # ---------------------------------------------------------------------------
