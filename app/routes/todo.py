@@ -155,16 +155,19 @@ def _build_index_context(user_id: str, username: str, current_date: date) -> dic
         })
 
     # --- Shared lists (owner + pinned member lists) -----------------------
-    shared_index_rows = SharedListModel.get_lists_for_todo_index(user_id)
-    shared_lists = []
-    for row in shared_index_rows:
-        list_data = SharedListModel.get_list_with_items(row['listID'])
-        if list_data:
-            list_data['can_edit'] = bool(row['is_owner']) or row['permission'] == 'edit'
-            list_data['is_owner'] = bool(row['is_owner'])
-            shared_lists.append(list_data)
-
-    pending_invite_count = len(SharedListModel.get_pending_invites(user_id))
+    try:
+        shared_index_rows = SharedListModel.get_lists_for_todo_index(user_id)
+        shared_lists = []
+        for row in shared_index_rows:
+            list_data = SharedListModel.get_list_with_items(row['listID'])
+            if list_data:
+                list_data['can_edit'] = bool(row['is_owner']) or row['permission'] == 'edit'
+                list_data['is_owner'] = bool(row['is_owner'])
+                shared_lists.append(list_data)
+        pending_invite_count = len(SharedListModel.get_pending_invites(user_id))
+    except Exception:
+        shared_lists = []
+        pending_invite_count = 0
 
     return {
         'username':           username,
