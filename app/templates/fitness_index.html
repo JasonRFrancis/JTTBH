@@ -20,6 +20,7 @@
     <nav aria-label="Fitness navigation">
       <a href="{{ url_for('fitness.index', username=username) }}" {% if viewed_date == today %}aria-current="page"{% endif %}>Today</a>
       <a href="{{ url_for('fitness.log', username=username) }}">Log</a>
+      <a href="{{ url_for('fitness.exercises', username=username) }}">Exercises</a>
       <a href="{{ url_for('fitness.settings', username=username) }}">Settings</a>
     </nav>
   </header>

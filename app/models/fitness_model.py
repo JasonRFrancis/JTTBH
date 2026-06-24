@@ -241,11 +241,135 @@ class FitnessModel:
         return exercise_id
 
     @staticmethod
+    def update_exercise(
+        exercise_id: str,
+        name: str,
+        description: str | None,
+        equipment_type: str,
+        exercise_type: str,
+        muscle_group: str | None,
+        video_url: str | None,
+    ) -> None:
+        db_manager.execute_update("""
+            UPDATE fitness_exercise
+            SET name = %s, description = %s, equipment_type = %s, type = %s,
+                muscle_group = %s, video_url = %s
+            WHERE exerciseID = %s
+        """, (name, description or None, equipment_type, exercise_type,
+              muscle_group or None, video_url or None, exercise_id))
+
+    @staticmethod
     def update_exercise_video(exercise_id: str, video_url: str | None) -> None:
         db_manager.execute_update(
             "UPDATE fitness_exercise SET video_url = %s WHERE exerciseID = %s",
             (video_url or None, exercise_id),
         )
+
+    @staticmethod
+    def delete_exercise(exercise_id: str) -> None:
+        db_manager.execute_update(
+            "UPDATE fitness_exercise SET name = NULL WHERE exerciseID = %s",
+            (exercise_id,)
+        )
+
+    @staticmethod
+    def get_exercises_with_program_days(fitness_id: str) -> list[dict]:
+        """Return all catalog exercises with their day assignments for the given program."""
+        rows = db_manager.execute_query("""
+            SELECT fe.exerciseID, fe.name, fe.type AS exercise_type,
+                   fe.muscle_group, fe.equipment_type, fe.video_url, fe.description,
+                   fp.programID, fp.day_of_week, fp.order_index
+            FROM fitness_exercise fe
+            LEFT JOIN (
+                SELECT fp2.programID, fp2.exerciseID, fp2.day_of_week, fp2.order_index
+                FROM fitness_program fp2
+                WHERE fp2.fitnessID = %s
+                  AND fp2.exerciseID IS NOT NULL
+                  AND fp2.id = (SELECT MAX(fp3.id) FROM fitness_program fp3
+                                WHERE fp3.programID = fp2.programID)
+            ) fp ON fp.exerciseID = fe.exerciseID
+            WHERE fe.name IS NOT NULL
+            ORDER BY fe.muscle_group, fe.name, fp.day_of_week
+        """, (fitness_id,))
+
+        exercises: dict[str, dict] = {}
+        for row in rows:
+            eid = row['exerciseID']
+            if eid not in exercises:
+                exercises[eid] = {
+                    'exerciseID': eid,
+                    'name': row['name'],
+                    'exercise_type': row['exercise_type'],
+                    'muscle_group': row['muscle_group'],
+                    'equipment_type': row['equipment_type'],
+                    'video_url': row['video_url'],
+                    'description': row['description'],
+                    'days': [],
+                }
+            if row['programID'] is not None:
+                exercises[eid]['days'].append({
+                    'programID': row['programID'],
+                    'day_of_week': row['day_of_week'],
+                    'order_index': row['order_index'],
+                })
+        return list(exercises.values())
+
+    @staticmethod
+    def move_program_exercise(fitness_id: str, program_id: str, direction: str) -> None:
+        """Swap order_index with the adjacent exercise (up or down) in the same day."""
+        current = db_manager.execute_one("""
+            SELECT fp.day_of_week, fp.order_index
+            FROM fitness_program fp
+            WHERE fp.programID = %s AND fp.exerciseID IS NOT NULL
+              AND fp.id = (SELECT MAX(fp2.id) FROM fitness_program fp2
+                           WHERE fp2.programID = fp.programID)
+        """, (program_id,))
+        if not current:
+            return
+
+        day = current['day_of_week']
+        idx = current['order_index']
+
+        if direction == 'up':
+            adj = db_manager.execute_one("""
+                SELECT fp.programID, fp.order_index
+                FROM fitness_program fp
+                WHERE fp.fitnessID = %s AND fp.day_of_week = %s AND fp.exerciseID IS NOT NULL
+                  AND fp.order_index < %s
+                  AND fp.id = (SELECT MAX(fp2.id) FROM fitness_program fp2
+                               WHERE fp2.programID = fp.programID)
+                ORDER BY fp.order_index DESC LIMIT 1
+            """, (fitness_id, day, idx))
+        else:
+            adj = db_manager.execute_one("""
+                SELECT fp.programID, fp.order_index
+                FROM fitness_program fp
+                WHERE fp.fitnessID = %s AND fp.day_of_week = %s AND fp.exerciseID IS NOT NULL
+                  AND fp.order_index > %s
+                  AND fp.id = (SELECT MAX(fp2.id) FROM fitness_program fp2
+                               WHERE fp2.programID = fp.programID)
+                ORDER BY fp.order_index ASC LIMIT 1
+            """, (fitness_id, day, idx))
+
+        if not adj:
+            return
+
+        _swap_sql = """
+            INSERT INTO fitness_program
+              (programID, fitnessID, day_of_week, exerciseID, order_index,
+               recommended_sets, recommended_reps, recommended_weight,
+               notes, location, recommended_duration, recommended_speed,
+               recommended_incline, created)
+            SELECT programID, fitnessID, day_of_week, exerciseID, %s,
+                   recommended_sets, recommended_reps, recommended_weight,
+                   notes, location, recommended_duration, recommended_speed,
+                   recommended_incline, NOW()
+            FROM fitness_program
+            WHERE programID = %s
+              AND id = (SELECT MAX(id) FROM fitness_program WHERE programID = %s)
+        """
+        db_manager.execute_insert(_swap_sql, (adj['order_index'], program_id, program_id))
+        db_manager.execute_insert(_swap_sql, (idx, adj['programID'], adj['programID']))
 
     @staticmethod
     def get_exercise_catalog() -> list[dict]:

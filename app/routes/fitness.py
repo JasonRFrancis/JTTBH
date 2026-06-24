@@ -158,6 +158,31 @@ def log(username: str):
     )
 
 
+@fitness_bp.route('/exercises')
+@login_required
+@permission_required_read(PERM_FITNESS)
+def exercises(username: str):
+    user_id = session['user_id']
+    program = FitnessModel.get_active_program(user_id)
+    if program:
+        exercises_list = FitnessModel.get_exercises_with_program_days(program['fitnessID'])
+        schedule = FitnessModel.get_program_schedule(program['fitnessID'])
+    else:
+        raw = FitnessModel.get_exercise_catalog()
+        exercises_list = [{**ex, 'days': []} for ex in raw]
+        schedule = None
+    return render_template(
+        'fitness_exercises.html',
+        username=username,
+        area='fitness',
+        exercises=exercises_list,
+        program=program,
+        schedule=schedule,
+        dow_order=_DOW_ORDER,
+        day_names=DAY_NAMES,
+    )
+
+
 @fitness_bp.route('/settings')
 @login_required
 @permission_required_read(PERM_FITNESS)
@@ -384,6 +409,52 @@ def program_exercise_delete(username: str, program_id: str):
                    else url_for('fitness.settings', username=username))
 
 
+@fitness_bp.route('/exercise/update/post/<exercise_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def exercise_update(username: str, exercise_id: str):
+    name = request.form.get('name', '').strip()
+    if not name:
+        flash('Exercise name is required.', 'error')
+        return redirect(url_for('fitness.exercises', username=username))
+    FitnessModel.update_exercise(
+        exercise_id=exercise_id,
+        name=name,
+        description=request.form.get('description', '').strip() or None,
+        equipment_type=request.form.get('equipment_type', 'other'),
+        exercise_type=request.form.get('type', 'machine'),
+        muscle_group=request.form.get('muscle_group', '').strip() or None,
+        video_url=request.form.get('video_url', '').strip() or None,
+    )
+    flash(f'"{name}" updated.', 'success')
+    return redirect(url_for('fitness.exercises', username=username))
+
+
+@fitness_bp.route('/exercise/delete/post/<exercise_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def exercise_delete(username: str, exercise_id: str):
+    FitnessModel.delete_exercise(exercise_id)
+    flash('Exercise deleted.', 'success')
+    return redirect(url_for('fitness.exercises', username=username))
+
+
+@fitness_bp.route('/program/exercise/move/post/<program_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def program_exercise_move(username: str, program_id: str):
+    fitness_id = request.form.get('fitness_id', '').strip()
+    direction = request.form.get('direction', '').strip()
+    if direction not in ('up', 'down'):
+        flash('Invalid direction.', 'error')
+        return redirect(url_for('fitness.exercises', username=username))
+    FitnessModel.move_program_exercise(fitness_id, program_id, direction)
+    return redirect(url_for('fitness.exercises', username=username))
+
+
 @fitness_bp.route('/exercise/create/post', methods=['POST'])
 @login_required
 @permission_required_read(PERM_FITNESS)
@@ -402,7 +473,7 @@ def exercise_create(username: str):
         video_url=request.form.get('video_url', '').strip() or None,
     )
     flash(f'"{name}" added to catalog.', 'success')
-    return redirect(url_for('fitness.settings', username=username))
+    return redirect(url_for('fitness.exercises', username=username))
 
 
 # ─────────────────────────────────────────────────────────────────────────────

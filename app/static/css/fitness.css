@@ -711,3 +711,161 @@
 .dow-checkboxes { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin-bottom: 0.75rem; }
 .dow-label { display: flex; align-items: center; gap: 0.3rem; font-size: 0.875rem; cursor: pointer; }
 .field-hint { font-size: 0.8rem; color: var(--color-text-muted, #888); margin: 0 0 0.5rem; }
+
+/* ── Exercise management page ────────────────────────────────────────── */
+
+.fitness-exercises-page section { margin-bottom: 2rem; }
+
+.fitness-exercises-page h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.4rem;
+  margin: 0 0 0.75rem;
+}
+
+.muscle-group-heading {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin: 1rem 0 0.35rem;
+}
+
+.ex-item {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  background: var(--color-surface);
+}
+
+.ex-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ex-item-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1;
+}
+
+.ex-item-title strong { font-size: 0.95rem; }
+
+.ex-type-badge {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+}
+.ex-type-machine    { background: #dbeafe; border-color: #93c5fd; color: #1d4ed8; }
+.ex-type-hand_weight { background: #ede9fe; border-color: #c4b5fd; color: #6d28d9; }
+.ex-type-bodyweight { background: #dcfce7; border-color: #86efac; color: #15803d; }
+.ex-type-cardio     { background: #fff7ed; border-color: #fdba74; color: #c2410c; }
+.ex-type-video      { background: #fce7f3; border-color: #f9a8d4; color: #be185d; }
+
+.ex-days {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.ex-days-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-right: 0.1rem;
+}
+
+.ex-days-none {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.inline-form { display: inline; }
+
+.day-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.day-chip--on {
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  color: #fff;
+}
+
+.day-chip--on:hover { opacity: 0.85; }
+
+.day-add-select {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-bg);
+  height: auto;
+  width: auto;
+}
+
+.ex-add-day-form { display: inline-flex; align-items: center; gap: 0.25rem; }
+
+.field-hint-inline {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+/* Reorder list */
+.reorder-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+  counter-reset: item;
+}
+
+.reorder-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--color-border);
+  counter-increment: item;
+}
+
+.reorder-item:last-child { border-bottom: none; }
+
+.reorder-btns {
+  display: flex;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.btn-reorder {
+  min-width: 1.8rem;
+  text-align: center;
+  font-size: 0.8rem;
+  padding: 0.15rem 0.35rem;
+}
+
+.btn-reorder--placeholder {
+  visibility: hidden;
+}
+
+.reorder-name {
+  flex: 1;
+  font-size: 0.9rem;
+}

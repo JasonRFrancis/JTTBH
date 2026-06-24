@@ -9,6 +9,7 @@
     <nav aria-label="Fitness navigation">
       <a href="{{ url_for('fitness.index', username=username) }}">Today</a>
       <a href="{{ url_for('fitness.log', username=username) }}">Log</a>
+      <a href="{{ url_for('fitness.exercises', username=username) }}">Exercises</a>
       <a href="{{ url_for('fitness.settings', username=username) }}" aria-current="page">Settings</a>
     </nav>
   </header>

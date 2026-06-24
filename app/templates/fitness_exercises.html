@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+{% block title %}Fitness — Exercises{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/fitness.css') }}">{% endblock %}
+
+{% block content %}
+<main class="fitness fitness-exercises-page">
+  <header>
+    <h1>Exercises</h1>
+    <nav aria-label="Fitness navigation">
+      <a href="{{ url_for('fitness.index', username=username) }}">Today</a>
+      <a href="{{ url_for('fitness.log', username=username) }}">Log</a>
+      <a href="{{ url_for('fitness.exercises', username=username) }}" aria-current="page">Exercises</a>
+      <a href="{{ url_for('fitness.settings', username=username) }}">Settings</a>
+    </nav>
+  </header>
+
+  {# ── New Exercise ──────────────────────────────────────────────────── #}
+  <section aria-labelledby="new-ex-heading">
+    <details class="create-form">
+      <summary id="new-ex-heading">+ New Exercise</summary>
+      <form method="post" action="{{ url_for('fitness.exercise_create', username=username) }}">
+        <div class="field">
+          <label for="new-name">Name</label>
+          <input type="text" id="new-name" name="name" required maxlength="100"
+                 placeholder="e.g. Cable Fly">
+        </div>
+        <div class="field">
+          <label for="new-type">Type</label>
+          <select id="new-type" name="type">
+            <option value="machine">Machine — setup + weight + reps</option>
+            <option value="hand_weight">Hand weight — weight + reps</option>
+            <option value="bodyweight">Bodyweight — reps / time</option>
+            <option value="cardio">Cardio — time + speed</option>
+            <option value="video">Video — completion only</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="new-muscle">Muscle group</label>
+          <input type="text" id="new-muscle" name="muscle_group" maxlength="50"
+                 placeholder="e.g. chest">
+        </div>
+        <div class="field">
+          <label for="new-equip">Equipment</label>
+          <select id="new-equip" name="equipment_type">
+            <option value="weight_machine">Weight machine</option>
+            <option value="hand_weight">Hand weight / dumbbell</option>
+            <option value="bodyweight">Bodyweight</option>
+            <option value="cable">Cable</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="new-desc">Description</label>
+          <input type="text" id="new-desc" name="description" maxlength="255">
+        </div>
+        <div class="field">
+          <label for="new-video">Video URL</label>
+          <input type="url" id="new-video" name="video_url" maxlength="500"
+                 placeholder="https://…">
+        </div>
+        <button type="submit">Add to catalog</button>
+      </form>
+    </details>
+  </section>
+
+  {# ── Exercise Catalog ──────────────────────────────────────────────── #}
+  <section aria-labelledby="catalog-heading">
+    <h2 id="catalog-heading">Exercise Catalog</h2>
+
+    {% if not exercises %}
+    <p class="empty-state">No exercises yet. Use the form above to add one.</p>
+    {% else %}
+
+    {# Day names shortened #}
+    {% set day_abbr = {0:'Sun', 1:'Mon', 2:'Tue', 3:'Wed', 4:'Thu', 5:'Fri', 6:'Sat'} %}
+
+    {% set ns = namespace(prev_group=None) %}
+    {% for ex in exercises %}
+
+    {% if ex.muscle_group != ns.prev_group %}
+    {% set ns.prev_group = ex.muscle_group %}
+    <h3 class="muscle-group-heading">{{ ex.muscle_group or 'Other' }}</h3>
+    {% endif %}
+
+    <div class="ex-item">
+      <div class="ex-item-header">
+        <div class="ex-item-title">
+          <strong>{{ ex.name }}</strong>
+          <span class="badge ex-type-badge ex-type-{{ ex.exercise_type }}">{{ ex.exercise_type }}</span>
+          {% if ex.equipment_type %}<span class="badge">{{ ex.equipment_type }}</span>{% endif %}
+        </div>
+        <div class="ex-item-actions">
+          <form method="post"
+                action="{{ url_for('fitness.exercise_delete', username=username, exercise_id=ex.exerciseID) }}"
+                onsubmit="return confirm('Delete {{ ex.name }}?')">
+            <button type="submit" class="btn-sm btn-danger">Delete</button>
+          </form>
+        </div>
+      </div>
+
+      {# Day assignment (only when active program exists) #}
+      {% if program %}
+      <div class="ex-days">
+        <span class="ex-days-label">Days:</span>
+        {% set assigned_days = ex.days | map(attribute='day_of_week') | list %}
+        {% for day_entry in ex.days | sort(attribute='day_of_week') %}
+        <form method="post"
+              action="{{ url_for('fitness.program_exercise_delete', username=username, program_id=day_entry.programID) }}"
+              class="inline-form">
+          <input type="hidden" name="fitness_id" value="{{ program.fitnessID }}">
+          <button type="submit" class="day-chip day-chip--on"
+                  title="Remove from {{ day_names[day_entry.day_of_week] }}">
+            × {{ day_abbr[day_entry.day_of_week] }}
+          </button>
+        </form>
+        {% endfor %}
+        {% set has_unassigned = namespace(found=false) %}
+        {% for d in dow_order %}{% if d not in assigned_days %}{% set has_unassigned.found = true %}{% endif %}{% endfor %}
+        {% if has_unassigned.found %}
+        <form method="post"
+              action="{{ url_for('fitness.program_exercise_create', username=username) }}"
+              class="inline-form ex-add-day-form">
+          <input type="hidden" name="fitness_id" value="{{ program.fitnessID }}">
+          <input type="hidden" name="exercise_id" value="{{ ex.exerciseID }}">
+          <input type="hidden" name="location" value="gym">
+          <select name="day_of_week" class="day-add-select">
+            {% for d in dow_order %}
+            {% if d not in assigned_days %}
+            <option value="{{ d }}">{{ day_abbr[d] }}</option>
+            {% endif %}
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn-sm">+ Add day</button>
+        </form>
+        {% endif %}
+        {% if not ex.days and not has_unassigned.found %}
+        <span class="empty-state">All days assigned</span>
+        {% elif not ex.days %}
+        <span class="ex-days-none">Not scheduled</span>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {# Edit form #}
+      <details class="edit-exercise-form">
+        <summary>Edit</summary>
+        <form method="post"
+              action="{{ url_for('fitness.exercise_update', username=username, exercise_id=ex.exerciseID) }}">
+          <div class="field">
+            <label>Name</label>
+            <input type="text" name="name" required maxlength="100"
+                   value="{{ ex.name }}">
+          </div>
+          <div class="field">
+            <label>Type <span class="field-hint-inline">(determines what you record)</span></label>
+            <select name="type">
+              <option value="machine"{% if ex.exercise_type == 'machine' %} selected{% endif %}>Machine — setup + weight + reps</option>
+              <option value="hand_weight"{% if ex.exercise_type == 'hand_weight' %} selected{% endif %}>Hand weight — weight + reps</option>
+              <option value="bodyweight"{% if ex.exercise_type == 'bodyweight' %} selected{% endif %}>Bodyweight — reps / time</option>
+              <option value="cardio"{% if ex.exercise_type == 'cardio' %} selected{% endif %}>Cardio — time + speed</option>
+              <option value="video"{% if ex.exercise_type == 'video' %} selected{% endif %}>Video — completion only</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Muscle group</label>
+            <input type="text" name="muscle_group" maxlength="50"
+                   value="{{ ex.muscle_group or '' }}" placeholder="e.g. chest">
+          </div>
+          <div class="field">
+            <label>Equipment</label>
+            <select name="equipment_type">
+              <option value="weight_machine"{% if ex.equipment_type == 'weight_machine' %} selected{% endif %}>Weight machine</option>
+              <option value="hand_weight"{% if ex.equipment_type == 'hand_weight' %} selected{% endif %}>Hand weight / dumbbell</option>
+              <option value="bodyweight"{% if ex.equipment_type == 'bodyweight' %} selected{% endif %}>Bodyweight</option>
+              <option value="cable"{% if ex.equipment_type == 'cable' %} selected{% endif %}>Cable</option>
+              <option value="other"{% if ex.equipment_type == 'other' %} selected{% endif %}>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Description</label>
+            <input type="text" name="description" maxlength="255"
+                   value="{{ ex.description or '' }}">
+          </div>
+          <div class="field">
+            <label>Video URL</label>
+            <input type="url" name="video_url" maxlength="500"
+                   value="{{ ex.video_url or '' }}" placeholder="https://…">
+          </div>
+          <button type="submit">Save</button>
+        </form>
+      </details>
+    </div>
+    {% endfor %}
+    {% endif %}
+  </section>
+
+  {# ── Day Schedule / Reorder ────────────────────────────────────────── #}
+  {% if program and schedule %}
+  <section aria-labelledby="reorder-heading">
+    <h2 id="reorder-heading">Day Schedule — {{ program.name }}</h2>
+    <p class="field-hint">Reorder exercises within each day. This order is reflected on the recording page.</p>
+
+    <div class="day-tabs" role="tablist">
+      {% for d in dow_order %}
+      <button role="tab"
+              class="day-tab{% if loop.first %} day-tab--active{% endif %}"
+              data-day="{{ d }}"
+              aria-selected="{{ 'true' if loop.first else 'false' }}"
+              aria-controls="reorder-panel-{{ d }}">
+        {{ day_names[d][:3] }}
+      </button>
+      {% endfor %}
+    </div>
+
+    {% for d in dow_order %}
+    <div role="tabpanel"
+         id="reorder-panel-{{ d }}"
+         class="day-panel{% if not loop.first %} day-panel--hidden{% endif %}"
+         data-day="{{ d }}">
+
+      {% set day_exs = schedule[d] %}
+      {% if day_exs %}
+      <ol class="reorder-list">
+        {% for ex in day_exs %}
+        <li class="reorder-item">
+          <div class="reorder-btns">
+            {% if not loop.first %}
+            <form method="post"
+                  action="{{ url_for('fitness.program_exercise_move', username=username, program_id=ex.programID) }}"
+                  class="inline-form">
+              <input type="hidden" name="fitness_id" value="{{ program.fitnessID }}">
+              <input type="hidden" name="direction" value="up">
+              <button type="submit" class="btn-sm btn-reorder" aria-label="Move up">↑</button>
+            </form>
+            {% else %}
+            <span class="btn-sm btn-reorder btn-reorder--placeholder"></span>
+            {% endif %}
+            {% if not loop.last %}
+            <form method="post"
+                  action="{{ url_for('fitness.program_exercise_move', username=username, program_id=ex.programID) }}"
+                  class="inline-form">
+              <input type="hidden" name="fitness_id" value="{{ program.fitnessID }}">
+              <input type="hidden" name="direction" value="down">
+              <button type="submit" class="btn-sm btn-reorder" aria-label="Move down">↓</button>
+            </form>
+            {% else %}
+            <span class="btn-sm btn-reorder btn-reorder--placeholder"></span>
+            {% endif %}
+          </div>
+          <span class="reorder-name">{{ ex.exercise_name }}</span>
+          {% if ex.muscle_group %}<span class="badge">{{ ex.muscle_group }}</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p class="empty-state">No exercises scheduled for {{ day_names[d] }}.</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </section>
+  {% elif not program %}
+  <p class="field-hint" style="margin-top:1rem">
+    <a href="{{ url_for('fitness.settings', username=username) }}">Create and activate a program</a>
+    to manage day assignments and reorder exercises.
+  </p>
+  {% endif %}
+
+</main>
+{% endblock %}
+
+{% block js %}
+<script src="{{ url_for('static', filename='js/fitness.js') }}" defer></script>
+{% endblock %}

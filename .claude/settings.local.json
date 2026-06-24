@@ -60,7 +60,8 @@
       "Bash(awk -F'\\(' '{print $2}')",
       "Bash(awk -F'w\\)' '{print $1}')",
       "Bash(awk '{sum+=$1} END {print \"Total words:\", sum, \"— est. audio time:\", int\\(sum/140\\), \"min\"}')",
-      "Bash(sort -t'\\(' -k2 -rn)"
+      "Bash(sort -t'\\(' -k2 -rn)",
+      "Bash(pkill -f \"app/main.py\")"
     ],
     "deny": [],
     "ask": []
