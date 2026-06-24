@@ -1,0 +1,267 @@
+/* =====================================================================
+   Scripture feature styles
+   ===================================================================== */
+
+/* --- Index ---------------------------------------------------------- */
+
+.scripture-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.scripture-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.scripture-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
+  gap: var(--space-4);
+}
+
+.scripture-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.scripture-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.scripture-card__ref {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.scripture-card__badges {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--color-border);
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.badge--due {
+  background: var(--oc-indigo-6);
+  color: #fff;
+}
+
+.scripture-card__summary {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  flex: 1;
+}
+
+.scripture-card__footer {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+/* --- Forms ---------------------------------------------------------- */
+
+.check-label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) 0;
+  cursor: pointer;
+}
+
+.check-label input[type="checkbox"] {
+  grid-row: 1 / 3;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  cursor: pointer;
+}
+
+.check-label .form-note {
+  grid-column: 2;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.form-actions {
+  margin-top: var(--space-5);
+}
+
+/* --- Review shell --------------------------------------------------- */
+
+.review-shell {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: var(--space-4) 0;
+}
+
+/* Progress bar */
+.review-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.review-progress__bar {
+  flex: 1;
+  height: 0.5rem;
+  background: var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  position: relative;
+}
+
+.review-progress__bar::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--oc-indigo-6);
+  width: var(--pct, 0%);
+  transition: width 300ms ease;
+}
+
+.review-progress__label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Flash card */
+.flashcard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-6);
+  min-height: 18rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.flashcard__mode-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--oc-indigo-6);
+}
+
+.flashcard__prompt {
+  font-size: 1.15rem;
+  line-height: 1.55;
+  flex: 1;
+  white-space: pre-wrap;
+}
+
+.flashcard__show-btn {
+  align-self: flex-start;
+}
+
+/* Answer section */
+.flashcard__answer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.flashcard__answer-text {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  padding: var(--space-3);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+/* Verbatim practice area */
+.flashcard__practice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.flashcard__practice-input {
+  width: 100%;
+  font-family: var(--font-family);
+  font-size: 1rem;
+  line-height: 1.5;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  resize: vertical;
+}
+
+.flashcard__practice-input:focus {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+  border-color: var(--color-primary);
+}
+
+/* Grade buttons */
+.flashcard__grades {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.grade-btn {
+  flex: 1;
+  min-width: 5rem;
+  font-weight: 600;
+}
+
+.grade-btn--again { background: var(--color-error);   color: #fff; border-color: var(--color-error); }
+.grade-btn--hard  { background: var(--oc-orange-6);   color: #fff; border-color: var(--oc-orange-6); }
+.grade-btn--good  { background: var(--color-primary);  color: #fff; border-color: var(--color-primary); }
+.grade-btn--easy  { background: var(--color-success);  color: #fff; border-color: var(--color-success); }
+
+.grade-btn:hover { filter: brightness(1.1); }
+.grade-btn:active { filter: brightness(0.92); }
+
+/* Completion screen */
+.review-done {
+  text-align: center;
+  padding: var(--space-10) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.review-done h2 {
+  font-size: 1.5rem;
+}

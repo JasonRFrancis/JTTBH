@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Add Scripture{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/scripture.css') }}">
+{% endblock %}
+
+{% block content %}
+<header>
+  <h1>Add Scripture</h1>
+  <a href="{{ url_for('scripture.index', username=username) }}" class="btn btn--secondary btn--sm">← Back</a>
+</header>
+
+<section class="widget">
+  <form method="post" action="{{ url_for('scripture.create', username=username) }}">
+    <div class="form-field">
+      <label for="reference">Reference <span aria-hidden="true">*</span></label>
+      <input type="text" id="reference" name="reference" required
+             placeholder="e.g. John 3:16"
+             autocomplete="off">
+    </div>
+
+    <div class="form-field">
+      <label for="text">Full text</label>
+      <textarea id="text" name="text" rows="5"
+                placeholder="For God so loved the world…"></textarea>
+    </div>
+
+    <div class="form-field">
+      <label for="summary">Summary <span class="form-note">(be-familiar-with notes)</span></label>
+      <textarea id="summary" name="summary" rows="3"
+                placeholder="God's love expressed through the Atonement of Christ."></textarea>
+    </div>
+
+    <fieldset class="form-field">
+      <legend>Review modes</legend>
+      <label class="check-label">
+        <input type="checkbox" name="modes" value="reference" checked>
+        <span>Reference</span>
+        <span class="form-note">Given the text, recall the reference</span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" name="modes" value="familiar" checked>
+        <span>Familiar</span>
+        <span class="form-note">Given the reference, recall the meaning</span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" name="modes" value="verbatim" checked>
+        <span>Verbatim</span>
+        <span class="form-note">Given the reference, recite word-for-word</span>
+      </label>
+    </fieldset>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn--primary">Add Scripture</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

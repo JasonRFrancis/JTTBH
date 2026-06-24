@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Edit — {{ scripture.reference }}{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/scripture.css') }}">
+{% endblock %}
+
+{% block content %}
+<header>
+  <h1>Edit Scripture</h1>
+  <a href="{{ url_for('scripture.index', username=username) }}" class="btn btn--secondary btn--sm">← Back</a>
+</header>
+
+<section class="widget">
+  <form method="post"
+        action="{{ url_for('scripture.update', username=username, scripture_id=scripture.scriptureID) }}">
+    <div class="form-field">
+      <label for="reference">Reference <span aria-hidden="true">*</span></label>
+      <input type="text" id="reference" name="reference" required
+             value="{{ scripture.reference }}"
+             autocomplete="off">
+    </div>
+
+    <div class="form-field">
+      <label for="text">Full text</label>
+      <textarea id="text" name="text" rows="5">{{ scripture.text or '' }}</textarea>
+    </div>
+
+    <div class="form-field">
+      <label for="summary">Summary <span class="form-note">(be-familiar-with notes)</span></label>
+      <textarea id="summary" name="summary" rows="3">{{ scripture.summary or '' }}</textarea>
+    </div>
+
+    <fieldset class="form-field">
+      <legend>Review modes</legend>
+      <label class="check-label">
+        <input type="checkbox" name="modes" value="reference"
+               {% if 'reference' in active_modes %}checked{% endif %}>
+        <span>Reference</span>
+        <span class="form-note">Given the text, recall the reference</span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" name="modes" value="familiar"
+               {% if 'familiar' in active_modes %}checked{% endif %}>
+        <span>Familiar</span>
+        <span class="form-note">Given the reference, recall the meaning</span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" name="modes" value="verbatim"
+               {% if 'verbatim' in active_modes %}checked{% endif %}>
+        <span>Verbatim</span>
+        <span class="form-note">Given the reference, recite word-for-word</span>
+      </label>
+    </fieldset>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn--primary">Save Changes</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

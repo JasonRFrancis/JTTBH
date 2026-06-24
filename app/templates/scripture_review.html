@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Scripture Review{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/scripture.css') }}">
+{% endblock %}
+
+{% block content %}
+{% if total == 0 %}
+<header>
+  <h1>Scripture Review</h1>
+</header>
+<section class="widget">
+  <p class="widget-empty">Nothing due for review. Check back later, or <a href="{{ url_for('scripture.add', username=username) }}">add more scriptures</a>.</p>
+  <p><a href="{{ url_for('scripture.index', username=username) }}" class="btn btn--secondary btn--sm">← Back to Scripture</a></p>
+</section>
+
+{% else %}
+
+<div class="review-shell" id="review-shell">
+
+  <!-- Progress -->
+  <div class="review-progress" id="review-progress" aria-label="Review progress">
+    <div class="review-progress__bar" id="progress-bar"></div>
+    <span class="review-progress__label" id="progress-label">1 / {{ total }}</span>
+  </div>
+
+  <!-- Card -->
+  <article class="flashcard" id="flashcard" aria-live="polite">
+    <div class="flashcard__mode-label" id="card-mode"></div>
+    <div class="flashcard__prompt" id="card-prompt"></div>
+
+    <button class="btn btn--secondary flashcard__show-btn" id="show-btn">
+      Show Answer
+    </button>
+
+    <div class="flashcard__answer" id="card-answer" hidden>
+      <!-- verbatim practice textarea (shown before answer reveal) -->
+      <div class="flashcard__practice" id="practice-area" hidden>
+        <label for="practice-input" class="sr-only">Type the scripture from memory</label>
+        <textarea id="practice-input" class="flashcard__practice-input"
+                  rows="4" placeholder="Type the scripture from memory…"></textarea>
+        <button class="btn btn--secondary flashcard__reveal-btn" id="reveal-btn">
+          Reveal Text
+        </button>
+      </div>
+
+      <div class="flashcard__answer-text" id="answer-text"></div>
+
+      <div class="flashcard__grades" id="grade-buttons">
+        <button class="btn grade-btn grade-btn--again" data-grade="again">Again</button>
+        <button class="btn grade-btn grade-btn--hard"  data-grade="hard">Hard</button>
+        <button class="btn grade-btn grade-btn--good"  data-grade="good">Good</button>
+        <button class="btn grade-btn grade-btn--easy"  data-grade="easy">Easy</button>
+      </div>
+    </div>
+  </article>
+
+  <!-- Completion screen (hidden until done) -->
+  <section class="review-done" id="review-done" hidden>
+    <h2>Session complete!</h2>
+    <p id="done-summary"></p>
+    <a href="{{ url_for('scripture.index', username=username) }}" class="btn btn--primary">Back to Scripture</a>
+  </section>
+
+</div>
+{% endif %}
+{% endblock %}
+
+{% block js %}
+<script>
+  const USERNAME   = {{ username | tojson }};
+  const GRADE_URL  = {{ url_for('scripture.grade', username=username) | tojson }};
+  const CARDS      = {{ cards_json | safe }};
+</script>
+<script src="{{ url_for('static', filename='js/scripture.js') }}" defer></script>
+{% endblock %}

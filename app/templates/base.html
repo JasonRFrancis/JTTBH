@@ -78,6 +78,9 @@
       {% if has_perm(32768) %}
       <a href="{{ url_for('recipe.index', username=session.username) }}"{% if area == 'recipe' %} aria-current="page"{% endif %}>Recipes</a>
       {% endif %}
+      {% if has_perm(65536) %}
+      <a href="{{ url_for('scripture.index', username=session.username) }}"{% if area == 'scripture' %} aria-current="page"{% endif %}>Scripture</a>
+      {% endif %}
       {% if has_perm(4) %}
       <a href="{{ url_for('appointment.index', username=session.username) }}"{% if area == 'appointment' %} aria-current="page"{% endif %}>Appointments</a>
       {% endif %}
@@ -102,7 +105,9 @@
       BOOK:        2048,
       JOURNAL:     4096,
       STUDY:       8192,
-      QUOTE:       16384
+      QUOTE:       16384,
+      RECIPE:      32768,
+      SCRIPTURE:   65536
     };
     {% if session.get('user_id') %}
     const SESSION = {

@@ -1,0 +1,203 @@
+from flask import (
+    Blueprint, render_template, request, session,
+    redirect, url_for, flash, jsonify,
+)
+
+from app.models.scripture_model import ScriptureModel
+from app.services.decorators import (
+    login_required,
+    permission_required_read,
+    permission_required_write,
+    PERM_SCRIPTURE,
+)
+
+scripture_bp = Blueprint('scripture', __name__)
+
+_VALID_MODES = {'reference', 'familiar', 'verbatim'}
+_QUALITY_MAP = {'again': 0, 'hard': 3, 'good': 4, 'easy': 5}
+
+
+# ---------------------------------------------------------------------------
+# Views
+# ---------------------------------------------------------------------------
+
+@scripture_bp.route('/index')
+@login_required
+@permission_required_read(PERM_SCRIPTURE)
+def index(username: str):
+    user_id = session['user_id']
+    scriptures = ScriptureModel.get_all(user_id)
+    review_states = ScriptureModel.get_review_states(user_id)
+    due_count = ScriptureModel.get_due_count(user_id)
+
+    # Build a lookup: scriptureID -> {mode: review_row}
+    states_by_id: dict[str, dict] = {}
+    for row in review_states:
+        sid = row['scriptureID']
+        if sid not in states_by_id:
+            states_by_id[sid] = {}
+        states_by_id[sid][row['mode']] = row
+
+    return render_template(
+        'scripture_index.html',
+        username=username,
+        area='scripture',
+        scriptures=scriptures,
+        states_by_id=states_by_id,
+        due_count=due_count,
+    )
+
+
+@scripture_bp.route('/add')
+@login_required
+@permission_required_read(PERM_SCRIPTURE)
+def add(username: str):
+    return render_template('scripture_add.html', username=username, area='scripture')
+
+
+@scripture_bp.route('/edit/<scripture_id>')
+@login_required
+@permission_required_read(PERM_SCRIPTURE)
+def edit(username: str, scripture_id: str):
+    user_id = session['user_id']
+    scripture = ScriptureModel.get_one(user_id, scripture_id)
+    if not scripture:
+        flash('Scripture not found.', 'error')
+        return redirect(url_for('scripture.index', username=username))
+
+    states = ScriptureModel.get_review_states(user_id)
+    active_modes = {
+        r['mode'] for r in states if r['scriptureID'] == scripture_id
+    }
+
+    return render_template(
+        'scripture_edit.html',
+        username=username,
+        area='scripture',
+        scripture=scripture,
+        active_modes=active_modes,
+    )
+
+
+@scripture_bp.route('/review')
+@login_required
+@permission_required_read(PERM_SCRIPTURE)
+def review(username: str):
+    user_id = session['user_id']
+    due = ScriptureModel.get_due_reviews(user_id)
+
+    import json
+    cards_json = json.dumps([
+        {
+            'scriptureID': r['scriptureID'],
+            'mode':        r['mode'],
+            'reference':   r['reference'],
+            'text':        r['text'] or '',
+            'summary':     r['summary'] or '',
+        }
+        for r in due
+    ])
+
+    return render_template(
+        'scripture_review.html',
+        username=username,
+        area='scripture',
+        cards_json=cards_json,
+        total=len(due),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Mutations
+# ---------------------------------------------------------------------------
+
+@scripture_bp.route('/create/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_SCRIPTURE)
+@permission_required_write(PERM_SCRIPTURE)
+def create(username: str):
+    user_id = session['user_id']
+    reference = (request.form.get('reference') or '').strip()
+    text      = (request.form.get('text') or '').strip()
+    summary   = (request.form.get('summary') or '').strip()
+    modes     = [m for m in request.form.getlist('modes') if m in _VALID_MODES]
+
+    if not reference:
+        flash('Reference is required.', 'error')
+        return redirect(url_for('scripture.add', username=username))
+
+    if not modes:
+        flash('Select at least one review mode.', 'error')
+        return redirect(url_for('scripture.add', username=username))
+
+    ScriptureModel.create(user_id, reference, text, summary, modes)
+    flash(f'"{reference}" added.', 'success')
+    return redirect(url_for('scripture.index', username=username))
+
+
+@scripture_bp.route('/update/post/<scripture_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_SCRIPTURE)
+@permission_required_write(PERM_SCRIPTURE)
+def update(username: str, scripture_id: str):
+    user_id = session['user_id']
+    if not ScriptureModel.get_one(user_id, scripture_id):
+        flash('Scripture not found.', 'error')
+        return redirect(url_for('scripture.index', username=username))
+
+    reference = (request.form.get('reference') or '').strip()
+    text      = (request.form.get('text') or '').strip()
+    summary   = (request.form.get('summary') or '').strip()
+    modes     = [m for m in request.form.getlist('modes') if m in _VALID_MODES]
+
+    if not reference:
+        flash('Reference is required.', 'error')
+        return redirect(url_for('scripture.edit', username=username,
+                                scripture_id=scripture_id))
+
+    if not modes:
+        flash('Select at least one review mode.', 'error')
+        return redirect(url_for('scripture.edit', username=username,
+                                scripture_id=scripture_id))
+
+    ScriptureModel.update(user_id, scripture_id, reference, text, summary, modes)
+    flash(f'"{reference}" updated.', 'success')
+    return redirect(url_for('scripture.index', username=username))
+
+
+@scripture_bp.route('/delete/post/<scripture_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_SCRIPTURE)
+@permission_required_write(PERM_SCRIPTURE)
+def delete(username: str, scripture_id: str):
+    user_id = session['user_id']
+    scripture = ScriptureModel.get_one(user_id, scripture_id)
+    if not scripture:
+        flash('Scripture not found.', 'error')
+        return redirect(url_for('scripture.index', username=username))
+
+    ScriptureModel.delete(user_id, scripture_id)
+    flash(f'"{scripture["reference"]}" deleted.', 'success')
+    return redirect(url_for('scripture.index', username=username))
+
+
+@scripture_bp.route('/review/grade/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_SCRIPTURE)
+@permission_required_write(PERM_SCRIPTURE)
+def grade(username: str):
+    user_id    = session['user_id']
+    data       = request.get_json(silent=True) or {}
+    scripture_id = data.get('scriptureID', '')
+    mode       = data.get('mode', '')
+    grade_str  = data.get('grade', '')
+
+    if mode not in _VALID_MODES or grade_str not in _QUALITY_MAP:
+        return jsonify({'status': 'error', 'message': 'Invalid input.'}), 400
+
+    if not ScriptureModel.get_one(user_id, scripture_id):
+        return jsonify({'status': 'error', 'message': 'Not found.'}), 404
+
+    quality = _QUALITY_MAP[grade_str]
+    ScriptureModel.grade_review(user_id, scripture_id, mode, quality)
+    return jsonify({'status': 'ok'})

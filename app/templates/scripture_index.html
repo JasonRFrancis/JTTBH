@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Scripture{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/scripture.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="scripture-header">
+  <h1>Scripture</h1>
+  <div class="scripture-actions">
+    {% if due_count > 0 %}
+    <a href="{{ url_for('scripture.review', username=username) }}" class="btn btn--primary">
+      Review ({{ due_count }} due)
+    </a>
+    {% endif %}
+    <a href="{{ url_for('scripture.add', username=username) }}" class="btn btn--secondary">Add Scripture</a>
+  </div>
+</header>
+
+{% if not scriptures %}
+<section class="widget">
+  <p class="widget-empty">No scriptures yet. <a href="{{ url_for('scripture.add', username=username) }}">Add your first one.</a></p>
+</section>
+{% else %}
+<section class="scripture-list" aria-label="Scriptures">
+  {% for s in scriptures %}
+  {% set modes = states_by_id.get(s.scriptureID, {}) %}
+  <article class="scripture-card">
+    <header class="scripture-card__header">
+      <h2 class="scripture-card__ref">{{ s.reference }}</h2>
+      <div class="scripture-card__badges">
+        {% for mode in ['reference', 'familiar', 'verbatim'] %}
+        {% if mode in modes %}
+        {% set r = modes[mode] %}
+        {% set is_due = r.next_review <= date.today() %}
+        <span class="badge badge--{{ mode }}{% if is_due %} badge--due{% endif %}"
+              title="{{ mode|capitalize }}: {% if is_due %}due today{% else %}next {{ r.next_review }}{% endif %}">
+          {{ mode[0]|upper }}
+        </span>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </header>
+
+    {% if s.summary %}
+    <p class="scripture-card__summary">{{ s.summary }}</p>
+    {% endif %}
+
+    <footer class="scripture-card__footer">
+      <a href="{{ url_for('scripture.edit', username=username, scripture_id=s.scriptureID) }}" class="btn btn--sm btn--secondary">Edit</a>
+      <form method="post"
+            action="{{ url_for('scripture.delete', username=username, scripture_id=s.scriptureID) }}"
+            onsubmit="return confirm('Delete {{ s.reference }}?')">
+        <button type="submit" class="btn btn--sm btn--danger">Delete</button>
+      </form>
+    </footer>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}
