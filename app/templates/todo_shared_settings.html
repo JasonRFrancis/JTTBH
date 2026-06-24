@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ list_data.name }} Settings – jttbh{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/todo.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h1>{{ list_data.name }}</h1>
+  <nav aria-label="List navigation">
+    <a href="{{ url_for('todo.shared_view', username=username, list_id=list_data.listID) }}">View list</a>
+    <a href="{{ url_for('todo.index', username=username) }}" class="todo-search-link">&#8592; Todo</a>
+  </nav>
+</header>
+
+{# ===== Non-owner member controls ===== #}
+{% if not is_owner and member_row %}
+<section class="shared-settings-section" aria-labelledby="member-controls-heading">
+  <h2 id="member-controls-heading">My membership</h2>
+
+  <div class="shared-settings-member-controls">
+    <form method="post"
+          action="{{ url_for('todo.shared_pin', username=username, list_id=list_data.listID) }}">
+      <button type="submit" class="btn btn--ghost">
+        {% if member_row.show_in_todo %}Unpin from my todo page{% else %}Pin to my todo page{% endif %}
+      </button>
+    </form>
+
+    <form method="post"
+          action="{{ url_for('todo.shared_leave', username=username, list_id=list_data.listID) }}"
+          onsubmit="return confirm('Leave this list? You will need a new invitation to rejoin.')">
+      <button type="submit" class="btn btn--danger">Leave list</button>
+    </form>
+  </div>
+
+  <dl class="shared-settings-dl">
+    <dt>Owner</dt><dd>{{ list_data.owner_username }}</dd>
+    <dt>Your permission</dt><dd>{{ member_row.permission }}</dd>
+  </dl>
+</section>
+{% endif %}
+
+{# ===== Owner: rename ===== #}
+{% if is_owner %}
+<section class="shared-settings-section" aria-labelledby="rename-heading">
+  <h2 id="rename-heading">List name</h2>
+  <form method="post"
+        action="{{ url_for('todo.shared_rename', username=username, list_id=list_data.listID) }}"
+        class="shared-settings-form">
+    <div class="form-field">
+      <label for="list-name">Name</label>
+      <input type="text" id="list-name" name="name"
+             value="{{ list_data.name }}" maxlength="100" required>
+    </div>
+    <button type="submit" class="btn btn--primary">Rename</button>
+  </form>
+</section>
+{% endif %}
+
+{# ===== Members table ===== #}
+<section class="shared-settings-section" aria-labelledby="members-heading">
+  <h2 id="members-heading">Members</h2>
+
+  {% if members %}
+  <table class="shared-members-table">
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Status</th>
+        <th>Permission</th>
+        {% if is_owner %}<th>Actions</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {# Owner row #}
+      <tr>
+        <td><strong>{{ list_data.owner_username }}</strong> <span class="shared-badge">owner</span></td>
+        <td>accepted</td>
+        <td>edit</td>
+        {% if is_owner %}<td></td>{% endif %}
+      </tr>
+      {% for member in members %}
+      <tr class="{% if member.status == 'pending' %}shared-members-table__row--pending{% endif %}">
+        <td>{{ member.username }}</td>
+        <td>{{ member.status }}</td>
+        <td>
+          {% if is_owner and member.status == 'accepted' %}
+          <form method="post"
+                action="{{ url_for('todo.shared_member_permission', username=username, list_id=list_data.listID) }}"
+                class="shared-perm-form">
+            <input type="hidden" name="member_user_id" value="{{ member.userID }}">
+            <select name="permission" aria-label="Permission for {{ member.username }}">
+              <option value="view" {% if member.permission == 'view' %}selected{% endif %}>view</option>
+              <option value="edit" {% if member.permission == 'edit' %}selected{% endif %}>edit</option>
+            </select>
+            <button type="submit" class="btn btn--ghost btn--sm">Save</button>
+          </form>
+          {% else %}
+          {{ member.permission }}
+          {% endif %}
+        </td>
+        {% if is_owner %}
+        <td>
+          <form method="post"
+                action="{{ url_for('todo.shared_member_remove', username=username, list_id=list_data.listID) }}"
+                onsubmit="return confirm('Remove {{ member.username }} from this list?')">
+            <input type="hidden" name="member_user_id" value="{{ member.userID }}">
+            <button type="submit" class="btn btn--danger btn--sm">Remove</button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="shared-settings-empty">No members yet. Invite someone below.</p>
+  {% endif %}
+</section>
+
+{# ===== Owner: invite ===== #}
+{% if is_owner %}
+<section class="shared-settings-section" aria-labelledby="invite-heading">
+  <h2 id="invite-heading">Invite a member</h2>
+  <form method="post"
+        action="{{ url_for('todo.shared_invite', username=username, list_id=list_data.listID) }}"
+        class="shared-settings-form">
+    <div class="form-field">
+      <label for="invite-username">Username</label>
+      <input type="text" id="invite-username" name="invite_username"
+             placeholder="their username" required autocomplete="off">
+    </div>
+    <div class="form-field">
+      <label for="invite-permission">Permission</label>
+      <select id="invite-permission" name="permission">
+        <option value="view">view — can see items, cannot add or edit</option>
+        <option value="edit">edit — can add, edit, delete, and toggle any item</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn--primary">Send invitation</button>
+  </form>
+</section>
+
+{# ===== Owner: danger zone ===== #}
+<section class="shared-settings-section shared-settings-section--danger"
+         aria-labelledby="danger-heading">
+  <h2 id="danger-heading">Danger zone</h2>
+  <p>Deleting this list removes all items and cannot be undone.</p>
+  <form method="post"
+        action="{{ url_for('todo.shared_delete', username=username, list_id=list_data.listID) }}"
+        onsubmit="return confirm('Delete {{ list_data.name }}? This cannot be undone.')">
+    <button type="submit" class="btn btn--danger">Delete list</button>
+  </form>
+</section>
+{% endif %}
+
+{% endblock %}

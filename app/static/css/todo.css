@@ -666,3 +666,413 @@ todo-list.todo-list--drag-target {
   border-radius: 4px;
   min-height: 3rem;
 }
+
+
+/* =========================================================================
+   9. Shared lists
+   ========================================================================= */
+
+/* --- 9a. Group header with actions ---------------------------------------- */
+
+.todo-list-group--shared .todo-list-group__header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.todo-list-group--shared .todo-list-group__header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.todo-invites-link {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.todo-invite-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  background: var(--color-today-accent);
+  color: #fff;
+  border-radius: 1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background var(--transition-fast);
+}
+
+.todo-invite-badge:hover {
+  background: #004da0;
+}
+
+/* --- 9b. Shared list card ------------------------------------------------- */
+
+.todo-list-card--shared {
+  border-color: #b3d1f5;
+}
+
+.todo-list-card--new-shared {
+  border-style: dashed;
+  background: transparent;
+  display: flex;
+  align-items: stretch;
+  min-width: var(--todo-col-min);
+  flex: 0 0 auto;
+}
+
+.shared-new-list-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  width: 100%;
+}
+
+.shared-new-list-form input[type="text"] {
+  flex: 1;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.3rem 0.2rem;
+  font-size: 0.88rem;
+  font-family: inherit;
+  background: transparent;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.shared-new-list-form input[type="text"]:focus {
+  border-bottom-color: var(--color-input-focus);
+}
+
+.todo-list-card__header--shared {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.todo-list-card__header--shared h3 {
+  margin: 0;
+  flex: 1;
+}
+
+.shared-list-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.shared-list-card__view-link,
+.shared-list-card__settings-link {
+  font-size: 0.78rem;
+  color: #666;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.shared-list-card__view-link:hover,
+.shared-list-card__settings-link:hover {
+  color: var(--color-today-accent);
+}
+
+/* --- 9c. Contributor subheadings ----------------------------------------- */
+
+.shared-contributor {
+  border-top: 1px solid #e8f0fb;
+}
+
+.shared-contributor:first-of-type {
+  border-top: none;
+}
+
+.shared-contributor__heading {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.35rem 0.75rem 0.1rem;
+  margin: 0;
+}
+
+/* --- 9d. Shared item read-only state ------------------------------------- */
+
+.todo-item--readonly {
+  pointer-events: none;
+}
+
+.todo-item__readonly-check {
+  width: 1.1rem;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  color: var(--color-success);
+  padding-top: 0.4rem;
+  text-align: center;
+}
+
+/* --- 9e. Add-item slot at bottom of shared card -------------------------- */
+
+.shared-list-card__add {
+  border-top: 1px solid var(--color-border);
+  padding: 0 0 0.25rem;
+}
+
+/* --- 9f. Badges ----------------------------------------------------------- */
+
+.shared-badge {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #e8f0fb;
+  color: #3a6aaa;
+  white-space: nowrap;
+}
+
+.shared-badge--owner {
+  background: #f0e8fb;
+  color: #6a3aaa;
+}
+
+
+/* =========================================================================
+   10. Shared invites page
+   ========================================================================= */
+
+.shared-invites {
+  padding: 1rem;
+  max-width: 44rem;
+}
+
+.shared-invites__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.shared-invite-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--todo-radius);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.shared-invite-card__info {
+  flex: 1;
+  min-width: 12rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.shared-invite-card__name {
+  font-size: 1rem;
+}
+
+.shared-invite-card__meta {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.shared-invite-card__perm {
+  font-weight: 600;
+}
+
+.shared-invite-card__perm--edit  { color: var(--color-today-accent); }
+.shared-invite-card__perm--view  { color: #555; }
+
+.shared-invite-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.shared-invite-card__accept-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.shared-invite-card__pin-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.shared-invites__empty {
+  color: #666;
+  font-style: italic;
+}
+
+
+/* =========================================================================
+   11. Shared settings page
+   ========================================================================= */
+
+.shared-settings-section {
+  padding: 1rem 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  max-width: 44rem;
+}
+
+.shared-settings-section h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.shared-settings-section--danger {
+  border-color: #f5c6c6;
+  background: #fff8f8;
+}
+
+.shared-settings-section--danger h2 {
+  color: var(--color-delete);
+}
+
+.shared-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.shared-settings-form .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.shared-settings-form label {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.shared-settings-form input[type="text"],
+.shared-settings-form select {
+  border: 1px solid var(--color-border);
+  border-radius: var(--todo-radius);
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  max-width: 28rem;
+}
+
+.shared-settings-member-controls {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.shared-settings-dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.shared-settings-dl dt {
+  font-weight: 500;
+  color: #555;
+}
+
+.shared-settings-empty {
+  color: #666;
+  font-style: italic;
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem;
+}
+
+/* Members table */
+.shared-members-table {
+  width: 100%;
+  max-width: 36rem;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.shared-members-table th,
+.shared-members-table td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.shared-members-table th {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.shared-members-table__row--pending td {
+  color: #888;
+  font-style: italic;
+}
+
+.shared-perm-form {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.shared-perm-form select {
+  border: 1px solid var(--color-border);
+  border-radius: var(--todo-radius);
+  padding: 0.2rem 0.3rem;
+  font-size: 0.82rem;
+  font-family: inherit;
+}
+
+/* Shared view page */
+.shared-view {
+  padding: 1rem;
+  max-width: 34rem;
+}
+
+.shared-view__owner-meta {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.shared-view__nav {
+  margin-left: auto;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.shared-view__self-controls {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.shared-view__empty {
+  color: #666;
+  font-style: italic;
+}
+
+/* .btn--ghost not in base.css */
+.btn--ghost {
+  background: transparent;
+  border-color: var(--color-border);
+}
+.btn--ghost:hover { background: var(--color-hover); }

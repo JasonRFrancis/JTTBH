@@ -1,0 +1,71 @@
+{#
+  Partial: todo_shared_item.html
+  ================================
+  Renders a single item from a shared list.
+
+  Expected context variables
+  --------------------------
+  item      : dict  — shared_list_item row (itemID, title, completed, ...)
+  username  : str   — URL username of the viewer (not necessarily the item author)
+  can_edit  : bool  — viewer has edit permission
+#}
+{% if can_edit %}
+<todo-item
+  data-id="{{ item.itemID }}"
+  class="todo-item{% if item.completed %} todo-item--completed{% endif %}"
+  role="listitem">
+
+  <form class="todo-item__form" method="post"
+        action="{{ url_for('todo.shared_item_update', username=username, item_id=item.itemID) }}">
+
+    <button type="submit"
+            class="todo-item__toggle-btn"
+            formaction="{{ url_for('todo.shared_item_toggle', username=username, item_id=item.itemID) }}"
+            hidden>Toggle</button>
+
+    <input type="checkbox"
+           class="todo-item__checkbox"
+           {% if item.completed %}checked{% endif %}
+           aria-label="{{ 'Mark incomplete' if item.completed else 'Mark complete' }}: {{ item.title }}">
+
+    <input type="hidden" name="title" value="{{ item.title | e }}">
+
+    <span class="todo-item__title"
+          data-raw="{{ item.title | e }}"
+          contenteditable="false"
+          aria-label="Item: {{ item.title }}">
+      {{- item.title -}}
+    </span>
+
+    <details class="todo-item__details">
+      <summary class="todo-item__details-toggle" aria-label="Options for {{ item.title }}">
+        <span aria-hidden="true">&#8943;</span>
+      </summary>
+      <div class="todo-item__detail-panel">
+        <button type="submit"
+                class="todo-item__delete-btn"
+                formaction="{{ url_for('todo.shared_item_delete', username=username, item_id=item.itemID) }}"
+                aria-label="Delete: {{ item.title }}">Delete</button>
+      </div>
+    </details>
+
+  </form>
+
+</todo-item>
+{% else %}
+<todo-item
+  class="todo-item todo-item--readonly{% if item.completed %} todo-item--completed{% endif %}"
+  role="listitem">
+
+  <span class="todo-item__readonly-check" aria-hidden="true">
+    {% if item.completed %}&#10003;{% endif %}
+  </span>
+
+  <span class="todo-item__title"
+        data-raw="{{ item.title | e }}"
+        aria-label="Item: {{ item.title }}">
+    {{- item.title -}}
+  </span>
+
+</todo-item>
+{% endif %}

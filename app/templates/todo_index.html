@@ -156,6 +156,84 @@
   </section>
   {% endif %}
 
+  {# Shared Lists group #}
+  <section class="todo-list-group todo-list-group--shared" aria-labelledby="shared-heading">
+    <header class="todo-list-group__header">
+      <h2 id="shared-heading" class="todo-list-group__heading">Shared Lists</h2>
+      <div class="todo-list-group__header-actions">
+        {% if pending_invite_count > 0 %}
+        <a href="{{ url_for('todo.shared_invites', username=username) }}"
+           class="todo-invite-badge" aria-label="{{ pending_invite_count }} pending invitation{{ 's' if pending_invite_count != 1 }}">
+          {{ pending_invite_count }} invite{{ 's' if pending_invite_count != 1 }}
+        </a>
+        {% else %}
+        <a href="{{ url_for('todo.shared_invites', username=username) }}"
+           class="todo-invites-link">Invitations</a>
+        {% endif %}
+      </div>
+    </header>
+
+    <div class="todo-list-group__lists">
+
+      {# New shared list creation card #}
+      <article class="todo-list-card todo-list-card--new-shared" aria-label="Create shared list">
+        <form method="post"
+              action="{{ url_for('todo.shared_create', username=username) }}"
+              class="shared-new-list-form">
+          <input type="text" name="name" placeholder="New shared list name…"
+                 maxlength="100" autocomplete="off" aria-label="New shared list name">
+          <button type="submit" class="btn btn--primary btn--sm">Create</button>
+        </form>
+      </article>
+
+      {% for sl in shared_lists %}
+      <article class="todo-list-card todo-list-card--shared"
+               aria-labelledby="shared-{{ sl.listID }}-heading">
+        <header class="todo-list-card__header todo-list-card__header--shared">
+          <h3 id="shared-{{ sl.listID }}-heading">{{ sl.name }}</h3>
+          <div class="shared-list-card__meta">
+            {% if not sl.is_owner %}
+            <span class="shared-badge shared-badge--owner">{{ sl.owner_username }}</span>
+            {% endif %}
+            <a href="{{ url_for('todo.shared_view', username=username, list_id=sl.listID) }}"
+               class="shared-list-card__view-link" aria-label="View {{ sl.name }}">View</a>
+            <a href="{{ url_for('todo.shared_settings', username=username, list_id=sl.listID) }}"
+               class="shared-list-card__settings-link" aria-label="Settings for {{ sl.name }}">&#9881;</a>
+          </div>
+        </header>
+
+        {# Contributors and their items #}
+        {% for contributor in sl.contributors %}
+        <section class="shared-contributor" aria-labelledby="contrib-{{ sl.listID }}-{{ contributor.userID }}-heading">
+          <h4 id="contrib-{{ sl.listID }}-{{ contributor.userID }}-heading"
+              class="shared-contributor__heading">{{ contributor.username }}</h4>
+          <todo-list data-type="shared" data-shared-list="{{ sl.listID }}" role="list">
+            {% for item in contributor.items %}
+              {% include 'todo_shared_item.html' %}
+            {% endfor %}
+          </todo-list>
+        </section>
+        {% endfor %}
+
+        {# Add-item slot for editors #}
+        {% if sl.can_edit %}
+        <div class="shared-list-card__add">
+          <todo-item class="todo-item--blank" role="listitem">
+            <form class="todo-new" method="post"
+                  action="{{ url_for('todo.shared_item_create', username=username) }}">
+              <input type="hidden" name="list_id" value="{{ sl.listID }}">
+              <input type="text" name="title" placeholder="Add item…"
+                     autocomplete="off" aria-label="New item for {{ sl.name }}">
+            </form>
+          </todo-item>
+        </div>
+        {% endif %}
+      </article>
+      {% endfor %}
+
+    </div>
+  </section>
+
 </section>
 {% endblock %}
 

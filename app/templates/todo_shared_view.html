@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ list_data.name }} – jttbh{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/todo.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h1>{{ list_data.name }}</h1>
+  <span class="shared-view__owner-meta">by {{ list_data.owner_username }}</span>
+  <nav class="shared-view__nav" aria-label="List actions">
+    <a href="{{ url_for('todo.shared_settings', username=username, list_id=list_data.listID) }}">
+      Settings
+    </a>
+    <a href="{{ url_for('todo.index', username=username) }}" class="todo-search-link">&#8592; Todo</a>
+  </nav>
+</header>
+
+<section class="shared-view" aria-label="{{ list_data.name }}">
+
+  {# Member self-management controls #}
+  {% if not is_owner and member_row %}
+  <div class="shared-view__self-controls">
+    <form method="post"
+          action="{{ url_for('todo.shared_pin', username=username, list_id=list_data.listID) }}">
+      <button type="submit" class="btn btn--ghost btn--sm">
+        {% if member_row.show_in_todo %}Unpin from todo page{% else %}Pin to todo page{% endif %}
+      </button>
+    </form>
+    <form method="post"
+          action="{{ url_for('todo.shared_leave', username=username, list_id=list_data.listID) }}"
+          onsubmit="return confirm('Leave this list?')">
+      <button type="submit" class="btn btn--ghost btn--sm btn--danger">Leave list</button>
+    </form>
+  </div>
+  {% endif %}
+
+  {# Contributors and their items #}
+  {% if list_data.contributors %}
+    {% for contributor in list_data.contributors %}
+    <section class="shared-contributor" aria-labelledby="contrib-{{ contributor.userID }}-heading">
+      <h3 id="contrib-{{ contributor.userID }}-heading" class="shared-contributor__heading">
+        {{ contributor.username }}
+      </h3>
+      <todo-list data-type="shared" data-shared-list="{{ list_data.listID }}" role="list">
+        {% for item in contributor.items %}
+          {% include 'todo_shared_item.html' %}
+        {% endfor %}
+      </todo-list>
+    </section>
+    {% endfor %}
+  {% else %}
+    <p class="shared-view__empty">No items yet.</p>
+  {% endif %}
+
+  {# Add-item slot — for editors, appears at bottom of list #}
+  {% if can_edit %}
+  <section class="shared-contributor" aria-label="Add item">
+    <todo-list data-type="shared" data-shared-list="{{ list_data.listID }}" role="list">
+      <todo-item class="todo-item--blank" role="listitem">
+        <form class="todo-new" method="post"
+              action="{{ url_for('todo.shared_item_create', username=username) }}">
+          <input type="hidden" name="list_id" value="{{ list_data.listID }}">
+          <input type="text" name="title" placeholder="Add item…"
+                 autocomplete="off" aria-label="New item for {{ list_data.name }}">
+        </form>
+      </todo-item>
+    </todo-list>
+  </section>
+  {% endif %}
+
+</section>
+{% endblock %}
+
+{% block js %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+<script src="{{ url_for('static', filename='js/todo.js') }}" defer></script>
+{% endblock %}

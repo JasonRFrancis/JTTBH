@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Shared List Invitations – jttbh{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/todo.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h1>Shared List Invitations</h1>
+  <a href="{{ url_for('todo.index', username=username) }}" class="todo-search-link">&#8592; Todo</a>
+</header>
+
+<section class="shared-invites" aria-label="Pending invitations">
+  {% if invites %}
+  <ul class="shared-invites__list">
+    {% for invite in invites %}
+    <li class="shared-invite-card">
+      <div class="shared-invite-card__info">
+        <strong class="shared-invite-card__name">{{ invite.list_name }}</strong>
+        <span class="shared-invite-card__meta">
+          Invited by <strong>{{ invite.invited_by_username }}</strong>
+          &middot;
+          Permission: <span class="shared-invite-card__perm shared-invite-card__perm--{{ invite.permission }}">{{ invite.permission }}</span>
+        </span>
+      </div>
+
+      <div class="shared-invite-card__actions">
+        <form method="post"
+              action="{{ url_for('todo.shared_invite_accept', username=username, list_id=invite.listID) }}"
+              class="shared-invite-card__accept-form">
+          <label class="shared-invite-card__pin-label">
+            <input type="checkbox" name="show_in_todo" value="1" checked>
+            Add to my todo page
+          </label>
+          <button type="submit" class="btn btn--success">Accept</button>
+        </form>
+
+        <form method="post"
+              action="{{ url_for('todo.shared_invite_decline', username=username, list_id=invite.listID) }}">
+          <button type="submit" class="btn btn--ghost">Decline</button>
+        </form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="shared-invites__empty">No pending invitations.</p>
+  {% endif %}
+</section>
+{% endblock %}
