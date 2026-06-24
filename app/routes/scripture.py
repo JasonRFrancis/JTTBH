@@ -109,6 +109,55 @@ def review(username: str):
 
 
 # ---------------------------------------------------------------------------
+# Bulk add
+# ---------------------------------------------------------------------------
+
+@scripture_bp.route('/bulk')
+@login_required
+@permission_required_read(PERM_SCRIPTURE)
+def bulk(username: str):
+    return render_template('scripture_bulk.html', username=username, area='scripture')
+
+
+@scripture_bp.route('/bulk/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_SCRIPTURE)
+@permission_required_write(PERM_SCRIPTURE)
+def bulk_create(username: str):
+    user_id = session['user_id']
+    raw = request.form.get('references', '')
+    modes = [m for m in request.form.getlist('modes') if m in _VALID_MODES]
+
+    if not modes:
+        flash('Select at least one review mode.', 'error')
+        return redirect(url_for('scripture.bulk', username=username))
+
+    lines = [l.strip() for l in raw.splitlines() if l.strip()]
+    if not lines:
+        flash('No references provided.', 'error')
+        return redirect(url_for('scripture.bulk', username=username))
+
+    added, no_text = 0, []
+    for ref in lines:
+        text = scripture_text_lookup(ref) or ''
+        ScriptureModel.create(user_id, ref, text, '', modes)
+        added += 1
+        if not text:
+            no_text.append(ref)
+
+    if no_text:
+        flash(
+            f'Added {added} scripture{"s" if added != 1 else ""}. '
+            f'Text not found for: {", ".join(no_text)} — you can add it manually.',
+            'warning',
+        )
+    else:
+        flash(f'Added {added} scripture{"s" if added != 1 else ""}.', 'success')
+
+    return redirect(url_for('scripture.index', username=username))
+
+
+# ---------------------------------------------------------------------------
 # Lookup
 # ---------------------------------------------------------------------------
 

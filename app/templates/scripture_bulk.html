@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Add Scriptures in Bulk{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/scripture.css') }}">
+{% endblock %}
+
+{% block content %}
+<header>
+  <h1>Add Scriptures in Bulk</h1>
+  <a href="{{ url_for('scripture.index', username=username) }}" class="btn btn--secondary btn--sm">← Back</a>
+</header>
+
+<section class="widget">
+  <form method="post" action="{{ url_for('scripture.bulk_create', username=username) }}">
+    <div class="form-field">
+      <label for="references">References <span class="form-note">— one per line</span></label>
+      <textarea id="references" name="references" rows="12" required
+                placeholder="John 3:16&#10;Moroni 10:4&#10;D&amp;C 121:7-8&#10;1 Nephi 3:7"></textarea>
+      <span class="form-note">Verse text is fetched automatically. References that aren't found will be added without text so you can fill them in later.</span>
+    </div>
+
+    <fieldset class="form-field">
+      <legend>Review modes</legend>
+      <label class="check-label">
+        <input type="checkbox" name="modes" value="reference" checked>
+        <span>Reference</span>
+        <span class="form-note">Given the text, recall the reference</span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" name="modes" value="familiar" checked>
+        <span>Familiar</span>
+        <span class="form-note">Given the reference, recall the meaning</span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox" name="modes" value="verbatim" checked>
+        <span>Verbatim</span>
+        <span class="form-note">Given the reference, recite word-for-word</span>
+      </label>
+    </fieldset>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn--primary">Add All</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
