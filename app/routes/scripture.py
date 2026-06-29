@@ -137,22 +137,27 @@ def bulk_create(username: str):
         flash('No references provided.', 'error')
         return redirect(url_for('scripture.bulk', username=username))
 
-    added, no_text = 0, []
+    added, skipped, no_text = 0, 0, []
     for ref in lines:
+        if ScriptureModel.reference_exists(user_id, ref):
+            skipped += 1
+            continue
         text = scripture_text_lookup(ref) or ''
         ScriptureModel.create(user_id, ref, text, '', modes)
         added += 1
         if not text:
             no_text.append(ref)
 
+    parts = []
+    if added:
+        parts.append(f'Added {added} scripture{"s" if added != 1 else ""}.')
+    if skipped:
+        parts.append(f'{skipped} duplicate{"s" if skipped != 1 else ""} skipped.')
     if no_text:
-        flash(
-            f'Added {added} scripture{"s" if added != 1 else ""}. '
-            f'Text not found for: {", ".join(no_text)} — you can add it manually.',
-            'warning',
-        )
-    else:
-        flash(f'Added {added} scripture{"s" if added != 1 else ""}.', 'success')
+        parts.append(f'Text not found for: {", ".join(no_text)} — add it manually.')
+
+    category = 'warning' if no_text else ('message' if not added else 'success')
+    flash(' '.join(parts) or 'Nothing to add.', category)
 
     return redirect(url_for('scripture.index', username=username))
 
@@ -196,6 +201,10 @@ def create(username: str):
     if not modes:
         flash('Select at least one review mode.', 'error')
         return redirect(url_for('scripture.add', username=username))
+
+    if ScriptureModel.reference_exists(user_id, reference):
+        flash(f'"{reference}" is already in your list.', 'message')
+        return redirect(url_for('scripture.index', username=username))
 
     ScriptureModel.create(user_id, reference, text, summary, modes)
     flash(f'"{reference}" added.', 'success')

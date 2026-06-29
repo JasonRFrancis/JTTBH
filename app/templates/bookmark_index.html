@@ -80,7 +80,9 @@
               <button type="button" class="btn-summarize" data-bookmark-id="{{ bm.bookmarkID }}"
                       data-url="{{ url_for('bookmark.summary_json', username=username, bookmark_id=bm.bookmarkID) }}">✨ Summarize</button>
             </span>
-            <div class="bm-summary-output" id="summary-{{ bm.bookmarkID }}" hidden></div>
+            <div class="bm-summary-output" id="summary-{{ bm.bookmarkID }}" {% if not bm.summary %}hidden{% endif %}>
+              {% if bm.summary %}<div class="bm-summary-section">{{ bm.summary }}</div>{% endif %}
+            </div>
           </div>
         </li>
         {% endfor %}
@@ -154,7 +156,9 @@
               <button type="button" class="btn-summarize" data-bookmark-id="{{ bm.bookmarkID }}"
                       data-url="{{ url_for('bookmark.summary_json', username=username, bookmark_id=bm.bookmarkID) }}">✨ Summarize</button>
             </span>
-            <div class="bm-summary-output" id="summary-{{ bm.bookmarkID }}" hidden></div>
+            <div class="bm-summary-output" id="summary-{{ bm.bookmarkID }}" {% if not bm.summary %}hidden{% endif %}>
+              {% if bm.summary %}<div class="bm-summary-section">{{ bm.summary }}</div>{% endif %}
+            </div>
           </div>
         </li>
         {% else %}
@@ -207,7 +211,9 @@
               <button type="button" class="btn-summarize" data-bookmark-id="{{ bm.bookmarkID }}"
                       data-url="{{ url_for('bookmark.summary_json', username=username, bookmark_id=bm.bookmarkID) }}">✨ Summarize</button>
             </span>
-            <div class="bm-summary-output" id="summary-{{ bm.bookmarkID }}" hidden></div>
+            <div class="bm-summary-output" id="summary-{{ bm.bookmarkID }}" {% if not bm.summary %}hidden{% endif %}>
+              {% if bm.summary %}<div class="bm-summary-section">{{ bm.summary }}</div>{% endif %}
+            </div>
           </div>
         </li>
         {% else %}

@@ -80,7 +80,7 @@ _CATEGORY_BY_ID_SQL = """
 
 _CAT_ITEMS_BASE = """
     SELECT b.bookmarkID, b.url, b.title, b.tags, b.favorite, b.notes,
-           bci.position
+           b.summary, bci.position
     FROM bookmark_category_item bci
     JOIN bookmark b ON b.bookmarkID = bci.bookmarkID
     WHERE bci.categoryID = %s AND b.userID = %s AND b.`read` = 0
@@ -230,7 +230,7 @@ def index(username: str):
 
     # Favorites: active bookmarks with favorite=1, newest first
     favorites = db_manager.execute_query(
-        """SELECT b.bookmarkID, b.url, b.title, b.tags, b.favorite, b.notes
+        """SELECT b.bookmarkID, b.url, b.title, b.tags, b.favorite, b.notes, b.summary
            FROM bookmark b
            WHERE b.userID = %s AND b.`read` = 0 AND b.favorite = 1
            ORDER BY b.created DESC
@@ -248,7 +248,7 @@ def index(username: str):
 
     # Uncategorized: active bookmarks not in any category_item for this user
     uncategorized = db_manager.execute_query(
-        """SELECT b.bookmarkID, b.url, b.title, b.tags, b.favorite, b.notes
+        """SELECT b.bookmarkID, b.url, b.title, b.tags, b.favorite, b.notes, b.summary
            FROM bookmark b
            WHERE b.userID = %s AND b.`read` = 0
              AND b.bookmarkID NOT IN (
@@ -955,6 +955,10 @@ def summary_json(username: str, bookmark_id: str):
             }]
         )
         result = _json.loads(msg.content[0].text)
+        db_manager.execute_update(
+            'UPDATE bookmark SET summary = %s WHERE bookmarkID = %s AND userID = %s',
+            (result.get('long', ''), bookmark_id, user_id),
+        )
         return jsonify({'status': 'ok', 'summary': result})
     except Exception as e:
         return jsonify({'error': f'Summary failed: {e}'}), 500

@@ -74,6 +74,21 @@ class ScriptureModel:
         """, (user_id, scripture_id))
 
     @staticmethod
+    def reference_exists(user_id: str, reference: str) -> bool:
+        # Normalize en-dash and em-dash to hyphen for comparison in both
+        # the stored value and the input so variants match each other.
+        row = db_manager.execute_one("""
+            SELECT 1 FROM scripture s
+            WHERE s.userID = %s
+              AND REPLACE(REPLACE(s.reference, '–', '-'), '—', '-')
+                = REPLACE(REPLACE(%s, '–', '-'), '—', '-')
+              AND s.id = (SELECT MAX(s2.id) FROM scripture s2
+                          WHERE s2.scriptureID = s.scriptureID)
+              AND s.reference IS NOT NULL
+        """, (user_id, reference))
+        return row is not None
+
+    @staticmethod
     def create(user_id: str, reference: str, text: str, summary: str,
                modes: list[str]) -> str:
         scripture_id = str(uuid.uuid4())

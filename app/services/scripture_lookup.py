@@ -148,9 +148,14 @@ _CANONICAL = {name.lower(): name for name in [
 ]}
 
 
+def _norm_dashes(s: str) -> str:
+    """Replace en-dash and em-dash with a plain hyphen."""
+    return s.replace('–', '-').replace('—', '-')
+
+
 def _normalize_book(name: str) -> str | None:
     """Return canonical book name or None if unrecognized."""
-    key = name.strip().lower()
+    key = _norm_dashes(name).strip().lower()
     if key in _CANONICAL:
         return _CANONICAL[key]
     if key in _ALIASES:
@@ -183,7 +188,7 @@ def _build_index() -> None:
         for book in data['books']:
             for chapter in book['chapters']:
                 for verse in chapter['verses']:
-                    idx[verse['reference']] = verse['text']
+                    idx[_norm_dashes(verse['reference'])] = verse['text']
 
     # D&C uses sections, not books
     dc_path = os.path.join(_DATA_DIR, 'doctrine-and-covenants.json')
@@ -192,7 +197,7 @@ def _build_index() -> None:
             dc = json.load(f)
         for section in dc['sections']:
             for verse in section['verses']:
-                idx[verse['reference']] = verse['text']
+                idx[_norm_dashes(verse['reference'])] = verse['text']
 
     _index = idx
     _loaded = True
@@ -227,7 +232,7 @@ def lookup(ref: str) -> str | None:
     """
     _ensure_loaded()
 
-    ref = ref.strip()
+    ref = _norm_dashes(ref.strip())
 
     # Try the index directly first (handles exact canonical refs)
     if ref in _index:
@@ -248,7 +253,7 @@ def lookup(ref: str) -> str | None:
 
     texts = []
     for v in range(verse_start, verse_end + 1):
-        candidate = f'{book} {chapter}:{v}'
+        candidate = _norm_dashes(f'{book} {chapter}:{v}')
         text = _index.get(candidate)
         if text:
             texts.append(text)

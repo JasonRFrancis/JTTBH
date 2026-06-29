@@ -223,6 +223,7 @@ def _register_blueprints(app: Flask) -> None:
         ('app.routes.quote',       'quote_bp',       '/<username>/quote'),
         ('app.routes.recipe',      'recipe_bp',      '/<username>/recipe'),
         ('app.routes.scripture',   'scripture_bp',   '/<username>/scripture'),
+        ('app.routes.api',         'api_bp',         '/api/v1'),
     ]
 
     for module_path, bp_attr, url_prefix in blueprint_specs:
