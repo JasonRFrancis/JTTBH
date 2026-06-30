@@ -313,7 +313,8 @@ class StudyModel:
         return {r['sourceID'] for r in rows}
 
     @staticmethod
-    def toggle_completion(user_id: str, source_id: str, completed_date):
+    def toggle_completion(user_id: str, source_id: str, completed_date) -> bool:
+        """Returns True if the item is now done, False if now undone."""
         existing = db_manager.execute_one(
             "SELECT id FROM study_completion WHERE userID=%s AND sourceID=%s AND completed_date=%s",
             (user_id, source_id, completed_date),
@@ -323,11 +324,13 @@ class StudyModel:
                 "DELETE FROM study_completion WHERE userID=%s AND sourceID=%s AND completed_date=%s",
                 (user_id, source_id, completed_date),
             )
+            return False
         else:
             db_manager.execute_insert(
                 "INSERT INTO study_completion (completionID, userID, sourceID, completed_date, created, created_by) VALUES (%s,%s,%s,%s,NOW(),%s)",
                 (str(uuid.uuid4()), user_id, source_id, completed_date, user_id),
             )
+            return True
 
     # ------------------------------------------------------------------
     # Personal schedule

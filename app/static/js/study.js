@@ -371,6 +371,33 @@
   if (scheduleSearch) scheduleSearch.addEventListener('input', filterSchedule);
   if (showScheduled)  showScheduled.addEventListener('change', filterSchedule);
 
+  /* ── Study index: AJAX completion toggle ─────────────────── */
+  (function() {
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('.complete-btn[data-source-id]');
+      if (!btn) return;
+      e.preventDefault();
+
+      const body = new URLSearchParams({ date: btn.dataset.date });
+      fetch(btn.dataset.url, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.status !== 'ok') return;
+        const done = data.done;
+        const li = btn.closest('.source-item');
+        btn.classList.toggle('complete-btn--done', done);
+        btn.setAttribute('aria-label', done ? 'Mark incomplete' : 'Mark complete');
+        btn.innerHTML = done ? '&#10003;' : '&#9675;';
+        if (li) li.classList.toggle('source-item--done', done);
+      })
+      .catch(() => {});
+    });
+  }());
+
   /* ── Study index: subscription drag-to-reorder ────────────── */
   (function() {
     const sections = [...document.querySelectorAll('.study-collection-section[data-sub-id]')];

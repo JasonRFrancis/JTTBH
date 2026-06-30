@@ -32,6 +32,7 @@ from datetime import date, timedelta
 from flask import (
     Blueprint,
     flash,
+    jsonify,
     make_response,
     redirect,
     render_template,
@@ -533,7 +534,9 @@ def unsubscribe(username: str, subscription_id: str):
 def source_complete(username: str, source_id: str):
     date_str = request.form.get('date', '').strip()
     target_date = _parse_date(date_str) if date_str else today_for_tz(session.get('timezone', 'UTC'))
-    StudyModel.toggle_completion(session['user_id'], source_id, target_date)
+    now_done = StudyModel.toggle_completion(session['user_id'], source_id, target_date)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'status': 'ok', 'done': now_done})
     if date_str:
         return redirect(url_for('study.index', username=username, date_str=date_str))
     return redirect(url_for('study.index', username=username))
@@ -582,7 +585,6 @@ def schedule_clear(username: str, subscription_id: str, source_id: str):
 @permission_required_read(PERM_STUDY)
 @permission_required_write(PERM_STUDY)
 def subscription_reorder(username: str):
-    from flask import jsonify
     user_id = session['user_id']
     items = request.get_json(silent=True) or []
     for item in items:
