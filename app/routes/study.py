@@ -643,12 +643,11 @@ def feed_xml(username: str):
         if aurl.startswith('/'):
             item['audio_url'] = base_url + aurl
 
-    # Stagger pubDate times so podcast apps display in feed order (first = newest).
-    # Use 60-second intervals so apps that parse pubDate to minute precision still
-    # see distinct values.
+    # Assign distinct pubDates (one day apart) so podcast apps order episodes
+    # reliably. Time-staggering within a single day is ignored by some clients.
     for idx, item in enumerate(sources):
-        secs = max(0, 86399 - idx * 60)
-        item['_pub_time'] = f'{secs // 3600:02d}:{(secs % 3600) // 60:02d}:{secs % 60:02d}'
+        pub_date = today - timedelta(days=idx)
+        item['_pub_date'] = pub_date.strftime('%a, %d %b %Y')
 
     rss = render_template('study_feed.xml', username=username, today=today, sources=sources)
     response = make_response(rss)
