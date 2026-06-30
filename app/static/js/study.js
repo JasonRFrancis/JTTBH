@@ -373,28 +373,30 @@
 
   /* ── Study index: AJAX completion toggle ─────────────────── */
   (function() {
-    document.addEventListener('click', function(e) {
-      const btn = e.target.closest('.complete-btn[data-source-id]');
-      if (!btn) return;
-      e.preventDefault();
+    document.querySelectorAll('.complete-form').forEach(function(form) {
+      // Hide the submit button — checkbox change will submit via fetch instead.
+      const submitBtn = form.querySelector('.complete-submit');
+      if (submitBtn) submitBtn.hidden = true;
 
-      const body = new URLSearchParams({ date: btn.dataset.date });
-      fetch(btn.dataset.url, {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: body.toString()
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.status !== 'ok') return;
-        const done = data.done;
-        const li = btn.closest('.source-item');
-        btn.classList.toggle('complete-btn--done', done);
-        btn.setAttribute('aria-label', done ? 'Mark incomplete' : 'Mark complete');
-        btn.innerHTML = done ? '&#10003;' : '&#9675;';
-        if (li) li.classList.toggle('source-item--done', done);
-      })
-      .catch(() => {});
+      const checkbox = form.querySelector('.complete-checkbox');
+      if (!checkbox) return;
+
+      checkbox.addEventListener('change', function() {
+        const data = new URLSearchParams(new FormData(form));
+        fetch(form.action, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: data.toString()
+        })
+        .then(r => r.json())
+        .then(function(resp) {
+          if (resp.status !== 'ok') { checkbox.checked = !checkbox.checked; return; }
+          const li = form.closest('.source-item');
+          if (li) li.classList.toggle('source-item--done', resp.done);
+          checkbox.setAttribute('aria-label', resp.done ? 'Mark incomplete' : 'Mark complete');
+        })
+        .catch(function() { checkbox.checked = !checkbox.checked; });
+      });
     });
   }());
 

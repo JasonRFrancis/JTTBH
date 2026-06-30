@@ -43,11 +43,16 @@
     {% set done = source.sourceID in completions %}
     <li class="source-item{% if done %} source-item--done{% endif %}">
       <div class="source-top">
-        <button class="complete-btn{% if done %} complete-btn--done{% endif %}"
-                data-source-id="{{ source.sourceID }}"
-                data-date="{{ target_date.isoformat() }}"
-                data-url="{{ url_for('study.source_complete', username=username, source_id=source.sourceID) }}"
-                aria-label="{% if done %}Mark incomplete{% else %}Mark complete{% endif %}">{% if done %}&#10003;{% else %}&#9675;{% endif %}</button>
+        <form class="complete-form"
+              method="post"
+              action="{{ url_for('study.source_complete', username=username, source_id=source.sourceID) }}">
+          <input type="hidden" name="date" value="{{ target_date.isoformat() }}">
+          <label class="complete-label">
+            <input type="checkbox" class="complete-checkbox" name="complete"{% if done %} checked{% endif %}
+                   aria-label="{% if done %}Mark incomplete{% else %}Mark complete{% endif %}">
+            <button type="submit" class="complete-submit">&#10003;</button>
+          </label>
+        </form>
         {% if source.category %}<span class="source-category">{{ source.category }}</span>{% endif %}
         <div class="source-title">
           {% if source.url %}
@@ -77,3 +82,4 @@
 {% endfor %}
 {% endif %}
 {% endblock %}
+{% block js %}<script src="{{ url_for('static', filename='js/study.js') }}" defer></script>{% endblock %}
