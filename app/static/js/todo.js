@@ -520,8 +520,13 @@ function initClickToToggle() {
 /**
  * Submit the toggle form when a completion checkbox changes state.
  * Uses event delegation so it works for dynamically-added items.
+ * Hides the no-JS toggle buttons since the checkbox handles interaction.
  */
 function initCheckboxToggle() {
+  document.querySelectorAll('.todo-item__toggle-btn').forEach((btn) => {
+    btn.hidden = true;
+  });
+
   document.addEventListener('change', (e) => {
     if (!e.target.matches('.todo-item__checkbox')) return;
     const form = e.target.closest('form');

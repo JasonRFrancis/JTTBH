@@ -1,0 +1,139 @@
+- generic [active] [ref=f8e1]:
+  - banner [ref=f8e2]:
+    - link "Just Trying to be Helpful" [ref=f8e3] [cursor=pointer]:
+      - /url: /
+    - link "JASON" [ref=f8e5] [cursor=pointer]:
+      - /url: /jason/settings
+  - region "Notifications" [ref=f8e6]:
+    - alert [ref=f8e7]: Please select a grid position for this habit.
+  - main [ref=f8e8]:
+    - generic [ref=f8e9]:
+      - heading "Manage Habits" [level=1] [ref=f8e10]
+      - navigation "Habit navigation" [ref=f8e11]:
+        - link "Back to Habits" [ref=f8e12] [cursor=pointer]:
+          - /url: /jason/habit/index
+        - link "Heat Map" [ref=f8e13] [cursor=pointer]:
+          - /url: /jason/habit/heatmap
+    - region "Add new habit" [ref=f8e14]:
+      - heading "Add Habit" [level=2] [ref=f8e15]
+      - generic [ref=f8e16]:
+        - paragraph [ref=f8e17]: "* Required"
+        - generic [ref=f8e18]:
+          - generic [ref=f8e19]: Name *
+          - textbox "Name" [ref=f8e20]:
+            - /placeholder: e.g. Morning run
+        - generic [ref=f8e21]:
+          - generic [ref=f8e22]: Description
+          - textbox "Description" [ref=f8e23]:
+            - /placeholder: Optional notes about this habit
+        - generic [ref=f8e24]:
+          - generic [ref=f8e25]: Action URL
+          - textbox "Action URL" [ref=f8e26]:
+            - /placeholder: https://example.com (optional)
+        - group "Days of Week" [ref=f8e27]:
+          - generic [ref=f8e28]: Days of Week
+          - generic [ref=f8e29]:
+            - generic [ref=f8e30] [cursor=pointer]:
+              - checkbox "Sun" [ref=f8e31]
+              - text: Sun
+            - generic [ref=f8e32] [cursor=pointer]:
+              - checkbox "Mon" [checked] [ref=f8e33]
+              - text: Mon
+            - generic [ref=f8e34] [cursor=pointer]:
+              - checkbox "Tue" [checked] [ref=f8e35]
+              - text: Tue
+            - generic [ref=f8e36] [cursor=pointer]:
+              - checkbox "Wed" [checked] [ref=f8e37]
+              - text: Wed
+            - generic [ref=f8e38] [cursor=pointer]:
+              - checkbox "Thu" [checked] [ref=f8e39]
+              - text: Thu
+            - generic [ref=f8e40] [cursor=pointer]:
+              - checkbox "Fri" [checked] [ref=f8e41]
+              - text: Fri
+            - generic [ref=f8e42] [cursor=pointer]:
+              - checkbox "Sat" [ref=f8e43]
+              - text: Sat
+        - generic [ref=f8e44]:
+          - generic [ref=f8e45]: Grid Position *
+          - generic [ref=f8e46]:
+            - button "0" [ref=f8e47] [cursor=pointer]
+            - button "1" [ref=f8e48] [cursor=pointer]
+            - button "2" [ref=f8e49] [cursor=pointer]
+            - button "3" [ref=f8e50] [cursor=pointer]
+            - button "4" [ref=f8e51] [cursor=pointer]
+            - button "5" [ref=f8e52] [cursor=pointer]
+            - button "6" [ref=f8e53] [cursor=pointer]
+            - button "7" [ref=f8e54] [cursor=pointer]
+            - button "8" [ref=f8e55] [cursor=pointer]
+            - button "9" [ref=f8e56] [cursor=pointer]
+            - button "10" [ref=f8e57] [cursor=pointer]
+            - button "11" [ref=f8e58] [cursor=pointer]
+            - button "12" [ref=f8e59] [cursor=pointer]
+            - button "13" [ref=f8e60] [cursor=pointer]
+            - button "14" [ref=f8e61] [cursor=pointer]
+            - button "15" [ref=f8e62] [cursor=pointer]
+            - button "16" [ref=f8e63] [cursor=pointer]
+            - button "17" [ref=f8e64] [cursor=pointer]
+            - button "18" [ref=f8e65] [cursor=pointer]
+            - button "19" [ref=f8e66] [cursor=pointer]
+            - button "20" [ref=f8e67] [cursor=pointer]
+            - button "21" [ref=f8e68] [cursor=pointer]
+            - button "22" [ref=f8e69] [cursor=pointer]
+            - button "23" [ref=f8e70] [cursor=pointer]
+            - button "24" [ref=f8e71] [cursor=pointer]
+        - generic [ref=f8e72]:
+          - generic [ref=f8e73]: Color
+          - textbox "Color" [ref=f8e74] [cursor=pointer]: "#2563eb"
+        - generic [ref=f8e75]:
+          - generic [ref=f8e76]: Icon
+          - combobox "Icon" [ref=f8e77]:
+            - option "— None —" [selected]
+        - generic [ref=f8e80] [cursor=pointer]:
+          - checkbox "Pause during vacation" [checked] [ref=f8e81]
+          - text: Pause during vacation
+        - button "Add Habit" [ref=f8e83] [cursor=pointer]
+    - region "Grid positions" [ref=f8e84]:
+      - heading "Grid Positions" [level=2] [ref=f8e85]
+      - paragraph [ref=f8e86]:
+        - text: Habits with non-overlapping days can share a grid position (0–24). Click
+        - strong [ref=f8e87]: Swap
+        - text: on two habits to exchange their positions.
+      - paragraph [ref=f8e88]: No habits yet.
+    - region "Current habits" [ref=f8e89]:
+      - heading "Current Habits (0)" [level=2] [ref=f8e90]
+      - paragraph [ref=f8e91]: No habits yet. Add one above to get started.
+  - contentinfo [ref=f8e92]:
+    - navigation "Main navigation" [ref=f8e93]:
+      - link "Admin" [ref=f8e94] [cursor=pointer]:
+        - /url: /jason/admin/dashboard
+      - link "· Dashboard" [ref=f8e95] [cursor=pointer]:
+        - /url: /jason/dashboard/index
+      - link "· Todo" [ref=f8e96] [cursor=pointer]:
+        - /url: /jason/todo/index
+      - link "· Habits" [ref=f8e97] [cursor=pointer]:
+        - /url: /jason/habit/index
+      - link "· Projects" [ref=f8e98] [cursor=pointer]:
+        - /url: /jason/project/index
+      - link "· Bookmarks" [ref=f8e99] [cursor=pointer]:
+        - /url: /jason/bookmark/index
+      - link "· Fitness" [ref=f8e100] [cursor=pointer]:
+        - /url: /jason/fitness/index
+      - link "· Triage" [ref=f8e101] [cursor=pointer]:
+        - /url: /jason/triage/index
+      - link "· Chores" [ref=f8e102] [cursor=pointer]:
+        - /url: /jason/chore/index
+      - link "· Media" [ref=f8e103] [cursor=pointer]:
+        - /url: /jason/media/index
+      - link "· Journal" [ref=f8e104] [cursor=pointer]:
+        - /url: /jason/journal/index
+      - link "· Study" [ref=f8e105] [cursor=pointer]:
+        - /url: /jason/study/index
+      - link "· Quotes" [ref=f8e106] [cursor=pointer]:
+        - /url: /jason/quote/index
+      - link "· Recipes" [ref=f8e107] [cursor=pointer]:
+        - /url: /jason/recipe/index
+      - link "· Scripture" [ref=f8e108] [cursor=pointer]:
+        - /url: /jason/scripture/index
+      - link "· Appointments" [ref=f8e109] [cursor=pointer]:
+        - /url: /jason/appointment/index

@@ -335,7 +335,8 @@
   // Flag toggles: ★ favorite and Try want-to-try
   // ----------------------------------------------------------------
   document.querySelectorAll('.recipe-flag').forEach(btn => {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', async e => {
+      e.preventDefault();
       const recipeId = btn.dataset.recipe;
       const flag = btn.dataset.flag;
       if (!recipeId || !flag) return;
@@ -375,7 +376,8 @@
   // Archive toggle
   // ----------------------------------------------------------------
   document.querySelectorAll('.recipe-archive-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', async e => {
+      e.preventDefault();
       const recipeId = btn.dataset.recipe;
       if (!recipeId) return;
       btn.disabled = true;

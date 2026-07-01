@@ -2,7 +2,8 @@
 
 function initTagChips() {
   document.querySelectorAll('.tag-chips-field').forEach(field => {
-    const hidden = field.querySelector('input[type="hidden"]');
+    const hidden = field.querySelector('.tags-raw-input');
+    if (hidden) hidden.hidden = true; // JS active: use chip UI instead
     const input = field.querySelector('.tag-chips-input');
     const chipList = field.querySelector('.tag-chips-list');
     if (!hidden || !input || !chipList) return;

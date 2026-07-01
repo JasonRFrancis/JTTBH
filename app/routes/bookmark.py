@@ -536,7 +536,11 @@ def update(username: str, bookmark_id: str):
         "UPDATE bookmark SET title = %s, tags = %s, notes = %s WHERE bookmarkID = %s AND userID = %s",
         (title, tags, notes, bookmark_id, user_id),
     )
-    return jsonify({'status': 'ok', 'title': title})
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if is_ajax:
+        return jsonify({'status': 'ok', 'title': title})
+    flash('Bookmark updated.', 'success')
+    return redirect(request.referrer or url_for('bookmark.index', username=username))
 
 
 @bookmark_bp.route('/archive/post/<bookmark_id>', methods=['POST'])
@@ -554,7 +558,11 @@ def toggle_archive(username: str, bookmark_id: str):
         "UPDATE bookmark SET `read` = %s WHERE bookmarkID = %s AND userID = %s",
         (new_val, bookmark_id, user_id),
     )
-    return jsonify({'status': 'ok', 'archived': bool(new_val)})
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if is_ajax:
+        return jsonify({'status': 'ok', 'archived': bool(new_val)})
+    flash('Bookmark archived.' if new_val else 'Bookmark restored.', 'success')
+    return redirect(request.referrer or url_for('bookmark.index', username=username))
 
 
 @bookmark_bp.route('/favorite/post/<bookmark_id>', methods=['POST'])
@@ -572,7 +580,11 @@ def toggle_favorite(username: str, bookmark_id: str):
         "UPDATE bookmark SET favorite = %s WHERE bookmarkID = %s AND userID = %s",
         (new_val, bookmark_id, user_id),
     )
-    return jsonify({'status': 'ok', 'favorite': bool(new_val)})
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if is_ajax:
+        return jsonify({'status': 'ok', 'favorite': bool(new_val)})
+    flash('Favorited.' if new_val else 'Unfavorited.', 'success')
+    return redirect(request.referrer or url_for('bookmark.index', username=username))
 
 
 @bookmark_bp.route('/delete/post/<bookmark_id>', methods=['POST'])

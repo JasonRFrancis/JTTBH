@@ -488,9 +488,14 @@ def log_set(username: str):
     user_id = session['user_id']
     f = request.form
 
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
     exercise_id = f.get('exercise_id', '').strip()
     if not exercise_id:
-        return jsonify({'status': 'error', 'message': 'Missing exercise_id'}), 400
+        if is_ajax:
+            return jsonify({'status': 'error', 'message': 'Missing exercise_id'}), 400
+        flash('Missing exercise.', 'error')
+        return redirect(url_for('fitness.index', username=username))
 
     def _int(v):
         try:
@@ -534,7 +539,11 @@ def log_set(username: str):
         speed=speed,
         incline=incline,
     )
-    return jsonify({'status': 'ok', 'logSetID': log_set_id, 'logID': log_id})
+
+    if is_ajax:
+        return jsonify({'status': 'ok', 'logSetID': log_set_id, 'logID': log_id})
+
+    return redirect(url_for('fitness.index', username=username, date_str=log_date.isoformat()))
 
 
 @fitness_bp.route('/log/set/delete/post/<log_set_id>', methods=['POST'])
@@ -630,12 +639,16 @@ def weight_schedule_post(username: str):
 @permission_required_write(PERM_FITNESS)
 def weight_post(username: str):
     user_id = session['user_id']
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     try:
         weight = float(request.form.get('weight', ''))
         if weight <= 0:
             raise ValueError
     except (TypeError, ValueError):
-        return jsonify({'status': 'error', 'message': 'Invalid weight'}), 400
+        if is_ajax:
+            return jsonify({'status': 'error', 'message': 'Invalid weight'}), 400
+        flash('Invalid weight.', 'error')
+        return redirect(url_for('fitness.index', username=username))
 
     log_date_str = request.form.get('log_date', '')
     try:
@@ -644,4 +657,9 @@ def weight_post(username: str):
         log_date = user_today()
 
     weight_id = FitnessModel.log_body_weight(user_id, weight, log_date)
-    return jsonify({'status': 'ok', 'weightID': weight_id, 'weight': weight})
+
+    if is_ajax:
+        return jsonify({'status': 'ok', 'weightID': weight_id, 'weight': weight})
+
+    flash(f'{weight} lbs recorded.', 'success')
+    return redirect(url_for('fitness.index', username=username, date_str=log_date.isoformat()))

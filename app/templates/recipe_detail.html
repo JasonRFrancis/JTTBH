@@ -24,12 +24,18 @@
     {% endif %}
     {% if has_write_perm(32768) %}
     <div class="recipe-detail-actions">
-      <button type="button" class="recipe-flag fav-flag{% if recipe.favorite %} active{% endif %}" data-recipe="{{ recipe.recipeID }}" data-flag="favorite" data-label-on="Favorited" data-label-off="Favorite">★ <span class="flag-label">{% if recipe.favorite %}Favorited{% else %}Favorite{% endif %}</span></button>
-      <button type="button" class="recipe-flag try-flag{% if recipe.want_to_try %} active{% endif %}" data-recipe="{{ recipe.recipeID }}" data-flag="want_to_try" data-label-on="Want to Try" data-label-off="Want to Try"><span class="flag-label">{% if recipe.want_to_try %}✓ Want to Try{% else %}Want to Try{% endif %}</span></button>
+      <form method="post" action="{{ url_for('recipe.favorite_toggle', username=username, recipe_id=recipe.recipeID) }}" style="display:contents">
+        <button type="submit" class="recipe-flag fav-flag{% if recipe.favorite %} active{% endif %}" data-recipe="{{ recipe.recipeID }}" data-flag="favorite" data-label-on="Favorited" data-label-off="Favorite">★ <span class="flag-label">{% if recipe.favorite %}Favorited{% else %}Favorite{% endif %}</span></button>
+      </form>
+      <form method="post" action="{{ url_for('recipe.want_to_try_toggle', username=username, recipe_id=recipe.recipeID) }}" style="display:contents">
+        <button type="submit" class="recipe-flag try-flag{% if recipe.want_to_try %} active{% endif %}" data-recipe="{{ recipe.recipeID }}" data-flag="want_to_try" data-label-on="Want to Try" data-label-off="Want to Try"><span class="flag-label">{% if recipe.want_to_try %}✓ Want to Try{% else %}Want to Try{% endif %}</span></button>
+      </form>
       <a href="{{ url_for('recipe.edit', username=username, recipe_id=recipe.recipeID) }}">Edit</a>
-      <button type="button" class="recipe-archive-btn btn-text-link{% if recipe.archived %} active{% endif %}"
-              data-recipe="{{ recipe.recipeID }}"
-              data-label-on="Restore" data-label-off="Archive">{% if recipe.archived %}Restore{% else %}Archive{% endif %}</button>
+      <form method="post" action="{{ url_for('recipe.archive_toggle', username=username, recipe_id=recipe.recipeID) }}" style="display:contents">
+        <button type="submit" class="recipe-archive-btn btn-text-link{% if recipe.archived %} active{% endif %}"
+                data-recipe="{{ recipe.recipeID }}"
+                data-label-on="Restore" data-label-off="Archive">{% if recipe.archived %}Restore{% else %}Archive{% endif %}</button>
+      </form>
       {% if not recipe.archived %}
       <form method="post" action="{{ url_for('recipe.delete', username=username, recipe_id=recipe.recipeID) }}" class="inline-form" onsubmit="return confirm('Delete this recipe?')">
         <button type="submit" class="btn-danger-link">Delete</button>

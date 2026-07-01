@@ -114,7 +114,7 @@
           </form>
         </td>
       </tr>
-      <tr id="perm-form-{{ user.userID }}" class="perm-form-row" hidden>
+      <tr id="perm-form-{{ user.userID }}" class="perm-form-row">
         <td colspan="6">
           <form method="post"
                 action="{{ url_for('admin.update_permissions', username=username, user_id=user.userID) }}"
@@ -206,6 +206,9 @@
  * Toggle permission edit form row visibility.
  * @param {string} userId
  */
+// Hide all perm-form rows on init; they're visible without JS
+document.querySelectorAll('.perm-form-row').forEach(function (r) { r.hidden = true; });
+
 function togglePermForm(userId) {
   const row = document.getElementById('perm-form-' + userId);
   if (!row) return;

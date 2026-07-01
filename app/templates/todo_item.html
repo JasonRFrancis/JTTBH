@@ -23,11 +23,11 @@
         method="post"
         action="{{ url_for('todo.update', username=username, todo_id=item.todoID) }}">
 
-    {# Hidden submit used by JS when the checkbox changes — routes to toggle endpoint #}
+    {# Submit button for toggle — JS hides it and uses checkbox change event instead #}
     <button type="submit"
             class="todo-item__toggle-btn"
             formaction="{{ url_for('todo.toggle', username=username, todo_id=item.todoID) }}"
-            hidden>Toggle</button>
+            aria-label="{{ 'Mark incomplete' if item.completed else 'Mark complete' }}: {{ item.title }}">&#10003;</button>
 
     {# --- Completion checkbox ------------------------------------------ #}
     <input type="checkbox"

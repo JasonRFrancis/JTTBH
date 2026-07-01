@@ -65,25 +65,29 @@
         <li class="bm-row bm-row--fav" data-bm-id="{{ bm.bookmarkID }}">
           <a href="{{ bm.url }}" target="_blank" rel="noopener noreferrer"
              class="bm-link">{{ bm.title or bm.url }}</a>
-          <span class="bm-actions">
-            <button class="bm-btn-fav"     title="Unfavorite" data-bm-id="{{ bm.bookmarkID }}" data-active="1">★</button>
-            <button class="bm-btn-archive" title="Archive"    data-bm-id="{{ bm.bookmarkID }}">⊘</button>
-            <button class="bm-btn-edit"    title="Edit"       data-bm-id="{{ bm.bookmarkID }}">✎</button>
-          </span>
-          <div class="bm-edit-row" hidden>
-            <input type="text"     class="bm-edit-title" value="{{ bm.title or '' }}" placeholder="Title">
-            <input type="text"     class="bm-edit-tags"  value="{{ bm.tags or '' }}"  placeholder="Tags">
-            <textarea              class="bm-edit-notes" placeholder="Notes">{{ bm.notes or '' }}</textarea>
+          <div class="bm-actions">
+            <form method="post" action="{{ url_for('bookmark.toggle_favorite', username=username, bookmark_id=bm.bookmarkID) }}" style="display:contents">
+              <button type="submit" class="bm-btn-fav" title="Unfavorite" data-bm-id="{{ bm.bookmarkID }}" data-active="1">★</button>
+            </form>
+            <form method="post" action="{{ url_for('bookmark.toggle_archive', username=username, bookmark_id=bm.bookmarkID) }}" style="display:contents">
+              <button type="submit" class="bm-btn-archive" title="Archive" data-bm-id="{{ bm.bookmarkID }}">⊘</button>
+            </form>
+            <button class="bm-btn-edit" type="button" title="Edit" data-bm-id="{{ bm.bookmarkID }}">✎</button>
+          </div>
+          <form class="bm-edit-row" method="post" action="{{ url_for('bookmark.update', username=username, bookmark_id=bm.bookmarkID) }}">
+            <input type="text"  name="title" class="bm-edit-title" value="{{ bm.title or '' }}" placeholder="Title">
+            <input type="text"  name="tags"  class="bm-edit-tags"  value="{{ bm.tags or '' }}"  placeholder="Tags">
+            <textarea          name="notes" class="bm-edit-notes" placeholder="Notes">{{ bm.notes or '' }}</textarea>
             <span class="bm-edit-row-actions">
-              <button class="bm-edit-save" data-bm-id="{{ bm.bookmarkID }}">Save</button>
-              <button class="bm-edit-cancel">Cancel</button>
+              <button type="submit" class="bm-edit-save" data-bm-id="{{ bm.bookmarkID }}">Save</button>
+              <button type="button" class="bm-edit-cancel">Cancel</button>
               <button type="button" class="btn-summarize" data-bookmark-id="{{ bm.bookmarkID }}"
                       data-url="{{ url_for('bookmark.summary_json', username=username, bookmark_id=bm.bookmarkID) }}">✨ Summarize</button>
             </span>
             <div class="bm-summary-output" id="summary-{{ bm.bookmarkID }}" {% if not bm.summary %}hidden{% endif %}>
               {% if bm.summary %}<div class="bm-summary-section">{{ bm.summary }}</div>{% endif %}
             </div>
-          </div>
+          </form>
         </li>
         {% endfor %}
         {% if fav_total > favorites | length %}
@@ -115,7 +119,7 @@
         <button class="bm-card-edit-btn" type="button" title="Edit category">✎</button>
       </header>
 
-      <div class="bm-card-edit-panel" hidden>
+      <div class="bm-card-edit-panel">
         <form method="post" action="{{ url_for('bookmark.category_update', username=username, category_id=cat.categoryID) }}">
           <input type="text" name="name" value="{{ cat.name }}" placeholder="Category name" required>
           <input type="text" name="url_contains"
@@ -141,25 +145,29 @@
             data-position="{{ loop.index0 }}">
           <a href="{{ bm.url }}" target="_blank" rel="noopener noreferrer"
              class="bm-link">{{ bm.title or bm.url }}</a>
-          <span class="bm-actions">
-            <button class="bm-btn-fav"     title="Favorite"  data-bm-id="{{ bm.bookmarkID }}" data-active="{{ '1' if bm.favorite else '0' }}">★</button>
-            <button class="bm-btn-archive" title="Archive"   data-bm-id="{{ bm.bookmarkID }}">⊘</button>
-            <button class="bm-btn-edit"    title="Edit"      data-bm-id="{{ bm.bookmarkID }}">✎</button>
-          </span>
-          <div class="bm-edit-row" hidden>
-            <input type="text"     class="bm-edit-title" value="{{ bm.title or '' }}" placeholder="Title">
-            <input type="text"     class="bm-edit-tags"  value="{{ bm.tags or '' }}"  placeholder="Tags">
-            <textarea              class="bm-edit-notes" placeholder="Notes">{{ bm.notes or '' }}</textarea>
+          <div class="bm-actions">
+            <form method="post" action="{{ url_for('bookmark.toggle_favorite', username=username, bookmark_id=bm.bookmarkID) }}" style="display:contents">
+              <button type="submit" class="bm-btn-fav" title="{{ 'Unfavorite' if bm.favorite else 'Favorite' }}" data-bm-id="{{ bm.bookmarkID }}" data-active="{{ '1' if bm.favorite else '0' }}">★</button>
+            </form>
+            <form method="post" action="{{ url_for('bookmark.toggle_archive', username=username, bookmark_id=bm.bookmarkID) }}" style="display:contents">
+              <button type="submit" class="bm-btn-archive" title="Archive" data-bm-id="{{ bm.bookmarkID }}">⊘</button>
+            </form>
+            <button class="bm-btn-edit" type="button" title="Edit" data-bm-id="{{ bm.bookmarkID }}">✎</button>
+          </div>
+          <form class="bm-edit-row" method="post" action="{{ url_for('bookmark.update', username=username, bookmark_id=bm.bookmarkID) }}">
+            <input type="text"  name="title" class="bm-edit-title" value="{{ bm.title or '' }}" placeholder="Title">
+            <input type="text"  name="tags"  class="bm-edit-tags"  value="{{ bm.tags or '' }}"  placeholder="Tags">
+            <textarea          name="notes" class="bm-edit-notes" placeholder="Notes">{{ bm.notes or '' }}</textarea>
             <span class="bm-edit-row-actions">
-              <button class="bm-edit-save" data-bm-id="{{ bm.bookmarkID }}">Save</button>
-              <button class="bm-edit-cancel">Cancel</button>
+              <button type="submit" class="bm-edit-save" data-bm-id="{{ bm.bookmarkID }}">Save</button>
+              <button type="button" class="bm-edit-cancel">Cancel</button>
               <button type="button" class="btn-summarize" data-bookmark-id="{{ bm.bookmarkID }}"
                       data-url="{{ url_for('bookmark.summary_json', username=username, bookmark_id=bm.bookmarkID) }}">✨ Summarize</button>
             </span>
             <div class="bm-summary-output" id="summary-{{ bm.bookmarkID }}" {% if not bm.summary %}hidden{% endif %}>
               {% if bm.summary %}<div class="bm-summary-section">{{ bm.summary }}</div>{% endif %}
             </div>
-          </div>
+          </form>
         </li>
         {% else %}
         <li class="bm-empty">No bookmarks yet.</li>
@@ -196,25 +204,29 @@
             data-bm-id="{{ bm.bookmarkID }}">
           <a href="{{ bm.url }}" target="_blank" rel="noopener noreferrer"
              class="bm-link">{{ bm.title or bm.url }}</a>
-          <span class="bm-actions">
-            <button class="bm-btn-fav"     title="Favorite"  data-bm-id="{{ bm.bookmarkID }}" data-active="{{ '1' if bm.favorite else '0' }}">★</button>
-            <button class="bm-btn-archive" title="Archive"   data-bm-id="{{ bm.bookmarkID }}">⊘</button>
-            <button class="bm-btn-edit"    title="Edit"      data-bm-id="{{ bm.bookmarkID }}">✎</button>
-          </span>
-          <div class="bm-edit-row" hidden>
-            <input type="text"     class="bm-edit-title" value="{{ bm.title or '' }}" placeholder="Title">
-            <input type="text"     class="bm-edit-tags"  value="{{ bm.tags or '' }}"  placeholder="Tags">
-            <textarea              class="bm-edit-notes" placeholder="Notes">{{ bm.notes or '' }}</textarea>
+          <div class="bm-actions">
+            <form method="post" action="{{ url_for('bookmark.toggle_favorite', username=username, bookmark_id=bm.bookmarkID) }}" style="display:contents">
+              <button type="submit" class="bm-btn-fav" title="{{ 'Unfavorite' if bm.favorite else 'Favorite' }}" data-bm-id="{{ bm.bookmarkID }}" data-active="{{ '1' if bm.favorite else '0' }}">★</button>
+            </form>
+            <form method="post" action="{{ url_for('bookmark.toggle_archive', username=username, bookmark_id=bm.bookmarkID) }}" style="display:contents">
+              <button type="submit" class="bm-btn-archive" title="Archive" data-bm-id="{{ bm.bookmarkID }}">⊘</button>
+            </form>
+            <button class="bm-btn-edit" type="button" title="Edit" data-bm-id="{{ bm.bookmarkID }}">✎</button>
+          </div>
+          <form class="bm-edit-row" method="post" action="{{ url_for('bookmark.update', username=username, bookmark_id=bm.bookmarkID) }}">
+            <input type="text"  name="title" class="bm-edit-title" value="{{ bm.title or '' }}" placeholder="Title">
+            <input type="text"  name="tags"  class="bm-edit-tags"  value="{{ bm.tags or '' }}"  placeholder="Tags">
+            <textarea          name="notes" class="bm-edit-notes" placeholder="Notes">{{ bm.notes or '' }}</textarea>
             <span class="bm-edit-row-actions">
-              <button class="bm-edit-save" data-bm-id="{{ bm.bookmarkID }}">Save</button>
-              <button class="bm-edit-cancel">Cancel</button>
+              <button type="submit" class="bm-edit-save" data-bm-id="{{ bm.bookmarkID }}">Save</button>
+              <button type="button" class="bm-edit-cancel">Cancel</button>
               <button type="button" class="btn-summarize" data-bookmark-id="{{ bm.bookmarkID }}"
                       data-url="{{ url_for('bookmark.summary_json', username=username, bookmark_id=bm.bookmarkID) }}">✨ Summarize</button>
             </span>
             <div class="bm-summary-output" id="summary-{{ bm.bookmarkID }}" {% if not bm.summary %}hidden{% endif %}>
               {% if bm.summary %}<div class="bm-summary-section">{{ bm.summary }}</div>{% endif %}
             </div>
-          </div>
+          </form>
         </li>
         {% else %}
         <li class="bm-empty">No uncategorized bookmarks.</li>

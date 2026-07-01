@@ -33,12 +33,16 @@ function postForm(path, data) {
 // ---------------------------------------------------------------------------
 
 function initRowActions() {
+  // Hide edit panels; they're visible without JS for no-JS form access
+  document.querySelectorAll('.bm-edit-row, .bm-card-edit-panel').forEach(el => { el.hidden = true; });
+
   document.addEventListener('click', e => {
     const btn = e.target.closest('button');
     if (!btn) return;
 
     // ---- Favorite ----
     if (btn.classList.contains('bm-btn-fav')) {
+      e.preventDefault();
       const bmId = btn.dataset.bmId;
       postJSON(`/favorite/post/${bmId}`, {}).then(res => {
         if (res.status !== 'ok') return;
@@ -50,6 +54,7 @@ function initRowActions() {
 
     // ---- Archive ----
     if (btn.classList.contains('bm-btn-archive')) {
+      e.preventDefault();
       const bmId = btn.dataset.bmId;
       const row  = btn.closest('.bm-row');
       row.style.opacity = '0.4';
@@ -65,6 +70,7 @@ function initRowActions() {
 
     // ---- Unarchive (archive page) ----
     if (btn.classList.contains('bm-btn-unarchive')) {
+      e.preventDefault();
       const bmId = btn.dataset.bmId;
       const row  = btn.closest('.bm-row');
       row.style.opacity = '0.4';
@@ -83,6 +89,7 @@ function initRowActions() {
 
     // ---- Edit save ----
     if (btn.classList.contains('bm-edit-save')) {
+      e.preventDefault();
       const bmId  = btn.dataset.bmId;
       const row   = btn.closest('.bm-row');
       const title = row.querySelector('.bm-edit-title').value.trim();
@@ -103,6 +110,7 @@ function initRowActions() {
 
     // ---- Remove from category (category detail page) ----
     if (btn.classList.contains('bm-btn-remove')) {
+      e.preventDefault();
       const bmId  = btn.dataset.bmId;
       const catId = btn.dataset.catId;
       const row   = btn.closest('.bm-row');

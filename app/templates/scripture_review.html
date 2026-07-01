@@ -17,7 +17,41 @@
 
 {% else %}
 
-<div class="review-shell" id="review-shell">
+{# No-JS fallback: render every card as a <details> with a grade form. JS hides this. #}
+<section class="review-noscript" id="review-noscript">
+  <h2>Scripture Review ({{ total }})</h2>
+  {% for card in cards %}
+  <article class="review-noscript-card">
+    <p class="review-noscript-mode"><em>
+      {% if card.mode == 'reference' %}Reference mode — recall the reference
+      {% elif card.mode == 'familiar' %}Familiar mode — recall the meaning
+      {% else %}Verbatim mode — recite word-for-word{% endif %}
+    </em></p>
+    <p class="review-noscript-prompt">
+      {% if card.mode == 'reference' %}{{ card.text or card.summary or '(no text)' }}
+      {% else %}{{ card.reference }}{% endif %}
+    </p>
+    <details>
+      <summary>Show Answer</summary>
+      <p class="review-noscript-answer">
+        {% if card.mode == 'reference' %}{{ card.reference }}
+        {% elif card.mode == 'familiar' %}{{ card.summary or card.text or '(no summary)' }}
+        {% else %}{{ card.text or '(no text)' }}{% endif %}
+      </p>
+    </details>
+    <form method="post" action="{{ url_for('scripture.grade', username=username) }}" class="review-noscript-form">
+      <input type="hidden" name="scriptureID" value="{{ card.scriptureID }}">
+      <input type="hidden" name="mode" value="{{ card.mode }}">
+      <button name="grade" value="again" class="grade-btn grade-btn--again">Again</button>
+      <button name="grade" value="hard"  class="grade-btn grade-btn--hard">Hard</button>
+      <button name="grade" value="good"  class="grade-btn grade-btn--good">Good</button>
+      <button name="grade" value="easy"  class="grade-btn grade-btn--easy">Easy</button>
+    </form>
+  </article>
+  {% endfor %}
+</section>
+
+<div class="review-shell" id="review-shell" hidden>
 
   <!-- Progress -->
   <div class="review-progress" id="review-progress" aria-label="Review progress">
@@ -72,6 +106,10 @@
   const USERNAME   = {{ username | tojson }};
   const GRADE_URL  = {{ url_for('scripture.grade', username=username) | tojson }};
   const CARDS      = {{ cards_json | safe }};
+  var _ns = document.getElementById('review-noscript');
+  var _sh = document.getElementById('review-shell');
+  if (_ns) _ns.hidden = true;
+  if (_sh) _sh.hidden = false;
 </script>
 <script src="{{ url_for('static', filename='js/scripture.js') }}" defer></script>
 {% endblock %}

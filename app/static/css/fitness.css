@@ -298,6 +298,51 @@
   color: var(--color-text-muted);
 }
 
+/* ── No-JS set entry form ────────────────────────────────────────────── */
+
+.set-form-noscript {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  padding: 0.4rem 0.5rem;
+  margin-top: 0.35rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 5px;
+}
+
+.set-form-noscript input {
+  width: 5.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  -moz-appearance: textfield;
+}
+
+.set-form-noscript input::-webkit-outer-spin-button,
+.set-form-noscript input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+.set-form-noscript input[name="notes"],
+.set-form-noscript input[name="setup"] {
+  width: 4rem;
+}
+
+.set-form-noscript button[type="submit"] {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
 /* ── Buttons ─────────────────────────────────────────────────────────── */
 
 .btn-add-set {

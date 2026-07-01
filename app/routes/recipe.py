@@ -175,10 +175,16 @@ def delete(username: str, recipe_id: str):
 @permission_required_read(PERM_RECIPE)
 @permission_required_write(PERM_RECIPE)
 def favorite_toggle(username: str, recipe_id: str):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     new_val = RecipeModel.toggle_favorite(recipe_id, session['user_id'])
     if new_val is None:
-        return jsonify({'status': 'error', 'message': 'Recipe not found.'})
-    return jsonify({'status': 'ok', 'favorite': new_val})
+        if is_ajax:
+            return jsonify({'status': 'error', 'message': 'Recipe not found.'})
+        flash('Recipe not found.', 'error')
+        return redirect(url_for('recipe.index', username=username))
+    if is_ajax:
+        return jsonify({'status': 'ok', 'favorite': new_val})
+    return redirect(request.referrer or url_for('recipe.detail', username=username, recipe_id=recipe_id))
 
 
 @recipe_bp.route('/want_to_try/toggle/post/<recipe_id>', methods=['POST'])
@@ -186,10 +192,16 @@ def favorite_toggle(username: str, recipe_id: str):
 @permission_required_read(PERM_RECIPE)
 @permission_required_write(PERM_RECIPE)
 def want_to_try_toggle(username: str, recipe_id: str):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     new_val = RecipeModel.toggle_want_to_try(recipe_id, session['user_id'])
     if new_val is None:
-        return jsonify({'status': 'error', 'message': 'Recipe not found.'})
-    return jsonify({'status': 'ok', 'want_to_try': new_val})
+        if is_ajax:
+            return jsonify({'status': 'error', 'message': 'Recipe not found.'})
+        flash('Recipe not found.', 'error')
+        return redirect(url_for('recipe.index', username=username))
+    if is_ajax:
+        return jsonify({'status': 'ok', 'want_to_try': new_val})
+    return redirect(request.referrer or url_for('recipe.detail', username=username, recipe_id=recipe_id))
 
 
 @recipe_bp.route('/archive/toggle/post/<recipe_id>', methods=['POST'])
@@ -197,10 +209,16 @@ def want_to_try_toggle(username: str, recipe_id: str):
 @permission_required_read(PERM_RECIPE)
 @permission_required_write(PERM_RECIPE)
 def archive_toggle(username: str, recipe_id: str):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     new_val = RecipeModel.toggle_archive(recipe_id, session['user_id'])
     if new_val is None:
-        return jsonify({'status': 'error', 'message': 'Recipe not found.'})
-    return jsonify({'status': 'ok', 'archived': new_val})
+        if is_ajax:
+            return jsonify({'status': 'error', 'message': 'Recipe not found.'})
+        flash('Recipe not found.', 'error')
+        return redirect(url_for('recipe.index', username=username))
+    if is_ajax:
+        return jsonify({'status': 'ok', 'archived': new_val})
+    return redirect(request.referrer or url_for('recipe.detail', username=username, recipe_id=recipe_id))
 
 
 # ---------------------------------------------------------------------------

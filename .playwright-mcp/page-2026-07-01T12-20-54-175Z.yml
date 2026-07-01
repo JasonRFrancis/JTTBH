@@ -1,0 +1,54 @@
+- generic [active] [ref=f29e1]:
+  - banner [ref=f29e2]:
+    - link "Just Trying to be Helpful" [ref=f29e3] [cursor=pointer]:
+      - /url: /
+    - link "JASON" [ref=f29e5] [cursor=pointer]:
+      - /url: /jason/settings
+  - main [ref=f29e6]:
+    - generic [ref=f29e7]:
+      - heading "Quotes" [level=1] [ref=f29e8]
+      - link "+ Add Quote" [ref=f29e9] [cursor=pointer]:
+        - /url: /jason/quote/add
+    - region "Quotes" [ref=f29e10]:
+      - paragraph [ref=f29e11]: No quotes yet.
+    - region "Bookmarklet" [ref=f29e12]:
+      - heading "Bookmarklet" [level=2] [ref=f29e13]
+      - paragraph [ref=f29e14]: Select text on any page, then click this link to save it as a quote. On General Conference pages it also captures the speaker and talk title.
+      - paragraph [ref=f29e15]: "Drag this link to your bookmarks bar:"
+      - link "📌 Save Quote" [ref=f29e16]:
+        - /url: "javascript:(function(){var t=window.getSelection().toString().trim();var s=location.href;var a='',ti='';if(location.hostname==='www.churchofjesuschrist.org'&&location.pathname.indexOf('/general-conference/')>-1){var ae=document.querySelector('.author-name')||document.querySelector('[class*=byLine]')||document.querySelector('[class*=author]');if(ae)a=ae.textContent.trim().replace(/^\\s*By\\s+/i,'').replace(/^\\s*(Elder|President|Sister)\\s+/i,'');var te=document.querySelector('h1');if(te)ti=te.textContent.trim();}window.open('https://jttbh.com/jason/quote/add?'+new URLSearchParams({text:t,source:s,author:a,title:ti}).toString(),'_blank');})();"
+      - paragraph [ref=f29e17]: Right-click → Bookmark Link, or drag to your bookmarks bar.
+  - contentinfo [ref=f29e18]:
+    - navigation "Main navigation" [ref=f29e19]:
+      - link "Admin" [ref=f29e20] [cursor=pointer]:
+        - /url: /jason/admin/dashboard
+      - link "· Dashboard" [ref=f29e21] [cursor=pointer]:
+        - /url: /jason/dashboard/index
+      - link "· Todo" [ref=f29e22] [cursor=pointer]:
+        - /url: /jason/todo/index
+      - link "· Habits" [ref=f29e23] [cursor=pointer]:
+        - /url: /jason/habit/index
+      - link "· Projects" [ref=f29e24] [cursor=pointer]:
+        - /url: /jason/project/index
+      - link "· Bookmarks" [ref=f29e25] [cursor=pointer]:
+        - /url: /jason/bookmark/index
+      - link "· Fitness" [ref=f29e26] [cursor=pointer]:
+        - /url: /jason/fitness/index
+      - link "· Triage" [ref=f29e27] [cursor=pointer]:
+        - /url: /jason/triage/index
+      - link "· Chores" [ref=f29e28] [cursor=pointer]:
+        - /url: /jason/chore/index
+      - link "· Media" [ref=f29e29] [cursor=pointer]:
+        - /url: /jason/media/index
+      - link "· Journal" [ref=f29e30] [cursor=pointer]:
+        - /url: /jason/journal/index
+      - link "· Study" [ref=f29e31] [cursor=pointer]:
+        - /url: /jason/study/index
+      - link "· Quotes" [ref=f29e32] [cursor=pointer]:
+        - /url: /jason/quote/index
+      - link "· Recipes" [ref=f29e33] [cursor=pointer]:
+        - /url: /jason/recipe/index
+      - link "· Scripture" [ref=f29e34] [cursor=pointer]:
+        - /url: /jason/scripture/index
+      - link "· Appointments" [ref=f29e35] [cursor=pointer]:
+        - /url: /jason/appointment/index

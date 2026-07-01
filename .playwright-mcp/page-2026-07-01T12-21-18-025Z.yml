@@ -1,0 +1,64 @@
+- generic [active] [ref=f30e1]:
+  - banner [ref=f30e2]:
+    - link "Just Trying to be Helpful" [ref=f30e3] [cursor=pointer]:
+      - /url: /
+    - link "JASON" [ref=f30e5] [cursor=pointer]:
+      - /url: /jason/settings
+  - main [ref=f30e6]:
+    - generic [ref=f30e7]:
+      - heading "Save Quote" [level=1] [ref=f30e8]
+      - link "Cancel" [ref=f30e9] [cursor=pointer]:
+        - /url: /jason/quote/index
+    - generic [ref=f30e11]:
+      - generic [ref=f30e12]: Quote *
+      - textbox "Quote" [ref=f30e13]:
+        - /placeholder: Enter the quote text…
+      - generic [ref=f30e14]: Author
+      - textbox "Author" [ref=f30e15]:
+        - /placeholder: e.g. C.S. Lewis
+      - generic [ref=f30e16]: Title / Work
+      - textbox "Title / Work" [ref=f30e17]:
+        - /placeholder: e.g. Mere Christianity
+      - generic [ref=f30e18]: Source URL
+      - textbox "Source URL" [ref=f30e19]:
+        - /placeholder: https://…
+      - generic [ref=f30e20]: Tags (press comma or space to add)
+      - combobox "Add tag…" [ref=f30e22]
+      - generic [ref=f30e23]:
+        - button "Save Quote" [ref=f30e24] [cursor=pointer]
+        - link "Cancel" [ref=f30e25] [cursor=pointer]:
+          - /url: /jason/quote/index
+  - contentinfo [ref=f30e26]:
+    - navigation "Main navigation" [ref=f30e27]:
+      - link "Admin" [ref=f30e28] [cursor=pointer]:
+        - /url: /jason/admin/dashboard
+      - link "· Dashboard" [ref=f30e29] [cursor=pointer]:
+        - /url: /jason/dashboard/index
+      - link "· Todo" [ref=f30e30] [cursor=pointer]:
+        - /url: /jason/todo/index
+      - link "· Habits" [ref=f30e31] [cursor=pointer]:
+        - /url: /jason/habit/index
+      - link "· Projects" [ref=f30e32] [cursor=pointer]:
+        - /url: /jason/project/index
+      - link "· Bookmarks" [ref=f30e33] [cursor=pointer]:
+        - /url: /jason/bookmark/index
+      - link "· Fitness" [ref=f30e34] [cursor=pointer]:
+        - /url: /jason/fitness/index
+      - link "· Triage" [ref=f30e35] [cursor=pointer]:
+        - /url: /jason/triage/index
+      - link "· Chores" [ref=f30e36] [cursor=pointer]:
+        - /url: /jason/chore/index
+      - link "· Media" [ref=f30e37] [cursor=pointer]:
+        - /url: /jason/media/index
+      - link "· Journal" [ref=f30e38] [cursor=pointer]:
+        - /url: /jason/journal/index
+      - link "· Study" [ref=f30e39] [cursor=pointer]:
+        - /url: /jason/study/index
+      - link "· Quotes" [ref=f30e40] [cursor=pointer]:
+        - /url: /jason/quote/index
+      - link "· Recipes" [ref=f30e41] [cursor=pointer]:
+        - /url: /jason/recipe/index
+      - link "· Scripture" [ref=f30e42] [cursor=pointer]:
+        - /url: /jason/scripture/index
+      - link "· Appointments" [ref=f30e43] [cursor=pointer]:
+        - /url: /jason/appointment/index

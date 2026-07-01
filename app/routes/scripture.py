@@ -104,6 +104,7 @@ def review(username: str):
         username=username,
         area='scripture',
         cards_json=cards_json,
+        cards=due,
         total=len(due),
     )
 
@@ -262,18 +263,27 @@ def delete(username: str, scripture_id: str):
 @permission_required_read(PERM_SCRIPTURE)
 @permission_required_write(PERM_SCRIPTURE)
 def grade(username: str):
-    user_id    = session['user_id']
-    data       = request.get_json(silent=True) or {}
+    user_id  = session['user_id']
+    is_ajax  = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    data     = request.get_json(silent=True) if is_ajax else request.form
     scripture_id = data.get('scriptureID', '')
-    mode       = data.get('mode', '')
-    grade_str  = data.get('grade', '')
+    mode         = data.get('mode', '')
+    grade_str    = data.get('grade', '')
 
     if mode not in _VALID_MODES or grade_str not in _QUALITY_MAP:
-        return jsonify({'status': 'error', 'message': 'Invalid input.'}), 400
+        if is_ajax:
+            return jsonify({'status': 'error', 'message': 'Invalid input.'}), 400
+        flash('Invalid grade.', 'error')
+        return redirect(url_for('scripture.review', username=username))
 
     if not ScriptureModel.get_one(user_id, scripture_id):
-        return jsonify({'status': 'error', 'message': 'Not found.'}), 404
+        if is_ajax:
+            return jsonify({'status': 'error', 'message': 'Not found.'}), 404
+        flash('Scripture not found.', 'error')
+        return redirect(url_for('scripture.review', username=username))
 
     quality = _QUALITY_MAP[grade_str]
     ScriptureModel.grade_review(user_id, scripture_id, mode, quality)
-    return jsonify({'status': 'ok'})
+    if is_ajax:
+        return jsonify({'status': 'ok'})
+    return redirect(url_for('scripture.review', username=username))

@@ -815,6 +815,21 @@ habit-cell {
     font-size: clamp(0.6rem, 2vw, 0.75rem);
   }
 
+  /* form wrapper must not affect flex layout */
+  form {
+    display: contents;
+  }
+
+  /* no-JS fallback: transparent button covers the full cell */
+  .habit-toggle-btn {
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 1;
+  }
+
   label {
     display: inline-block;
     width: var(--habit-cell-size);

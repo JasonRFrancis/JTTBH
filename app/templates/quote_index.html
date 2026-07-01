@@ -59,7 +59,7 @@
             <span class="tag-chips-list"></span>
             <input class="tag-chips-input" type="text" placeholder="Add tag…"
                    autocomplete="off" list="quote-tag-suggestions" spellcheck="false">
-            <input type="hidden" id="tags-{{ q.quoteID }}" name="tags" value="{{ q.tags or '' }}">
+            <input type="text" class="tags-raw-input" id="tags-{{ q.quoteID }}" name="tags" value="{{ q.tags or '' }}" placeholder="comma-separated tags">
           </div>
           <div class="quote-edit-actions">
             <button type="submit" class="btn-save">Save</button>

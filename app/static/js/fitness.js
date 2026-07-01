@@ -47,6 +47,10 @@ function post(url, data) {
   var tplVideo      = document.getElementById('tpl-set-video');
   if (!tplMachine && !tplHandWeight && !tplBodyweight && !tplCardio && !tplVideo) return;
 
+  // JS active: swap no-JS static forms for the dynamic btn-add-set buttons
+  document.querySelectorAll('.set-form-noscript').forEach(function (f) { f.hidden = true; });
+  document.querySelectorAll('.btn-add-set').forEach(function (b) { b.hidden = false; });
+
   function getPrefill(article) {
     var t = article.querySelector('template.prefill-data');
     if (!t) return {};

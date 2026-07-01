@@ -235,6 +235,28 @@ todo-item.todo-item--completed {
   background: none;
 }
 
+.todo-item__toggle-btn {
+  flex-shrink: 0;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 3px;
+  background: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  margin-top: 0.35rem;
+}
+
+todo-item.todo-item--completed .todo-item__toggle-btn {
+  background: var(--color-completed);
+  border-color: var(--color-completed);
+  color: #fff;
+}
+
 .todo-item__checkbox {
   display: none;
 }

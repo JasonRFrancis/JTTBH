@@ -1,0 +1,16 @@
+- generic [active] [ref=f1e1]:
+  - banner [ref=f1e2]:
+    - link "Just Trying to be Helpful" [ref=f1e3] [cursor=pointer]:
+      - /url: /
+  - main [ref=f1e4]:
+    - article [ref=f1e5]:
+      - generic [ref=f1e6]:
+        - heading "jttbh" [level=1] [ref=f1e7]
+        - paragraph [ref=f1e8]: Just Trying to be Helpful
+      - generic [ref=f1e9]:
+        - heading "Sign in" [level=2] [ref=f1e10]
+        - paragraph [ref=f1e11]: Use your Google account to sign in.
+        - link "Sign in with Google" [ref=f1e12] [cursor=pointer]:
+          - /url: /auth/login/google
+          - img [ref=f1e13]
+          - text: Sign in with Google

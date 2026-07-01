@@ -29,7 +29,10 @@
   {% if not weight_days or day_of_week|string in weight_days %}
   <section class="body-weight" aria-labelledby="bw-heading">
     <h2 id="bw-heading">Body Weight</h2>
-    <form class="bw-form" id="bw-form" aria-label="Log body weight">
+    <form class="bw-form" id="bw-form" method="post"
+          action="{{ url_for('fitness.weight_post', username=username) }}"
+          aria-label="Log body weight">
+      <input type="hidden" name="log_date" value="{{ viewed_date.isoformat() }}">
       <label for="bw-input" class="sr-only">Weight in lbs</label>
       <input type="number" id="bw-input" name="weight" step="0.1" min="0" max="999"
              inputmode="decimal"
@@ -187,8 +190,53 @@
         </template>
       {% endif %}
 
-      {# Action button ─────────────────────────────────────────────────── #}
-      <button class="btn-add-set" type="button"
+      {# No-JS fallback: static form for logging one set ─────────────────── #}
+      {% set ps = ex.prev_sets[0] if ex.prev_sets else None %}
+      <form class="set-form-noscript" method="post"
+            action="{{ url_for('fitness.log_set', username=username) }}">
+        <input type="hidden" name="exercise_id" value="{{ ex.exerciseID }}">
+        <input type="hidden" name="log_date"    value="{{ viewed_date.isoformat() }}">
+        <input type="hidden" name="set_number"  value="{{ ex.today_sets|length + 1 }}">
+        {% if is_machine %}
+        <input type="text"   name="setup"  placeholder="setup"
+               value="{{ ps.setup if ps and ps.setup else ex.notes or '' }}">
+        <input type="number" name="weight" step="5"   min="0" placeholder="lbs"
+               value="{{ ps.actual_weight|int if ps and ps.actual_weight else ex.recommended_weight|int if ex.recommended_weight else '' }}">
+        <input type="number" name="reps"   step="1"   min="0" placeholder="reps"
+               value="{{ ps.actual_reps if ps and ps.actual_reps else ex.recommended_reps or '' }}">
+        <input type="text"   name="notes"  placeholder="notes"
+               value="{{ ps.notes if ps and ps.notes else '' }}">
+        {% elif is_hand_weight %}
+        <input type="number" name="weight" step="5"   min="0" placeholder="lbs"
+               value="{{ ps.actual_weight|int if ps and ps.actual_weight else ex.recommended_weight|int if ex.recommended_weight else '' }}">
+        <input type="number" name="reps"   step="1"   min="0" placeholder="reps"
+               value="{{ ps.actual_reps if ps and ps.actual_reps else ex.recommended_reps or '' }}">
+        <input type="text"   name="notes"  placeholder="notes"
+               value="{{ ps.notes if ps and ps.notes else '' }}">
+        {% elif is_bodyweight %}
+        <input type="number" name="reps"     step="1" min="0" placeholder="reps"
+               value="{{ ps.actual_reps if ps and ps.actual_reps else ex.recommended_reps or '' }}">
+        <input type="number" name="duration" step="1" min="0" placeholder="sec"
+               value="{{ ps.duration_minutes if ps and ps.duration_minutes else '' }}">
+        <input type="text"   name="notes"  placeholder="notes"
+               value="{{ ps.notes if ps and ps.notes else '' }}">
+        {% elif is_cardio %}
+        <input type="text"   name="setup"    placeholder="setup"
+               value="{{ ps.setup if ps and ps.setup else ex.notes or '' }}">
+        <input type="number" name="duration" step="1"   min="0" placeholder="min"
+               value="{{ ps.duration_minutes if ps and ps.duration_minutes else ex.recommended_duration or '' }}">
+        <input type="number" name="speed"    step="0.1" min="0" placeholder="mph"
+               value="{{ ps.speed if ps and ps.speed else ex.recommended_speed or '' }}">
+        <input type="text"   name="notes"    placeholder="notes"
+               value="{{ ps.notes if ps and ps.notes else '' }}">
+        {% elif is_video %}
+        <input type="text" name="notes" placeholder="notes">
+        {% endif %}
+        <button type="submit">{{ '✓ Mark Done' if is_video else ('+ Log' if is_cardio else '+ Set') }}</button>
+      </form>
+
+      {# Action button (JS-only; shown by JS on init) ──────────────────── #}
+      <button class="btn-add-set" type="button" hidden
               data-exercise-id="{{ ex.exerciseID }}"
               data-exercise-type="{{ t }}">
         {% if is_video %}{% if ex.today_sets %}✓ Done again{% else %}✓ Mark Done{% endif %}{% elif is_cardio %}+ Log{% else %}+ Set{% endif %}

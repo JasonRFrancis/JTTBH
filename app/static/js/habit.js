@@ -28,6 +28,10 @@
      ------------------------------------------------------------------------- */
 
   function initToggleCheckboxes() {
+    // JS active: hide the no-JS submit buttons; label/checkbox handles clicks
+    document.querySelectorAll('.habit-toggle-btn').forEach(function (btn) {
+      btn.hidden = true;
+    });
     document.querySelectorAll('.habit-checkbox:not([disabled])').forEach(function (cb) {
       cb.addEventListener('change', handleToggleChange);
     });
@@ -50,7 +54,7 @@
     var changeId = crypto.randomUUID();
     _pendingToggles[key] = { changeId: changeId };
 
-    var url = '/' + username + '/habit/toggle/post/' + habitId + '/' + dateStr;
+    var url = cb.closest('form').action;
 
     if (typeof fetch === 'function') {
       fetch(url, {
@@ -71,13 +75,9 @@
         }
       });
     } else {
-      // No fetch API: fall back to a plain form POST (navigates away).
+      // No fetch API: submit the existing form (navigates away).
       delete _pendingToggles[key];
-      var form = document.createElement('form');
-      form.method = 'POST';
-      form.action = url;
-      document.body.appendChild(form);
-      form.submit();
+      cb.closest('form').submit();
     }
   }
 
