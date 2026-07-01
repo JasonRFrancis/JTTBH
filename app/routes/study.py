@@ -114,6 +114,7 @@ def index(username: str, date_str: str = None):
             })
 
     completions = StudyModel.get_completions_for_date(user_id, target_date)
+    streak = StudyModel.calculate_streak(user_id, today)
 
     return render_template(
         'study_index.html',
@@ -126,6 +127,7 @@ def index(username: str, date_str: str = None):
         day_sources=day_sources,
         has_subscriptions=bool(subscriptions),
         completions=completions,
+        streak=streak,
     )
 
 

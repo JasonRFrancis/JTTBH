@@ -111,26 +111,24 @@ def _get_today_todos(user_id: str) -> list[dict]:
 def _get_fitness_summary(user_id: str) -> dict:
     program = FitnessModel.get_active_program(user_id)
     if not program:
-        return {'program': None, 'exercise_count': 0}
-    from app.services.timezone_utils import user_today
+        return {'program': None, 'exercise_count': 0, 'exercises': []}
     today = user_today()
-    from datetime import date as date_cls
     dow = (today.weekday() + 1) % 7
     exercises = FitnessModel.get_day_exercises(program['fitnessID'], dow)
-    return {'program': program, 'exercise_count': len(exercises)}
+    return {'program': program, 'exercise_count': len(exercises), 'exercises': exercises}
 
 
 def _get_study_summary(user_id: str) -> dict:
-    from app.services.timezone_utils import user_today
     today = user_today()
     subs = StudyModel.get_user_subscriptions(user_id)
-    total = 0
+    completions = StudyModel.get_completions_for_date(user_id, today)
+    items = []
     for sub in subs:
         sources = StudyModel.get_sources(sub['collectionID'])
-        items = StudyModel.sources_for_date(sub, sources, today, user_id)
-        total += len(items)
-    completions = StudyModel.get_completions_for_date(user_id, today)
-    return {'total': total, 'completed': len(completions)}
+        for item in StudyModel.sources_for_date(sub, sources, today, user_id):
+            items.append({**item, 'completed': item['sourceID'] in completions})
+    streak = StudyModel.calculate_streak(user_id, today)
+    return {'total': len(items), 'completed': len(completions), 'items': items, 'streak': streak}
 
 
 def _gather_dashboard_data(user_id: str, perm_read: int) -> dict:

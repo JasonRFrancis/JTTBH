@@ -9,6 +9,9 @@
     <a href="{{ url_for('study.collections', username=username) }}">Collections</a>
     <a href="{{ url_for('study.feed_xml', username=username, _external=True) }}">Podcast Feed</a>
   </nav>
+  {% if streak > 0 %}
+  <p class="study-streak">🔥 {{ streak }}-day streak</p>
+  {% endif %}
   <nav class="date-nav" aria-label="Date navigation">
     <a class="btn-nav" href="{{ url_for('study.index', username=username, date_str=prev_date.isoformat()) }}" aria-label="Previous day">&#8592;</a>
     <span class="date-label">{{ target_date | format_date_long }}</span>

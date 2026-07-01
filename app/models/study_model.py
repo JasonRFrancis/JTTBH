@@ -305,6 +305,24 @@ class StudyModel:
     # ------------------------------------------------------------------
 
     @staticmethod
+    def calculate_streak(user_id: str, today) -> int:
+        """Consecutive days ending today (or yesterday) with at least one completion."""
+        from datetime import timedelta
+        rows = db_manager.execute_query(
+            "SELECT DISTINCT completed_date FROM study_completion WHERE userID=%s ORDER BY completed_date DESC",
+            (user_id,),
+        )
+        if not rows:
+            return 0
+        dates = {r['completed_date'] for r in rows}
+        check = today if today in dates else today - timedelta(days=1)
+        streak = 0
+        while check in dates:
+            streak += 1
+            check -= timedelta(days=1)
+        return streak
+
+    @staticmethod
     def get_completions_for_date(user_id: str, target_date) -> set[str]:
         rows = db_manager.execute_query(
             "SELECT sourceID FROM study_completion WHERE userID=%s AND completed_date=%s",

@@ -11,6 +11,12 @@
   font-size: 0.85rem;
 }
 
+.study-streak {
+  font-size: 0.9rem;
+  margin: -0.75rem 0 1rem;
+  color: var(--color-text-secondary, #666);
+}
+
 /* Date navigation */
 .date-nav {
   display: flex;
