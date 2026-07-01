@@ -115,3 +115,4 @@ app/static/audio/handbook
 
 user.sql
 test.html
+.playwright-mcp
