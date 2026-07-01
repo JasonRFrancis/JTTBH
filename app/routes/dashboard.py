@@ -128,7 +128,7 @@ def _get_study_summary(user_id: str) -> dict:
         for item in StudyModel.sources_for_date(sub, sources, today, user_id):
             items.append({**item, 'completed': item['sourceID'] in completions})
     streak = StudyModel.calculate_streak(user_id, today)
-    return {'total': len(items), 'completed': len(completions), 'items': items, 'streak': streak}
+    return {'total': len(items), 'completed': len(completions), 'sources': items, 'streak': streak}
 
 
 def _gather_dashboard_data(user_id: str, perm_read: int) -> dict:

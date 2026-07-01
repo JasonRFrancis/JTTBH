@@ -136,9 +136,9 @@
     </h2>
     <span class="widget-meta">{{ study.completed }}/{{ study.total }} today{% if study.streak > 0 %} · {{ study.streak }}-day streak{% endif %}</span>
   </header>
-  {% if study.items %}
+  {% if study.sources %}
   <ul class="study-item-list">
-    {% for item in study.items %}
+    {% for item in study.sources %}
     <li class="study-item{% if item.completed %} study-item--done{% endif %}">
       {% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.title }}</a>
       {% else %}{{ item.title }}{% endif %}
