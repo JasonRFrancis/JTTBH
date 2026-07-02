@@ -18,6 +18,7 @@ POST /<username>/study/collection/delete/post/<collection_id>
 POST /<username>/study/source/create/post
 POST /<username>/study/source/update/post/<source_id>
 POST /<username>/study/source/delete/post/<source_id>
+POST /<username>/study/source/import/post
 POST /<username>/study/subscribe/post/<collection_id>
 POST /<username>/study/subscription/update/post/<subscription_id>
 POST /<username>/study/unsubscribe/post/<subscription_id>
@@ -171,12 +172,27 @@ def collection_detail(username: str, collection_id: str):
         flash('Only the collection owner can manage sources.', 'error')
         return redirect(url_for('study.collections', username=username))
     sources = StudyModel.get_sources(collection_id)
+
+    from_collection = None
+    from_sources = []
+    all_collections = []
+    if collection['mode'] == 'calendar':
+        all_collections = StudyModel.get_all_collections()
+        from_collection_id = request.args.get('from_collection', '').strip()
+        if from_collection_id:
+            from_collection = StudyModel.get_collection(from_collection_id)
+            if from_collection:
+                from_sources = StudyModel.get_sources(from_collection_id)
+
     return render_template(
         'study_collection_detail.html',
         username=username,
         area='study',
         collection=collection,
         sources=sources,
+        all_collections=all_collections,
+        from_collection=from_collection,
+        from_sources=from_sources,
     )
 
 
@@ -435,6 +451,27 @@ def source_delete(username: str, source_id: str):
     StudyModel.delete_source(source_id, source['collectionID'], session['user_id'])
     flash('Source deleted.', 'success')
     return redirect(url_for('study.collection_detail', username=username, collection_id=source['collectionID']))
+
+
+@study_bp.route('/source/import/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_STUDY)
+@permission_required_write(PERM_STUDY)
+def source_import(username: str):
+    dest_collection_id = request.form.get('collection_id', '').strip()
+    collection = StudyModel.get_collection(dest_collection_id)
+    if not collection or collection['userID'] != session['user_id']:
+        flash('Collection not found.', 'error')
+        return redirect(url_for('study.collections', username=username))
+    source_ids = request.form.getlist('source_ids')
+    if not source_ids:
+        flash('No sources selected.', 'warning')
+        return redirect(url_for('study.collection_detail', username=username, collection_id=dest_collection_id))
+    override_date_raw = request.form.get('scheduled_date', '').strip()
+    override_date = _parse_date(override_date_raw) if override_date_raw else None
+    count = StudyModel.copy_sources(session['user_id'], dest_collection_id, source_ids, override_date)
+    flash(f'Imported {count} source{"s" if count != 1 else ""}.', 'success')
+    return redirect(url_for('study.collection_detail', username=username, collection_id=dest_collection_id))
 
 
 # ---------------------------------------------------------------------------

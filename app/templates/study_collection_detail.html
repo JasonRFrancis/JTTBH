@@ -172,4 +172,66 @@
     </div>
   </form>
 </section>
+
+{% if collection.mode == 'calendar' %}
+<section aria-labelledby="import-heading">
+  <h2 id="import-heading">Import from Another Collection</h2>
+  <form method="get" action="{{ url_for('study.collection_detail', username=username, collection_id=collection.collectionID) }}">
+    <div class="form-row">
+      <label for="from-collection">Collection</label>
+      <select id="from-collection" name="from_collection">
+        <option value="">— pick a collection —</option>
+        {% for c in all_collections %}
+        {% if c.collectionID != collection.collectionID %}
+        <option value="{{ c.collectionID }}"{% if from_collection and c.collectionID == from_collection.collectionID %} selected{% endif %}>{{ c.name }} ({{ c.source_count }})</option>
+        {% endif %}
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn">Browse</button>
+    </div>
+  </form>
+
+  {% if from_sources %}
+  <form method="post" action="{{ url_for('study.source_import', username=username) }}" style="margin-top:1.5rem;">
+    <input type="hidden" name="collection_id" value="{{ collection.collectionID }}">
+    <p>Copying from <strong>{{ from_collection.name }}</strong>:</p>
+    <div class="form-row">
+      <label for="import-date">Override date <span style="font-weight:400;color:var(--color-muted,#999);">(optional — leave blank to keep each source's own date)</span></label>
+      <input type="date" id="import-date" name="scheduled_date">
+    </div>
+    <ul class="source-import-list" role="list" style="list-style:none;padding:0;margin:0.75rem 0;">
+      {% for s in from_sources %}
+      <li style="padding:0.3rem 0;">
+        <label style="display:flex;align-items:baseline;gap:0.5rem;cursor:pointer;">
+          <input type="checkbox" name="source_ids" value="{{ s.sourceID }}">
+          {% if s.category %}<span class="source-category">{{ s.category }}</span>{% endif %}
+          {{ s.title }}{% if s.scheduled_date %} <span style="color:var(--color-muted,#999);font-size:0.75rem;">({{ s.scheduled_date }})</span>{% endif %}
+        </label>
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="form-actions" style="gap:0.5rem;">
+      <button type="button" id="import-select-all" class="btn">Select all</button>
+      <button type="submit" class="btn btn-primary">Import Selected</button>
+    </div>
+  </form>
+  <script>
+  (function(){
+    var btn = document.getElementById('import-select-all');
+    if (!btn) return;
+    var checked = false;
+    btn.addEventListener('click', function(){
+      checked = !checked;
+      document.querySelectorAll('[name=source_ids]').forEach(function(cb){ cb.checked = checked; });
+      btn.textContent = checked ? 'Deselect all' : 'Select all';
+    });
+  }());
+  </script>
+  {% elif from_collection %}
+  <p class="study-empty" style="margin-top:1rem;">No sources in that collection.</p>
+  {% endif %}
+</section>
+{% endif %}
 {% endblock %}

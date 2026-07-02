@@ -129,6 +129,30 @@ class StudyModel:
         )
 
     @staticmethod
+    def copy_sources(user_id: str, dest_collection_id: str, source_ids: list[str], override_date=None) -> int:
+        count = 0
+        for source_id in source_ids:
+            source = StudyModel.get_source(source_id)
+            if not source:
+                continue
+            scheduled_date = override_date if override_date is not None else source.get('scheduled_date')
+            StudyModel.create_source(
+                user_id=user_id,
+                collection_id=dest_collection_id,
+                category=source.get('category') or '',
+                title=source['title'],
+                subtitle=source.get('subtitle') or '',
+                author=source.get('author') or '',
+                url=source.get('url') or '',
+                audio_url=source.get('audio_url') or '',
+                audio_length=source.get('audio_length') or '',
+                order_by=source.get('order_by') or 0,
+                scheduled_date=scheduled_date,
+            )
+            count += 1
+        return count
+
+    @staticmethod
     def get_distinct_authors(collection_id: str) -> list[str]:
         rows = db_manager.execute_query("""
             SELECT DISTINCT ss.author
