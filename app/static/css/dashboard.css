@@ -188,6 +188,11 @@
   line-height: 1.4;
 }
 
+.todo-toggle-btn {
+  font-size: 0.8rem;
+  margin: 0.3rem 0 0 1.35rem;
+}
+
 /* ---------------------------------------------------------------------------
    Responsive: two-column widget layout on wider screens
 */

@@ -75,14 +75,17 @@
     {% for todo in todos %}
     <li class="todo-item{% if todo.completed %} todo-item--done{% endif %}"
         data-todo-id="{{ todo.todoID }}">
-      <label class="todo-label">
-        <input type="checkbox"
-               class="todo-checkbox"
-               data-todo-id="{{ todo.todoID }}"
-               {% if todo.completed %}checked{% endif %}
-               aria-label="{{ todo.title }}">
-        <span class="todo-title">{{ todo.title }}</span>
-      </label>
+      <form method="post" action="{{ url_for('todo.toggle', username=username, todo_id=todo.todoID) }}">
+        <label class="todo-label">
+          <input type="checkbox"
+                 class="todo-checkbox"
+                 data-todo-id="{{ todo.todoID }}"
+                 {% if todo.completed %}checked{% endif %}
+                 aria-label="{{ todo.title }}">
+          <span class="todo-title">{{ todo.title }}</span>
+        </label>
+        <button type="submit" class="todo-toggle-btn">Toggle</button>
+      </form>
       {% if todo.content %}
       <p class="todo-content">{{ todo.content }}</p>
       {% endif %}
