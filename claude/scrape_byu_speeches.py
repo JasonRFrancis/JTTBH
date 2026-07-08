@@ -3,9 +3,9 @@
 Scrape BYU Speeches for General Conference speakers.
 
 For every speaker who appears in both the GC collections and
-speeches.byu.edu/speakers/, creates a collection
-"BYU Speeches — {Speaker Name}" with one source per talk
-(title, URL, date as subtitle, MP3 audio URL where available).
+speeches.byu.edu/speakers/, adds their talks to a single "BYU Speeches"
+collection (title, URL, date as subtitle, MP3 audio URL where available,
+author set to the speaker's name). Safe to re-run for new talks.
 
 Usage:
     python3 claude/scrape_byu_speeches.py
@@ -226,15 +226,15 @@ def source_exists(collection_id, url):
 
 
 def add_source(collection_id, *, title, url, order_by,
-               subtitle=None, audio_url=None, author=None):
+               subtitle=None, audio_url=None, author=None, category=None):
     if source_exists(collection_id, url):
         return False
     db_manager.execute_insert("""
         INSERT INTO study_source
-          (sourceID, collectionID, userID, title, subtitle, author,
+          (sourceID, collectionID, userID, category, title, subtitle, author,
            url, audio_url, order_by, created, created_by)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s)
-    """, (str(uuid.uuid4()), collection_id, ADMIN_USER_ID,
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s)
+    """, (str(uuid.uuid4()), collection_id, ADMIN_USER_ID, category,
           title, subtitle, author, url, audio_url, order_by, ADMIN_USER_ID))
     return True
 
@@ -242,6 +242,59 @@ def add_source(collection_id, *, title, url, order_by,
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
+def run_import(dry_run=False):
+    """
+    Import BYU Speeches (speeches.byu.edu) talks by GC-matched speakers into
+    the single 'BYU Speeches' collection. Safe to re-run — skips talks
+    already present (by URL) and speakers already fully scraped.
+
+    Returns total sources added.
+    """
+    print("Loading GC speakers from DB...")
+    gc_authors = get_gc_authors()
+    print(f"  {len(gc_authors)} unique GC speakers")
+
+    print("Loading BYU speakers directory...")
+    byu_speakers = load_byu_speakers()
+    print(f"  {len(byu_speakers)} BYU speakers")
+
+    matches = match_speakers(gc_authors, byu_speakers)
+    print(f"\nMatched: {len(matches)} speakers\n")
+
+    if dry_run:
+        for gc_name, byu_url, byu_display, count in sorted(matches, key=lambda x: -x[3]):
+            print(f"  {gc_name:40s}  {byu_display} ({count} talks)")
+        return 0
+
+    cid, _ = get_or_create_collection(
+        'BYU Speeches',
+        'Devotional and forum addresses from Brigham Young University. '
+        'Filter by author to subscribe to talks by a specific speaker.')
+
+    total_sources = 0
+    for i, (gc_name, byu_url, byu_display, speech_count) in enumerate(matches, 1):
+        try:
+            talks = scrape_speaker_talks(byu_url)
+        except Exception as e:
+            print(f"  [{i:3d}/{len(matches)}] ERROR {gc_name}: {e}")
+            continue
+
+        added = 0
+        for order_by, title, talk_url, date_str, mp3_url in talks:
+            if add_source(cid, title=title, url=talk_url,
+                          order_by=order_by, subtitle=date_str or None,
+                          audio_url=mp3_url or None, author=gc_name):
+                added += 1
+
+        total_sources += added
+        audio_count = sum(1 for _, _, _, _, mp3 in talks if mp3)
+        print(f"  [{i:3d}/{len(matches)}] {gc_name}: {len(talks)} talks "
+              f"({audio_count} with audio) — {added} added")
+
+    print(f"\nDone. Total sources added: {total_sources}")
+    return total_sources
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -260,52 +313,7 @@ def main():
         ADMIN_USER_ID = row['userID']
         print(f"Admin: {ADMIN_USER_ID[:8]}...")
 
-        print("Loading GC speakers from DB...")
-        gc_authors = get_gc_authors()
-        print(f"  {len(gc_authors)} unique GC speakers")
-
-        print("Loading BYU speakers directory...")
-        byu_speakers = load_byu_speakers()
-        print(f"  {len(byu_speakers)} BYU speakers")
-
-        matches = match_speakers(gc_authors, byu_speakers)
-        print(f"\nMatched: {len(matches)} speakers\n")
-
-        if args.dry_run:
-            for gc_name, byu_url, byu_display, count in sorted(matches, key=lambda x: -x[3]):
-                print(f"  {gc_name:40s}  {byu_display} ({count} talks)")
-            return
-
-        total_sources = 0
-        for i, (gc_name, byu_url, byu_display, speech_count) in enumerate(matches, 1):
-            col_name = f"BYU Speeches — {gc_name}"
-            cid, created = get_or_create_collection(
-                col_name,
-                f'BYU devotional and forum speeches by {gc_name}')
-
-            if not created:
-                print(f"  [{i:3d}/{len(matches)}] {gc_name} (collection exists, skipping)")
-                continue
-
-            try:
-                talks = scrape_speaker_talks(byu_url)
-            except Exception as e:
-                print(f"  [{i:3d}/{len(matches)}] ERROR {gc_name}: {e}")
-                continue
-
-            added = 0
-            for order_by, title, talk_url, date_str, mp3_url in talks:
-                if add_source(cid, title=title, url=talk_url,
-                              order_by=order_by, subtitle=date_str or None,
-                              audio_url=mp3_url or None, author=gc_name):
-                    added += 1
-
-            total_sources += added
-            audio_count = sum(1 for _, _, _, _, mp3 in talks if mp3)
-            print(f"  [{i:3d}/{len(matches)}] {gc_name}: {len(talks)} talks "
-                  f"({audio_count} with audio) — {added} added")
-
-        print(f"\nDone. Total sources added: {total_sources}")
+        run_import(dry_run=args.dry_run)
 
 
 if __name__ == '__main__':

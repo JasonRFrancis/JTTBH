@@ -330,6 +330,11 @@ def scrape_gc(start_year=1971, end_year=None):
         end_year = today.year
 
     print(f"\n=== GENERAL CONFERENCE {start_year}–{end_year} ===")
+    cid, _ = get_or_create_collection(
+        'General Conference',
+        'Talks from General Conference of The Church of Jesus Christ of '
+        'Latter-day Saints, 1971–present. Filter by author (speaker) or '
+        'category (conference date) to create a smart subscription.')
     total_added = 0
 
     for year in range(start_year, end_year + 1):
@@ -339,7 +344,7 @@ def scrape_gc(start_year=1971, end_year=None):
 
             conf_path = f'/study/general-conference/{year}/{month}'
             month_name = 'April' if month == '04' else 'October'
-            conf_name = f"General Conference — {month_name} {year}"
+            conf_display = f'{month_name} {year}'
 
             try:
                 soup = fetch(conf_path)
@@ -356,17 +361,19 @@ def scrape_gc(start_year=1971, end_year=None):
             if not talks:
                 continue
 
-            cid, created = get_or_create_collection(conf_name)
-
             conf_added = 0
-            for order_by, h, title, author, session_label in talks:
-                if add_source(cid, title=title, author=author,
+            for local_order, h, title, author, session_label in talks:
+                # Encode as YYYYMM*1000 + local sequence so talks sort
+                # chronologically within the single shared collection
+                # (matches the scheme already used by existing rows).
+                order_by = (year * 100 + int(month)) * 1000 + local_order
+                if add_source(cid, title=title, author=author, subtitle=conf_display,
                               url=BASE + h, order_by=order_by, category=session_label):
                     conf_added += 1
 
             total_added += conf_added
-            marker = 'NEW' if created else ('updated' if conf_added else 'exists')
-            print(f"  {conf_name}: {len(talks)} talks, {conf_added} added [{marker}]")
+            if conf_added:
+                print(f"  {conf_display}: {len(talks)} talks, {conf_added} added")
 
     print(f"\nTotal GC sources added: {total_added}")
 
