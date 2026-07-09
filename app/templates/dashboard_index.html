@@ -30,25 +30,30 @@
     {% for cell in habit_grid %}
     {% if cell.habitID and cell.applies %}
       <habit-cell>
-        <input
-          type="checkbox"
-          id="hc-{{ cell.habitID }}-{{ today }}"
-          class="habit-checkbox"
-          data-habit-id="{{ cell.habitID }}"
-          data-date="{{ today }}"
-          data-position="{{ cell.position }}"
-          {% if cell.completed == 1 %}checked{% endif %}
-          aria-label="{{ cell.name }}: {{ 'completed' if cell.completed == 1 else 'not completed' }}">
-        <label
-          for="hc-{{ cell.habitID }}-{{ today }}"
-          {% if cell.color %}style="--habit-color: {{ cell.color }};"{% endif %}
-          title="{{ cell.name }}{% if cell.streak is defined and cell.streak > 0 %} ({{ cell.streak }}-day streak){% endif %}">
-          {% if cell.icon_svg %}
-            {{ cell.icon_svg | safe }}
-          {% else %}
-            <span class="habit-initial" aria-hidden="true">{{ cell.name[0] | upper }}</span>
-          {% endif %}
-        </label>
+        <form method="post"
+              action="{{ url_for('habit.toggle', username=username, habit_id=cell.habitID, date_str=today) }}">
+          <button type="submit" class="habit-toggle-btn"
+                  aria-label="{{ cell.name }}: toggle"></button>
+          <input
+            type="checkbox"
+            id="hc-{{ cell.habitID }}-{{ today }}"
+            class="habit-checkbox"
+            data-habit-id="{{ cell.habitID }}"
+            data-date="{{ today }}"
+            data-position="{{ cell.position }}"
+            {% if cell.completed == 1 %}checked{% endif %}
+            aria-label="{{ cell.name }}: {{ 'completed' if cell.completed == 1 else 'not completed' }}">
+          <label
+            for="hc-{{ cell.habitID }}-{{ today }}"
+            {% if cell.color %}style="--habit-color: {{ cell.color }};"{% endif %}
+            title="{{ cell.name }}{% if cell.streak is defined and cell.streak > 0 %} ({{ cell.streak }}-day streak){% endif %}">
+            {% if cell.icon_svg %}
+              {{ cell.icon_svg | safe }}
+            {% else %}
+              <span class="habit-initial" aria-hidden="true">{{ cell.name[0] | upper }}</span>
+            {% endif %}
+          </label>
+        </form>
       </habit-cell>
     {% else %}
       <habit-cell class="empty" data-position="{{ cell.position }}" aria-hidden="true"></habit-cell>
