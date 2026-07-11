@@ -16,6 +16,14 @@
     </nav>
   </header>
 
+  {# ---- Search ---- #}
+  <section class="bm-search-section">
+    <form method="get" action="{{ url_for('bookmark.search', username=username) }}" class="bm-search-form">
+      <input type="search" name="q" placeholder="Search all bookmarks…" autocomplete="off">
+      <button type="submit">Search</button>
+    </form>
+  </section>
+
   {# ---- Add bookmark form ---- #}
   <section class="bm-add-section">
     <details class="bm-add-details">

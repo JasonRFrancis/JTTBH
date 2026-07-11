@@ -78,7 +78,12 @@
       "Bash(sample 16839 3 -f /private/tmp/claude-501/-Users-jason-Documents-JTTBH/c52de1b3-da04-4e5f-893d-35a3bf467f79/scratchpad/sample.txt)",
       "Bash(ps *)",
       "Bash(kill -0 19176)",
-      "Bash(break)"
+      "Bash(break)",
+      "mcp__playwright__browser_run_code_unsafe",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_network_requests",
+      "Bash(pkill -f \"python3 ./app/main.py\")",
+      "Bash(lsof *)"
     ],
     "deny": [],
     "ask": []

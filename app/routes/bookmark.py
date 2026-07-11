@@ -8,6 +8,7 @@ URL patterns
 GET  /<username>/bookmark/index
 GET  /<username>/bookmark/archive
 GET  /<username>/bookmark/read-later
+GET  /<username>/bookmark/search
 GET  /<username>/bookmark/category/<category_id>
 
 POST /<username>/bookmark/create/post
@@ -477,6 +478,50 @@ def category_view(username: str, category_id: str):
         pages=pages,
         total=total,
         q=q,
+    )
+
+
+@bookmark_bp.route('/search')
+@login_required
+@permission_required_read(PERM_BOOKMARK)
+def search(username: str):
+    user_id = session['user_id']
+
+    page   = max(1, int(request.args.get('page', 1) or 1))
+    q      = request.args.get('q', '').strip()
+    offset = (page - 1) * PER_PAGE
+
+    items = []
+    total = 0
+    if q:
+        like = f'%{q}%'
+        items = db_manager.execute_query(
+            """SELECT bookmarkID, url, title, tags, favorite, notes
+               FROM bookmark
+               WHERE userID = %s AND `read` = 0
+                 AND (title LIKE %s OR url LIKE %s OR tags LIKE %s)
+               ORDER BY created DESC
+               LIMIT %s OFFSET %s""",
+            (user_id, like, like, like, PER_PAGE, offset),
+        )
+        total_row = db_manager.execute_one(
+            """SELECT COUNT(*) AS cnt FROM bookmark
+               WHERE userID = %s AND `read` = 0
+                 AND (title LIKE %s OR url LIKE %s OR tags LIKE %s)""",
+            (user_id, like, like, like),
+        )
+        total = total_row['cnt'] if total_row else 0
+
+    pages = max(1, (total + PER_PAGE - 1) // PER_PAGE)
+
+    return render_template(
+        'bookmark_search.html',
+        username=username,
+        q=q,
+        items=items,
+        page=page,
+        pages=pages,
+        total=total,
     )
 
 

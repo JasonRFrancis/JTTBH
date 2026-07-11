@@ -1,7 +1,7 @@
 /* bookmark.js — drag-and-drop, AJAX actions, inline edit */
 'use strict';
 
-const BASE = window.location.pathname.replace(/\/(index|archive|category\/.*)$/, '');
+const BASE = window.location.pathname.replace(/\/(index|archive|search|category\/.*)$/, '');
 
 // ---------------------------------------------------------------------------
 // Utilities

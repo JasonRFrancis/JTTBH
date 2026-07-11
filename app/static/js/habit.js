@@ -37,6 +37,20 @@
     });
   }
 
+  // Safety net: these forms should never actually submit — the checkbox's
+  // 'change' handler above is what drives the toggle. If a submit slips
+  // through anyway (Enter pressed while a form control has focus, or the
+  // hidden fallback button was clicked before hiding it took effect),
+  // intercept it here instead of letting the browser navigate away via the
+  // no-JS PRG redirect.
+  document.addEventListener('submit', function (e) {
+    var cb = e.target.querySelector && e.target.querySelector('.habit-checkbox:not([disabled])');
+    if (!cb) return;
+    e.preventDefault();
+    cb.checked = !cb.checked;
+    handleToggleChange({ currentTarget: cb });
+  });
+
   function handleToggleChange(event) {
     var cb      = event.currentTarget;
     var habitId = cb.dataset.habitId;
