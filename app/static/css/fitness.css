@@ -300,6 +300,10 @@
 
 /* ── No-JS set entry form ────────────────────────────────────────────── */
 
+.set-form-noscript[hidden] {
+  display: none !important;
+}
+
 .set-form-noscript {
   display: flex;
   align-items: center;
