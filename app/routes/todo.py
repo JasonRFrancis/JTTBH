@@ -129,7 +129,6 @@ def _build_index_context(user_id: str, username: str, current_date: date) -> dic
             'is_today':     day == today,
             'is_current':   day == current_date,
             'todos':        todos,
-            'blank_slots':  max(DAILY_BLANK_SLOTS - len(todos), 1),
         })
 
     # --- Planning lists ---------------------------------------------------
@@ -140,7 +139,6 @@ def _build_index_context(user_id: str, username: str, current_date: date) -> dic
             'name':         key,
             'display_name': display_name,
             'todos':        todos,
-            'blank_slots':  max(CUSTOM_BLANK_SLOTS - len(todos), 1),
         })
 
     # --- Custom lists from user preferences --------------------------------
@@ -151,7 +149,6 @@ def _build_index_context(user_id: str, username: str, current_date: date) -> dic
         custom_lists.append({
             'name':        list_name,
             'todos':       todos,
-            'blank_slots': max(CUSTOM_BLANK_SLOTS - len(todos), 1),
         })
 
     # --- Shared lists (owner + pinned member lists) -----------------------
@@ -170,14 +167,16 @@ def _build_index_context(user_id: str, username: str, current_date: date) -> dic
         pending_invite_count = 0
 
     return {
-        'username':           username,
-        'current_date':       current_date,
-        'today':              today,
-        'daily_lists':        daily_lists,
-        'planning_lists':     planning_lists,
-        'custom_lists':       custom_lists,
-        'push_count':         push_count,
-        'shared_lists':       shared_lists,
+        'username':             username,
+        'current_date':         current_date,
+        'today':                today,
+        'daily_lists':          daily_lists,
+        'planning_lists':       planning_lists,
+        'custom_lists':         custom_lists,
+        'daily_default_length': DAILY_BLANK_SLOTS,
+        'custom_default_length': CUSTOM_BLANK_SLOTS,
+        'push_count':           push_count,
+        'shared_lists':         shared_lists,
         'pending_invite_count': pending_invite_count,
     }
 

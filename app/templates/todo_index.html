@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% import '_todo_macros.html' as todo_macros %}
 
 {% block title %}Todo – jttbh{% endblock %}
 
@@ -59,24 +60,11 @@
       </h2>
     </header>
 
-    <todo-list data-date="{{ day.date_str }}" data-type="daily" role="list">
-      {% for item in day.todos %}
-      {% include 'todo_item.html' %}
-      {% endfor %}
-
-      {# Blank input slots — minimum DAILY_BLANK_SLOTS, grow as needed #}
-      {% for i in range(day.blank_slots) %}
-      <todo-item class="todo-item--blank" role="listitem">
-        <form class="todo-new" method="post"
-              action="{{ url_for('todo.create', username=username) }}">
-          <input type="hidden" name="list_type" value="daily">
-          <input type="hidden" name="due" value="{{ day.date_str }}">
-          <input type="text" name="title" placeholder="Add item…"
-                 autocomplete="off" aria-label="New todo for {{ day.date_str }}">
-        </form>
-      </todo-item>
-      {% endfor %}
-    </todo-list>
+    {{ todo_macros.todo_list(day.todos, daily_default_length, username,
+                              action=url_for('todo.create', username=username),
+                              hidden={'list_type': 'daily', 'due': day.date_str},
+                              list_type='daily', date_str=day.date_str,
+                              new_item_label='New todo for ' ~ day.date_str) }}
   </article>
   {% endfor %}
 </section>
@@ -96,25 +84,11 @@
           <h3 id="planning-{{ plist.name }}-heading">{{ plist.display_name }}</h3>
         </header>
 
-        <todo-list data-type="planning" data-name="{{ plist.name }}" role="list">
-          {% for item in plist.todos %}
-          {% set list_type = 'planning' %}
-          {% set list_name = plist.name %}
-          {% include 'todo_item.html' %}
-          {% endfor %}
-
-          {% for i in range(plist.blank_slots) %}
-          <todo-item class="todo-item--blank" role="listitem">
-            <form class="todo-new" method="post"
-                  action="{{ url_for('todo.create', username=username) }}">
-              <input type="hidden" name="list_type" value="planning">
-              <input type="hidden" name="list_name" value="{{ plist.name }}">
-              <input type="text" name="title" placeholder="Add item…"
-                     autocomplete="off" aria-label="New {{ plist.display_name }} item">
-            </form>
-          </todo-item>
-          {% endfor %}
-        </todo-list>
+        {{ todo_macros.todo_list(plist.todos, custom_default_length, username,
+                                  action=url_for('todo.create', username=username),
+                                  hidden={'list_type': 'planning', 'list_name': plist.name},
+                                  list_type='planning', data_name=plist.name,
+                                  new_item_label='New ' ~ plist.display_name ~ ' item') }}
       </article>
       {% endfor %}
     </div>
@@ -131,25 +105,11 @@
           <h3 id="custom-{{ loop.index }}-heading">{{ clist.name }}</h3>
         </header>
 
-        <todo-list data-type="custom" data-name="{{ clist.name | urlencode }}" role="list">
-          {% for item in clist.todos %}
-          {% set list_type = 'custom' %}
-          {% set list_name = clist.name %}
-          {% include 'todo_item.html' %}
-          {% endfor %}
-
-          {% for i in range(clist.blank_slots) %}
-          <todo-item class="todo-item--blank" role="listitem">
-            <form class="todo-new" method="post"
-                  action="{{ url_for('todo.create', username=username) }}">
-              <input type="hidden" name="list_type" value="custom">
-              <input type="hidden" name="list_name" value="{{ clist.name }}">
-              <input type="text" name="title" placeholder="Add item…"
-                     autocomplete="off" aria-label="New {{ clist.name }} item">
-            </form>
-          </todo-item>
-          {% endfor %}
-        </todo-list>
+        {{ todo_macros.todo_list(clist.todos, custom_default_length, username,
+                                  action=url_for('todo.create', username=username),
+                                  hidden={'list_type': 'custom', 'list_name': clist.name},
+                                  list_type='custom', data_name=clist.name | urlencode,
+                                  new_item_label='New ' ~ clist.name ~ ' item') }}
       </article>
       {% endfor %}
     </div>
@@ -208,8 +168,8 @@
           <h4 id="contrib-{{ sl.listID }}-{{ contributor.userID }}-heading"
               class="shared-contributor__heading">{{ contributor.username }}</h4>
           <todo-list data-type="shared" data-shared-list="{{ sl.listID }}" role="list">
-            {% for item in contributor.items %}
-              {% include 'todo_shared_item.html' %}
+            {% for item in contributor['items'] %}
+              {{ todo_macros.todo_shared_item(item, username, sl.can_edit) }}
             {% endfor %}
           </todo-list>
         </section>
@@ -218,14 +178,10 @@
         {# Add-item slot for editors #}
         {% if sl.can_edit %}
         <div class="shared-list-card__add">
-          <todo-item class="todo-item--blank" role="listitem">
-            <form class="todo-new" method="post"
-                  action="{{ url_for('todo.shared_item_create', username=username) }}">
-              <input type="hidden" name="list_id" value="{{ sl.listID }}">
-              <input type="text" name="title" placeholder="Add item…"
-                     autocomplete="off" aria-label="New item for {{ sl.name }}">
-            </form>
-          </todo-item>
+          {{ todo_macros.todo_new_item_row(
+               url_for('todo.shared_item_create', username=username),
+               {'list_id': sl.listID},
+               'New item for ' ~ sl.name) }}
         </div>
         {% endif %}
       </article>

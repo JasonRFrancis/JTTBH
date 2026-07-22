@@ -1,0 +1,10 @@
+{% macro fitness_widget_exercise(ex) %}
+<li class="fitness-ex-item">
+  <span class="fitness-ex-name">{{ ex.exercise_name }}</span>
+  {% if ex.exercise_type == 'cardio' %}
+    {% if ex.recommended_duration %}<span class="fitness-ex-detail">{{ ex.recommended_duration }} min</span>{% endif %}
+  {% else %}
+    {% if ex.recommended_sets and ex.recommended_reps %}<span class="fitness-ex-detail">{{ ex.recommended_sets }}×{{ ex.recommended_reps }}</span>{% endif %}
+  {% endif %}
+</li>
+{% endmacro %}

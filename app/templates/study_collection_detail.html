@@ -3,21 +3,22 @@
 {% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}">{% endblock %}
 
 {% block content %}
-<header>
-  <nav class="study-nav" aria-label="Study navigation">
-    <a href="{{ url_for('study.index', username=username) }}">Today</a>
-    <a href="{{ url_for('study.collections', username=username) }}">Collections</a>
-  </nav>
+  <header class="page-header">
+    <h2>{{ collection.name }}</h2>
+    <nav class="study" aria-label="Study navigation">
+      <a href="{{ url_for('study.index', username=username) }}">Today's Study</a>
+      <a href="{{ url_for('study.collections', username=username) }}">Collections</a>
+    </nav>
+    <div class="filler"></div>
+  </header>
   <div class="collection-detail-header">
-    <h1>{{ collection.name }}</h1>
     {% if collection.description %}<p>{{ collection.description }}</p>{% endif %}
     <p><span class="badge-mode">{{ 'Rate-based' if collection.mode == 'rate' else 'Calendar-pinned' }}</span></p>
   </div>
 
-  <details>
+  <details class="source-admin">
     <summary>Edit collection</summary>
-    <form method="post" action="{{ url_for('study.collection_update', username=username, collection_id=collection.collectionID) }}"
-          style="margin-top:0.75rem; max-width:480px; display:flex; flex-direction:column; gap:0.75rem;">
+    <form method="post" action="{{ url_for('study.collection_update', username=username, collection_id=collection.collectionID) }}">
       <div class="form-row">
         <label for="edit-name">Name <span aria-hidden="true">*</span></label>
         <input type="text" id="edit-name" name="name" required maxlength="200" value="{{ collection.name }}">
@@ -45,7 +46,7 @@
 </header>
 
 <section aria-labelledby="sources-heading">
-  <h2 id="sources-heading">Sources ({{ sources | length }})</h2>
+  <h3 id="sources-heading">Sources ({{ sources | length }})</h3>
 
   {% if sources %}
   <ul class="source-admin-list" role="list">
@@ -125,8 +126,8 @@
   {% endif %}
 </section>
 
-<section aria-labelledby="add-source-heading">
-  <h2 id="add-source-heading">Add Source</h2>
+<section class="source-admin" aria-labelledby="add-source-heading">
+  <h3 id="add-source-heading">Add Source</h3>
   <form method="post" action="{{ url_for('study.source_create', username=username) }}" class="add-source-form">
     <input type="hidden" name="collection_id" value="{{ collection.collectionID }}">
     <div class="form-row">

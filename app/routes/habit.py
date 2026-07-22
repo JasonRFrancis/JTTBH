@@ -104,14 +104,9 @@ def _parse_date(date_str: str | None, default: date = None) -> date:
 # ---------------------------------------------------------------------------
 
 def _today_stats(user_id: str) -> tuple[int, int]:
-    """
-    Return (completed_count, total_count) for today's applicable habits.
-    """
-    today   = user_today()
-    grid    = HabitModel.get_grid_for_date(user_id, today)
-    total     = sum(1 for cell in grid if cell['habitID'] and cell['applies'])
-    completed = sum(1 for cell in grid if cell['habitID'] and cell['applies'] and cell['completed'] == 1)
-    return completed, total
+    """Return (completed_count, total_count) for today's applicable habits."""
+    grid = HabitModel.get_grid_for_date(user_id, user_today())
+    return HabitModel.grid_stats(grid)
 
 
 # ---------------------------------------------------------------------------
@@ -131,11 +126,8 @@ def index(username: str, date_str: str):
     streaks          = HabitModel.calculate_streaks(user_id)
     today_completed, today_total = _today_stats(user_id)
 
-    # Attach streak to each calendar day's grid cells
     for day in calendar_data:
-        for cell in day['grid']:
-            if cell['habitID']:
-                cell['streak'] = streaks.get(cell['habitID'], 0)
+        HabitModel.attach_streaks(day['grid'], streaks)
 
     return render_template(
         'habit_index.html',

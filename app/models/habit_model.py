@@ -496,6 +496,29 @@ class HabitModel:
         return grid
 
     @staticmethod
+    def attach_streaks(grid: list[dict], streaks: dict) -> list[dict]:
+        """Attach each cell's current streak (from a calculate_streaks() dict) in place."""
+        for cell in grid:
+            if cell['habitID']:
+                cell['streak'] = streaks.get(cell['habitID'], 0)
+        return grid
+
+    @staticmethod
+    def get_grid_with_streaks(user_id: str, entry_date: date, streaks: dict = None) -> list[dict]:
+        """Like get_grid_for_date, with each cell's streak attached."""
+        grid = HabitModel.get_grid_for_date(user_id, entry_date)
+        if streaks is None:
+            streaks = HabitModel.calculate_streaks(user_id)
+        return HabitModel.attach_streaks(grid, streaks)
+
+    @staticmethod
+    def grid_stats(grid: list[dict]) -> tuple[int, int]:
+        """Return (completed_count, total_count) for a grid's applicable cells."""
+        total     = sum(1 for c in grid if c['habitID'] and c['applies'])
+        completed = sum(1 for c in grid if c['habitID'] and c['applies'] and c['completed'] == 1)
+        return completed, total
+
+    @staticmethod
     def calculate_streaks(user_id: str) -> dict:
         """
         Calculate current streak for each active habit.

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_habit_macros.html" as habit_macros %}
 
 {% block title %}Habits{% endblock %}
 
@@ -7,21 +8,20 @@
 {% endblock %}
 
 {% block content %}
-  <header class="page">
-    <h1>Habits</h1>
+  <header class="page-header">
+    <h2>Habits</h2>
     <nav aria-label="Habit navigation">
       <a href="{{ url_for('habit.settings', username=username) }}">Manage Habits</a>
-      <a href="{{ url_for('habit.heatmap', username=username) }}">Heat Map</a>
     </nav>
   </header>
 
   <!-- Today's progress -->
   <habit-today aria-label="Today's progress">
-    <h2>
+    <h3>
       Today:
       <span class="today-count">{{ today_completed }}/{{ today_total }}</span>
       completed
-    </h2>
+    </h3>
     {% if today_total > 0 %}
     <progress
       class="habit-progress"
@@ -43,50 +43,8 @@
       id="day-{{ day.date }}"
       aria-label="{{ day.date | format_day_short }}{% if day.is_today %} (today){% endif %}">
 
-      <header>
-        <time datetime="{{ day.date }}">{{ day.date | format_day_short }}</time>
-      </header>
-
-      <habit-grid data-date="{{ day.date }}">
-        {% for cell in day.grid %}
-
-        {% if cell.habitID and cell.applies %}
-          <habit-cell>
-            <form method="post"
-                  action="{{ url_for('habit.toggle', username=username, habit_id=cell.habitID, date_str=day.date) }}">
-              <button type="submit" class="habit-toggle-btn"
-                      aria-label="{{ cell.name }}: toggle"></button>
-              <input
-                type="checkbox"
-                id="hc-{{ cell.habitID }}-{{ day.date }}"
-                class="habit-checkbox"
-                data-habit-id="{{ cell.habitID }}"
-                data-date="{{ day.date }}"
-                data-position="{{ cell.position }}"
-                {% if cell.completed == 1 %}checked{% endif %}
-                aria-label="{{ cell.name }}: {{ 'completed' if cell.completed == 1 else 'not completed' }}">
-              <label
-                for="hc-{{ cell.habitID }}-{{ day.date }}"
-                {% if cell.color %}style="--habit-color: {{ cell.color }};"{% endif %}
-                title="{{ cell.name }}{% if cell.streak is defined and cell.streak > 0 %} ({{ cell.streak }}-day streak){% endif %}">
-                {% if cell.icon_svg %}
-                  {{ cell.icon_svg | safe }}
-                {% else %}
-                  <span class="habit-initial" aria-hidden="true">{{ cell.name[0] | upper }}</span>
-                {% endif %}
-              </label>
-            </form>
-          </habit-cell>
-        {% else %}
-          <habit-cell
-            class="empty"
-            data-position="{{ cell.position }}"
-            aria-hidden="true">
-          </habit-cell>
-        {% endif %}
-
-        {% endfor %}
-      </habit-grid>
+      <date-label datetime="{{ day.date }}">{{ day.date | format_day_short }}</date-label>
+      {{ habit_macros.habit_grid(day.grid, day.date, username) }}
 
     </habit-day>
     {% endfor %}

@@ -58,20 +58,9 @@ dashboard_bp = Blueprint('dashboard', __name__)
 # ---------------------------------------------------------------------------
 
 def _get_today_habit_grid(user_id: str) -> tuple[list[dict], int, int]:
-    """
-    Return (grid, completed_count, total_count) for today.
-
-    grid is the 25-element list from HabitModel.get_grid_for_date, with
-    streak attached to each cell that has a habit.
-    """
-    today   = user_today()
-    grid    = HabitModel.get_grid_for_date(user_id, today)
-    streaks = HabitModel.calculate_streaks(user_id)
-    for cell in grid:
-        if cell['habitID']:
-            cell['streak'] = streaks.get(cell['habitID'], 0)
-    total     = sum(1 for c in grid if c['habitID'] and c['applies'])
-    completed = sum(1 for c in grid if c['habitID'] and c['applies'] and c['completed'] == 1)
+    """Return (grid, completed_count, total_count) for today."""
+    grid = HabitModel.get_grid_with_streaks(user_id, user_today())
+    completed, total = HabitModel.grid_stats(grid)
     return grid, completed, total
 
 
@@ -138,7 +127,7 @@ def _gather_dashboard_data(user_id: str, perm_read: int) -> dict:
     users who lack certain feature access.
     """
     data: dict = {
-        'today':           user_today().isoformat(),
+        'today':           user_today(),
         'habit_grid':      [],
         'habit_completed': 0,
         'habit_total':     0,
@@ -214,4 +203,5 @@ def index_json(username: str):
     perm_read = session.get('perm_read', 0)
 
     data = _gather_dashboard_data(user_id, perm_read)
+    data['today'] = data['today'].isoformat()
     return jsonify(data)

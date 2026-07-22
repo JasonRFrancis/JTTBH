@@ -8,86 +8,41 @@
   {% block css %}{% endblock %}
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}" sizes="any">
 </head>
-<body>
-
+<body class="{{ area | default('') }}">
   <header>
-    <a class="site-name" href="/">Just Trying to be Helpful</a>
-    {% if session.get('user_id') %}
-    <login>
+    <h1><a class="site-name" href="/"><b>Just Trying to be Helpful</b></a></h1>
+    {% if session.get('user_id') %}<login>
       <a href="{{ url_for('user.settings', username=session.username) }}" class="login-username">{{ session.username.upper() }}</a>
-    </login>
-    {% endif %}
+    </login>{% endif %}
   </header>
-
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <section class="messages" aria-live="polite" aria-label="Notifications">
-      {% for category, message in messages %}
-      <p class="message message--{{ category }}" role="alert">{{ message }}</p>
-      {% endfor %}
-    </section>
+  <nav aria-label="Main navigation">
+    {% if has_perm(1) %}{% if area == 'admin' %}<b>Admin</b>{% else %}<a href="{{ url_for('admin.dashboard', username=session.username) }}">Admin</a>{% endif %}
+    {% endif %}{% if has_perm(4) %}{% if area == 'appointment' %}<b>Appointments</b>{% else %}<a href="{{ url_for('appointment.index', username=session.username) }}">Appointments</a>{% endif %}
+    {% endif %}{% if has_perm(16) %}{% if area == 'todo' %}<b>To-do</b>{% else %}<a href="{{ url_for('todo.index', username=session.username) }}">To-do</a>{% endif %}
+    {% endif %}{% if has_perm(32) %}{% if area == 'habit' %}<b>Habits</b>{% else %}<a href="{{ url_for('habit.index', username=session.username) }}">Habits</a>{% endif %}
+    {% endif %}{% if has_perm(64) %}{% if area == 'project' %}<b>Projects</b>{% else %}<a href="{{ url_for('project.index', username=session.username) }}">Projects</a>{% endif %}
+    {% endif %}{% if has_perm(128) %}{% if area == 'triage' %}<b>Triage</b>{% else %}<a href="{{ url_for('triage.index', username=session.username) }}">Triage</a>{% endif %}
+    {% endif %}{% if has_perm(256) %}{% if area == 'bookmark' %}<b>Bookmarks</b>{% else %}<a href="{{ url_for('bookmark.index', username=session.username) }}">Bookmarks</a>{% endif %}
+    {% endif %}{% if has_perm(512) %}{% if area == 'fitness' %}<b>Fitness</b>{% else %}<a href="{{ url_for('fitness.index', username=session.username) }}">Fitness</a>{% endif %}
+    {% endif %}{% if has_perm(1024) %}{% if area == 'chore' %}<b>Chores</b>{% else %}<a href="{{ url_for('chore.index', username=session.username) }}">Chores</a>{% endif %}
+    {% endif %}{% if has_perm(2048) %}{% if area == 'media' %}<b>Media</b>{% else %}<a href="{{ url_for('media.index', username=session.username) }}">Media</a>{% endif %}
+    {% endif %}{% if has_perm(4096) %}{% if area == 'journal' %}<b>Journal</b>{% else %}<a href="{{ url_for('journal.index', username=session.username) }}">Journal</a>{% endif %}
+    {% endif %}{% if has_perm(8192) %}{% if area == 'study' %}<b>Study</b>{% else %}<a href="{{ url_for('study.index', username=session.username) }}">Study</a>{% endif %}
+    {% endif %}{% if has_perm(16384) %}{% if area == 'quote' %}<b>Quotes</b>{% else %}<a href="{{ url_for('quote.index', username=session.username) }}">Quotes</a>{% endif %}
+    {% endif %}{% if has_perm(32768) %}{% if area == 'recipe' %}<b>Recipes</b>{% else %}<a href="{{ url_for('recipe.index', username=session.username) }}">Recipes</a>{% endif %}
+    {% endif %}{% if has_perm(65536) %}{% if area == 'scripture' %}<b>Scripture</b>{% else %}<a href="{{ url_for('scripture.index', username=session.username) }}">Scripture</a>{% endif %}
     {% endif %}
-  {% endwith %}
-
-  <main class="{{ area | default('') }}">
+  </nav>
+  {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<messages aria-live="polite" aria-label="Notifications">
+      {% for category, message in messages %}<p class="message message--{{ category }}" role="alert">{{ message }}</p>
+      {% endfor %}
+  </messages>{% endif %}{% endwith %}
+  <main>
     {% block content %}{% endblock %}
   </main>
-
   {% if session.get('user_id') %}
-  <footer>
-    <nav aria-label="Main navigation">
-      {% if has_perm(1) %}
-      <a href="{{ url_for('admin.dashboard', username=session.username) }}"{% if area == 'admin' %} aria-current="page"{% endif %}>Admin</a>
-      {% endif %}
-      {% if has_perm(8) %}
-      <a href="{{ url_for('dashboard.index', username=session.username) }}"{% if area == 'dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
-      {% endif %}
-      {% if has_perm(16) %}
-      <a href="{{ url_for('todo.index', username=session.username) }}"{% if area == 'todo' %} aria-current="page"{% endif %}>Todo</a>
-      {% endif %}
-      {% if has_perm(32) %}
-      <a href="{{ url_for('habit.index', username=session.username) }}"{% if area == 'habit' %} aria-current="page"{% endif %}>Habits</a>
-      {% endif %}
-      {% if has_perm(64) %}
-      <a href="{{ url_for('project.index', username=session.username) }}"{% if area == 'project' %} aria-current="page"{% endif %}>Projects</a>
-      {% endif %}
-      {% if has_perm(256) %}
-      <a href="{{ url_for('bookmark.index', username=session.username) }}"{% if area == 'bookmark' %} aria-current="page"{% endif %}>Bookmarks</a>
-      {% endif %}
-      {% if has_perm(512) %}
-      <a href="{{ url_for('fitness.index', username=session.username) }}"{% if area == 'fitness' %} aria-current="page"{% endif %}>Fitness</a>
-      {% endif %}
-      {% if has_perm(128) %}
-      <a href="{{ url_for('triage.index', username=session.username) }}"{% if area == 'triage' %} aria-current="page"{% endif %}>Triage</a>
-      {% endif %}
-      {% if has_perm(1024) %}
-      <a href="{{ url_for('chore.index', username=session.username) }}"{% if area == 'chore' %} aria-current="page"{% endif %}>Chores</a>
-      {% endif %}
-      {% if has_perm(2048) %}
-      <a href="{{ url_for('media.index', username=session.username) }}"{% if area == 'book' %} aria-current="page"{% endif %}>Media</a>
-      {% endif %}
-      {% if has_perm(4096) %}
-      <a href="{{ url_for('journal.index', username=session.username) }}"{% if area == 'journal' %} aria-current="page"{% endif %}>Journal</a>
-      {% endif %}
-      {% if has_perm(8192) %}
-      <a href="{{ url_for('study.index', username=session.username) }}"{% if area == 'study' %} aria-current="page"{% endif %}>Study</a>
-      {% endif %}
-      {% if has_perm(16384) %}
-      <a href="{{ url_for('quote.index', username=session.username) }}"{% if area == 'quote' %} aria-current="page"{% endif %}>Quotes</a>
-      {% endif %}
-      {% if has_perm(32768) %}
-      <a href="{{ url_for('recipe.index', username=session.username) }}"{% if area == 'recipe' %} aria-current="page"{% endif %}>Recipes</a>
-      {% endif %}
-      {% if has_perm(65536) %}
-      <a href="{{ url_for('scripture.index', username=session.username) }}"{% if area == 'scripture' %} aria-current="page"{% endif %}>Scripture</a>
-      {% endif %}
-      {% if has_perm(4) %}
-      <a href="{{ url_for('appointment.index', username=session.username) }}"{% if area == 'appointment' %} aria-current="page"{% endif %}>Appointments</a>
-      {% endif %}
-    </nav>
-  </footer>
+  <footer></footer>
   {% endif %}
-
   <script>
     /* Permission constants available to feature JS */
     const PERM = {
@@ -122,6 +77,5 @@
   </script>
   <script src="{{ url_for('static', filename='js/base.js') }}" defer></script>
   {% block js %}{% endblock %}
-
 </body>
 </html>

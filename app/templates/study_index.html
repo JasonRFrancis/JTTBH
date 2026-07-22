@@ -3,24 +3,24 @@
 {% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}">{% endblock %}
 
 {% block content %}
-<header>
-  <h1>Study</h1>
-  <nav class="study-nav" aria-label="Study navigation">
+<header class="page-header">
+  <h2>Study</h2>
+  <nav class="study" aria-label="Study navigation">
     <a href="{{ url_for('study.collections', username=username) }}">Collections</a>
-    <a href="{{ url_for('study.feed_xml', username=username, _external=True) }}">Podcast Feed</a>
   </nav>
-  {% if streak > 0 %}
-  <p class="study-streak">🔥 {{ streak }}-day streak</p>
-  {% endif %}
-  <nav class="date-nav" aria-label="Date navigation">
-    <a class="btn-nav" href="{{ url_for('study.index', username=username, date_str=prev_date.isoformat()) }}" aria-label="Previous day">&#8592;</a>
+  <nav class="date" aria-label="Date navigation">
+    <a class="btn-nav" href="{{ url_for('study.index', username=username, date_str=prev_date.isoformat()) }}" aria-label="Previous day">&#x2B05;</a>
     <span class="date-label">{{ target_date | format_date_long }}</span>
-    <a class="btn-nav" href="{{ url_for('study.index', username=username, date_str=next_date.isoformat()) }}" aria-label="Next day">&#8594;</a>
+    <a class="btn-nav" href="{{ url_for('study.index', username=username, date_str=next_date.isoformat()) }}" aria-label="Next day">&#x2B95;</a>
     {% if target_date != today %}
     <a class="btn-today" href="{{ url_for('study.index', username=username) }}">Today</a>
     {% endif %}
   </nav>
 </header>
+<p class="podcast"><a href="{{ url_for('study.feed_xml', username=username, _external=True) }}">Podcast Feed</a></p>
+{% if streak > 0 %}
+<study-streak>{{ streak }}-day streak</study-streak>
+{% endif %}
 
 {% if not has_subscriptions %}
 <p class="study-empty">No subscriptions yet. <a href="{{ url_for('study.collections', username=username) }}">Browse collections</a> to subscribe.</p>
@@ -32,45 +32,33 @@
          aria-labelledby="col-{{ loop.index }}"
          data-sub-id="{{ group.subscription_id }}"
          draggable="true">
-  <h2 id="col-{{ loop.index }}">
-    {{ group.display_name }}
-    <span class="collection-section-actions">
-      <a href="{{ url_for('study.subscription_edit', username=username, subscription_id=group.subscription_id) }}" class="action-link">Filters</a>
-      {% if group.use_personal_schedule %}
-      <a href="{{ url_for('study.subscription_schedule', username=username, subscription_id=group.subscription_id) }}" class="action-link">Schedule</a>
-      {% endif %}
-    </span>
-  </h2>
+  <h3 id="col-{{ loop.index }}">
+    <a href="{{ url_for('study.subscription_edit', username=username, subscription_id=group.subscription_id) }}" class="action-link">{{ group.display_name }}</a>
+    {% if group.use_personal_schedule %}
+    <a href="{{ url_for('study.subscription_schedule', username=username, subscription_id=group.subscription_id) }}" class="action-link">    {{ group.display_name }}</a>
+    {% endif %}
+  </h3>
   <ul class="source-list" role="list">
     {% for source in group.sources %}
     {% set done = source.sourceID in completions %}
     <li class="source-item{% if done %} source-item--done{% endif %}">
       <div class="source-top">
-        <form class="complete-form"
-              method="post"
-              action="{{ url_for('study.source_complete', username=username, source_id=source.sourceID) }}">
+        <form class="complete-form" method="post" action="{{ url_for('study.source_complete', username=username, source_id=source.sourceID) }}">
           <input type="hidden" name="date" value="{{ target_date.isoformat() }}">
-          <label class="complete-label">
-            <input type="checkbox" class="complete-checkbox" name="complete"{% if done %} checked{% endif %}
-                   aria-label="{% if done %}Mark incomplete{% else %}Mark complete{% endif %}">
-            <button type="submit" class="complete-submit">&#10003;</button>
+          <input type="checkbox" id="c{{source.sourceID}}" class="complete-checkbox" name="complete"{% if done %} checked{% endif %} aria-label="{% if done %}Mark incomplete{% else %}Mark complete{% endif %}">
+          <label for="c{{source.sourceID}}" class="complete-label">
+            {% if source.url %}
+            <a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.title }}</a>
+            {% else %}
+            {{ source.title }}
+            {% endif %}
+            {% if source.author %}<span class="source-author">by {{ source.author }}</span>{% endif %}
           </label>
+          <button type="submit" class="complete-submit">&#10003;</button>
         </form>
-        {% if source.category %}<span class="source-category">{{ source.category }}</span>{% endif %}
-        <div class="source-title">
-          {% if source.url %}
-          <a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.title }}</a>
-          {% else %}
-          {{ source.title }}
-          {% endif %}
-        </div>
-      </div>
-      {% if source.subtitle or source.author %}
-      <div class="source-meta">
         {% if source.subtitle %}<p class="source-subtitle">{{ source.subtitle }}</p>{% endif %}
-        {% if source.author %}<p class="source-author">{{ source.author }}</p>{% endif %}
+        {% if source.category %}<span class="source-category">{{ source.category }}</span>{% endif %}
       </div>
-      {% endif %}
       {% if source.audio_url %}
       <div class="source-audio">
         <a class="audio-link" href="{{ source.audio_url }}" target="_blank" rel="noopener noreferrer">

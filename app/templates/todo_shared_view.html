@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% import '_todo_macros.html' as todo_macros %}
 
 {% block title %}{{ list_data.name }} – jttbh{% endblock %}
 
@@ -45,8 +46,8 @@
         {{ contributor.username }}
       </h3>
       <todo-list data-type="shared" data-shared-list="{{ list_data.listID }}" role="list">
-        {% for item in contributor.items %}
-          {% include 'todo_shared_item.html' %}
+        {% for item in contributor['items'] %}
+          {{ todo_macros.todo_shared_item(item, username, can_edit) }}
         {% endfor %}
       </todo-list>
     </section>
@@ -59,14 +60,10 @@
   {% if can_edit %}
   <section class="shared-contributor" aria-label="Add item">
     <todo-list data-type="shared" data-shared-list="{{ list_data.listID }}" role="list">
-      <todo-item class="todo-item--blank" role="listitem">
-        <form class="todo-new" method="post"
-              action="{{ url_for('todo.shared_item_create', username=username) }}">
-          <input type="hidden" name="list_id" value="{{ list_data.listID }}">
-          <input type="text" name="title" placeholder="Add item…"
-                 autocomplete="off" aria-label="New item for {{ list_data.name }}">
-        </form>
-      </todo-item>
+      {{ todo_macros.todo_new_item_row(
+           url_for('todo.shared_item_create', username=username),
+           {'list_id': list_data.listID},
+           'New item for ' ~ list_data.name) }}
     </todo-list>
   </section>
   {% endif %}

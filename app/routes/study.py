@@ -95,6 +95,8 @@ def index(username: str, date_str: str = None):
     target_date = _parse_date(date_str) if date_str else today
     if target_date is None:
         return redirect(url_for('study.index', username=username))
+    id_date = target_date.isoformat().replace('_','')
+
 
     user_id = session['user_id']
     subscriptions = StudyModel.get_user_subscriptions(user_id)

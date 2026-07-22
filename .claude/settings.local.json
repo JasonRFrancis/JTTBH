@@ -83,7 +83,14 @@
       "mcp__playwright__browser_console_messages",
       "mcp__playwright__browser_network_requests",
       "Bash(pkill -f \"python3 ./app/main.py\")",
-      "Bash(lsof *)"
+      "Bash(lsof *)",
+      "Bash(timeout 8 ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new jttbh@172.236.126.82 \"echo CONNECTED\")",
+      "Bash(ssh *)",
+      "Bash(gunzip -k backups/jttbh_20260712_233035.sql.gz)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_find",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_take_screenshot"
     ],
     "deny": [],
     "ask": []

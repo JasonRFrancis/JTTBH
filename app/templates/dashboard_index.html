@@ -1,176 +1,128 @@
 {% extends 'base.html' %}
+{% import '_habit_macros.html' as habit_macros %}
+{% import '_todo_macros.html' as todo_macros %}
+{% import '_fitness_macros.html' as fitness_macros %}
+{% import '_study_macros.html' as study_macros %}
 
 {% block title %}Dashboard - jttbh{% endblock %}
 
 {% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 {% if has_perm(32) %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/habit.css') }}">
+{% endif %}
+{% if has_perm(16) %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/todo.css') }}">
+{% endif %}
+{% if has_perm(512) %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/fitness.css') }}">
+{% endif %}
+{% if has_perm(8192) %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}">
 {% endif %}
 {% endblock %}
 
 {% block content %}
-<header class="page-header">
-  <h1>Dashboard</h1>
-  <time class="today-date" datetime="{{ today }}">
-    {{ today | replace('-', '\u2011') }}
-  </time>
-</header>
+    <header class="page-header">
+      <h2>Dashboard</h2>
+      <time class="today-date" datetime="{{ today }}">
+        {{ today | format_date_long }}
+      </time>
+      <div class="filler"></div>
+    </header>
+    <widgets>
+    {% if has_perm(32) %}
+    <section class="widget habit" aria-labelledby="habit-widget-heading">
+      <header class="widget-header">
+        <h3 id="habit-widget-heading">
+          <a href="{{ url_for('habit.index', username=username) }}">Habits</a>
+        </h3>
+        <span class="widget-meta">{{ habit_completed }}/{{ habit_total }} today</span>
+      </header>
 
-{% if has_perm(32) %}
-<section class="widget habit" aria-labelledby="habit-widget-heading">
-  <header class="widget-header">
-    <h2 id="habit-widget-heading">
-      <a href="{{ url_for('habit.index', username=username) }}">Habits</a>
-    </h2>
-    <span class="widget-meta">{{ habit_completed }}/{{ habit_total }} today</span>
-  </header>
-
-  {% if habit_total > 0 %}
-  <habit-grid data-date="{{ today }}">
-    {% for cell in habit_grid %}
-    {% if cell.habitID and cell.applies %}
-      <habit-cell>
-        <form method="post"
-              action="{{ url_for('habit.toggle', username=username, habit_id=cell.habitID, date_str=today) }}">
-          <button type="submit" class="habit-toggle-btn"
-                  aria-label="{{ cell.name }}: toggle"></button>
-          <input
-            type="checkbox"
-            id="hc-{{ cell.habitID }}-{{ today }}"
-            class="habit-checkbox"
-            data-habit-id="{{ cell.habitID }}"
-            data-date="{{ today }}"
-            data-position="{{ cell.position }}"
-            {% if cell.completed == 1 %}checked{% endif %}
-            aria-label="{{ cell.name }}: {{ 'completed' if cell.completed == 1 else 'not completed' }}">
-          <label
-            for="hc-{{ cell.habitID }}-{{ today }}"
-            {% if cell.color %}style="--habit-color: {{ cell.color }};"{% endif %}
-            title="{{ cell.name }}{% if cell.streak is defined and cell.streak > 0 %} ({{ cell.streak }}-day streak){% endif %}">
-            {% if cell.icon_svg %}
-              {{ cell.icon_svg | safe }}
-            {% else %}
-              <span class="habit-initial" aria-hidden="true">{{ cell.name[0] | upper }}</span>
-            {% endif %}
-          </label>
-        </form>
-      </habit-cell>
-    {% else %}
-      <habit-cell class="empty" data-position="{{ cell.position }}" aria-hidden="true"></habit-cell>
-    {% endif %}
-    {% endfor %}
-  </habit-grid>
-  {% else %}
-  <p class="widget-empty">No habits scheduled for today.</p>
-  {% endif %}
-</section>
-{% endif %}
-
-{% if has_perm(16) %}
-<section class="widget todo-widget" aria-labelledby="todo-widget-heading">
-  <header class="widget-header">
-    <h2 id="todo-widget-heading">
-      <a href="{{ url_for('todo.index', username=username) }}">Today</a>
-    </h2>
-    <span class="widget-meta">{{ todos | length }} item{% if todos | length != 1 %}s{% endif %}</span>
-  </header>
-
-  {% if todos %}
-  <ol class="todo-list" data-username="{{ username }}">
-    {% for todo in todos %}
-    <li class="todo-item{% if todo.completed %} todo-item--done{% endif %}"
-        data-todo-id="{{ todo.todoID }}">
-      <form method="post" action="{{ url_for('todo.toggle', username=username, todo_id=todo.todoID) }}">
-        <label class="todo-label">
-          <input type="checkbox"
-                 class="todo-checkbox"
-                 data-todo-id="{{ todo.todoID }}"
-                 {% if todo.completed %}checked{% endif %}
-                 aria-label="{{ todo.title }}">
-          <span class="todo-title">{{ todo.title }}</span>
-        </label>
-        <button type="submit" class="todo-toggle-btn">Toggle</button>
-      </form>
-      {% if todo.content %}
-      <p class="todo-content">{{ todo.content }}</p>
-      {% endif %}
-    </li>
-    {% endfor %}
-  </ol>
-  {% else %}
-  <p class="widget-empty">No todos for today.</p>
-  {% endif %}
-</section>
-{% endif %}
-
-{% if has_perm(512) and fitness %}
-<section class="widget fitness-widget" aria-labelledby="fitness-widget-heading">
-  <header class="widget-header">
-    <h2 id="fitness-widget-heading">
-      <a href="{{ url_for('fitness.index', username=username) }}">Fitness</a>
-    </h2>
-    {% if fitness.program %}
-    <span class="widget-meta">{{ fitness.exercise_count }} exercise{% if fitness.exercise_count != 1 %}s{% endif %} today</span>
-    {% endif %}
-  </header>
-  {% if fitness.program %}
-  {% if fitness.exercises %}
-  <ol class="fitness-exercise-list">
-    {% for ex in fitness.exercises %}
-    <li class="fitness-ex-item">
-      <span class="fitness-ex-name">{{ ex.exercise_name }}</span>
-      {% if ex.exercise_type == 'cardio' %}
-        {% if ex.recommended_duration %}<span class="fitness-ex-detail">{{ ex.recommended_duration }} min</span>{% endif %}
+      {% if habit_total > 0 %}
+      {{ habit_macros.habit_grid(habit_grid, today, username) }}
       {% else %}
-        {% if ex.recommended_sets and ex.recommended_reps %}<span class="fitness-ex-detail">{{ ex.recommended_sets }}×{{ ex.recommended_reps }}</span>{% endif %}
+      <p class="widget-empty">No habits scheduled for today.</p>
       {% endif %}
-    </li>
-    {% endfor %}
-  </ol>
-  {% else %}
-  <p class="widget-empty">No exercises scheduled for today.</p>
-  {% endif %}
-  {% else %}
-  <p class="widget-empty">No active program. <a href="{{ url_for('fitness.settings', username=username) }}">Set one up</a>.</p>
-  {% endif %}
-</section>
-{% endif %}
+    </section>
+    {% endif %}
 
-{% if has_perm(8192) and study %}
-<section class="widget study-widget" aria-labelledby="study-widget-heading">
-  <header class="widget-header">
-    <h2 id="study-widget-heading">
-      <a href="{{ url_for('study.index', username=username) }}">Study</a>
-    </h2>
-    <span class="widget-meta">{{ study.completed }}/{{ study.total }} today{% if study.streak > 0 %} · {{ study.streak }}-day streak{% endif %}</span>
-  </header>
-  {% if study.sources %}
-  <ul class="study-item-list">
-    {% for item in study.sources %}
-    <li class="study-item{% if item.completed %} study-item--done{% endif %}">
-      {% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.title }}</a>
-      {% else %}{{ item.title }}{% endif %}
-    </li>
-    {% endfor %}
-  </ul>
-  {% else %}
-  <p class="widget-empty">Nothing scheduled for today.</p>
-  {% endif %}
-</section>
-{% endif %}
+    {% if has_perm(16) %}
+    <section class="widget todo-widget" aria-labelledby="todo-widget-heading">
+      <header class="widget-header">
+        <h3><a href="{{ url_for('todo.index', username=username) }}">To-dos</a></h3>
+        <span class="widget-meta">{% if todos %}{{ todos | selectattr('completed') | list | length }}/{{ todos | length }} today{% else %}0 items, <a href="{{ url_for('todo.index', username=username) }}">add an item?</a>{% endif %}</span>
+      </header>
+      {% if todos %}
+      <ol class="todo-list" data-username="{{ username }}">
+        {% for todo in todos %}
+        {{ todo_macros.todo_widget_item(todo, username) }}
+        {% endfor %}
+      </ol>
+      {% endif %}
+    </section>
+    {% endif %}
 
-{% if not (session.get('perm_read') is not none and (has_perm(32) or has_perm(16) or has_perm(512) or has_perm(8192))) %}
-<p>No widgets available. Check your account permissions.</p>
-{% endif %}
-{% endblock %}
+    {% if has_perm(8192) and study %}
+    <section class="widget study-widget" aria-labelledby="study-widget-heading">
+      <header class="widget-header">
+        <h3 id="study-widget-heading">
+          <a href="{{ url_for('study.index', username=username) }}">Study</a>
+        </h3>
+        <span class="widget-meta">{{ study.completed }}/{{ study.total }} today{% if study.streak > 0 %} · {{ study.streak }}-day streak{% endif %}</span>
+      </header>
+      {% if study.sources %}
+      <ul class="study-item-list source-list">
+        {% for item in study.sources %}
+        {{ study_macros.study_widget_item(item, username, today) }}
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="widget-empty">Nothing scheduled for today.</p>
+      {% endif %}
+    </section>
+    {% endif %}
 
-{% block js %}
-<script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
-{% if has_perm(32) %}
-<script>
-  const username = {{ username | tojson }};
-  const refDate  = {{ today | tojson }};
-</script>
-<script src="{{ url_for('static', filename='js/habit.js') }}"></script>
-{% endif %}
+    {% if has_perm(512) and fitness %}
+    <section class="widget fitness-widget" aria-labelledby="fitness-widget-heading">
+      <header class="widget-header">
+        <h3 id="fitness-widget-heading">
+          <a href="{{ url_for('fitness.index', username=username) }}">Fitness</a>
+        </h3>
+        {% if fitness.program %}
+        <span class="widget-meta">{{ fitness.exercise_count }} exercise{% if fitness.exercise_count != 1 %}s{% endif %} today</span>
+        {% endif %}
+      </header>
+      {% if fitness.program %}
+      {% if fitness.exercises %}
+      <ol class="fitness-exercise-list">
+        {% for ex in fitness.exercises %}
+        {{ fitness_macros.fitness_widget_exercise(ex) }}
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p class="widget-empty">No exercises scheduled for today.</p>
+      {% endif %}
+      {% else %}
+      <p class="widget-empty">No active program. <a href="{{ url_for('fitness.settings', username=username) }}">Set one up</a>.</p>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    {% if not (session.get('perm_read') is not none and (has_perm(32) or has_perm(16) or has_perm(512) or has_perm(8192))) %}
+    <p>No widgets available. Check your account permissions.</p>
+    {% endif %}
+    {% endblock %}
+    </widgets>
+
+    {% block js %}
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
+    {% if has_perm(32) %}
+    <script>
+      const username = {{ username | tojson }};
+      const refDate  = {{ today.isoformat() | tojson }};
+    </script>
+    <script src="{{ url_for('static', filename='js/habit.js') }}"></script>
+    {% endif %}
 {% endblock %}

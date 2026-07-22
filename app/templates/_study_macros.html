@@ -1,0 +1,17 @@
+{% macro study_widget_item(item, username, today) %}
+<li class="source-item{% if item.completed %} source-item--done{% endif %}">
+  <div class="source-top">
+    <form class="complete-form" method="post"
+          action="{{ url_for('study.source_complete', username=username, source_id=item.sourceID) }}">
+      <input type="hidden" name="date" value="{{ today.isoformat() }}">
+      <input type="checkbox" id="c{{item.sourceID}}" class="complete-checkbox" name="complete"{% if item.completed %} checked{% endif %}
+             aria-label="{% if item.completed %}Mark incomplete{% else %}Mark complete{% endif %}: {{ item.title }}">
+      <label for="c{{item.sourceID}}" class="source-title">
+        {% if item.url %}<a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.title }}</a>
+        {% else %}{{ item.title }}{% endif %}
+      </label>
+      <button type="submit" class="complete-submit">&#10003;</button>
+    </form>
+  </div>
+</li>
+{% endmacro %}

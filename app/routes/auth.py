@@ -37,6 +37,7 @@ from flask import (
     flash,
     render_template,
     current_app,
+    abort,
 )
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -203,7 +204,7 @@ def login():
     if session.get('user_id'):
         username = session['username']
         return redirect(url_for('dashboard.index', username=username))
-    return render_template('auth.html')
+    return render_template('auth.html', debug=current_app.debug)
 
 
 @auth_bp.route('/login/google')
@@ -307,6 +308,29 @@ def oauth2callback():
         )
     except Exception as exc:
         current_app.logger.warning('Failed to persist OAuth tokens: %s', exc)
+
+    _set_session(user)
+    return redirect(url_for('dashboard.index', username=user['username']))
+
+
+@auth_bp.route('/dev-login')
+def dev_login():
+    """
+    Dev-only bypass: log in as 'jason' without Google OAuth.
+
+    404s unless the running config has DEBUG=True (config.prod.ProductionConfig
+    hardcodes DEBUG=False, so this route cannot be reached in production).
+    """
+    if not current_app.debug:
+        abort(404)
+
+    user = db_manager.execute_one(
+        "SELECT * FROM `user` WHERE username = %s",
+        ('jason',),
+    )
+    if not user:
+        flash('Dev login failed: user "jason" not found.', 'error')
+        return redirect(url_for('auth.login'))
 
     _set_session(user)
     return redirect(url_for('dashboard.index', username=user['username']))
