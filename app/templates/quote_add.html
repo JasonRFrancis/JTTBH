@@ -45,4 +45,15 @@
     </div>
   </form>
 </section>
+
+{% if all_tags %}
+{# Not rendered visually — quote.js's autocomplete builds its suggestion list
+   by scanning .tag-chip/.tag-pill text already on the page, same as it does
+   from the tag nav and quote cards on quote_index.html. #}
+<ul hidden>
+  {% for tag in all_tags %}
+  <li class="tag-chip">{{ tag }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
 {% endblock %}

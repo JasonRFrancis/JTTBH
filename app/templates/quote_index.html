@@ -84,9 +84,10 @@
 <section class="bookmarklet-section" aria-labelledby="bookmarklet-heading">
   <h2 id="bookmarklet-heading">Bookmarklet</h2>
   <p>Select text on any page, then click this link to save it as a quote.
-     On General Conference pages it also captures the speaker and talk title.</p>
+     On General Conference, BYU, BYU-Idaho, and BYU-Hawaii speech pages it
+     also captures the speaker and talk title.</p>
   <p>Drag this link to your bookmarks bar:</p>
-  {% set bm_js %}javascript:(function(){var t=window.getSelection().toString().trim();var s=location.href;var a='',ti='';if(location.hostname==='www.churchofjesuschrist.org'&&location.pathname.indexOf('/general-conference/')>-1){var ae=document.querySelector('.author-name')||document.querySelector('[class*=byLine]')||document.querySelector('[class*=author]');if(ae)a=ae.textContent.trim().replace(/^\s*By\s+/i,'').replace(/^\s*(Elder|President|Sister)\s+/i,'');var te=document.querySelector('h1');if(te)ti=te.textContent.trim();}window.open('https://jttbh.com/{{ username }}/quote/add?'+new URLSearchParams({text:t,source:s,author:a,title:ti}).toString(),'_blank');})();{% endset %}
+  {% set bm_js %}javascript:(function(){var t=window.getSelection().toString().trim();var s=location.href;var a='',ti='';var h=location.hostname,p=location.pathname;var rules=[[h==='www.churchofjesuschrist.org'&&p.indexOf('/general-conference/')>-1,['.author-name','[class*=byLine]','[class*=author]'],['h1'],1],[h==='speeches.byu.edu',['.single-speech__speaker'],['.single-speech__title'],0],[h==='www.byui.edu'&&p.indexOf('/speeches/')>-1,['.DevotionalPage-authorName'],['.DevotionalPage-headline'],0],[h==='speeches.byuh.edu',['.ArticlePage-authorName'],['.ArticlePage-headline'],1]];for(var i=0;i<rules.length;i++){var r=rules[i];if(!r[0])continue;for(var j=0;j<r[1].length;j++){var ae=document.querySelector(r[1][j]);if(ae){a=ae.textContent.trim();break;}}if(r[3])a=a.replace(/^\s*By\s*/i,'').replace(/^\s*(Elder|President|Sister|Bishop|Brother)\s+/i,'');for(var k=0;k<r[2].length;k++){var te=document.querySelector(r[2][k]);if(te){ti=te.textContent.trim();break;}}break;}window.open('https://jttbh.com/{{ username }}/quote/add?'+new URLSearchParams({text:t,source:s,author:a,title:ti}).toString(),'_blank');})();{% endset %}
   <a href="{{ bm_js }}" class="bookmarklet-link">📌 Save Quote</a>
   <p class="bookmarklet-note">Right-click → Bookmark Link, or drag to your bookmarks bar.</p>
 </section>

@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-Check speeches.byu.edu, byui.edu/speeches, and General Conference for new
-material and add it to the database. Safe to re-run on a schedule — only
-adds talks not already present (by URL).
+Check speeches.byu.edu, byui.edu/speeches, speeches.byuh.edu, and General
+Conference for new material and add it to the database. Safe to re-run on a
+schedule — only adds talks not already present (by URL).
 
 Usage:
-    python3 claude/import_new_speeches.py                # all three sources
+    python3 claude/import_new_speeches.py                # all sources
     python3 claude/import_new_speeches.py --site byu
     python3 claude/import_new_speeches.py --site byui
+    python3 claude/import_new_speeches.py --site byuh
     python3 claude/import_new_speeches.py --site gc
-    python3 claude/import_new_speeches.py --dry-run       # byu/byui only; GC has no preview mode
+    python3 claude/import_new_speeches.py --dry-run       # byu/byui/byuh only; GC has no preview mode
 """
 
 import argparse
@@ -22,14 +23,15 @@ from app.services.database import db_manager
 
 import scrape_byu_speeches
 import scrape_byui_speeches
+import scrape_byuh_speeches
 import scrape_gospel_library
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--site', choices=['byu', 'byui', 'gc', 'all'], default='all')
+    parser.add_argument('--site', choices=['byu', 'byui', 'byuh', 'gc', 'all'], default='all')
     parser.add_argument('--dry-run', action='store_true',
-                        help='Show matches without writing to DB (byu/byui only)')
+                        help='Show matches without writing to DB (byu/byui/byuh only)')
     args = parser.parse_args()
 
     app = create_app()
@@ -41,8 +43,9 @@ def main():
             sys.exit(1)
         admin_id = row['userID']
         # add_source/get_or_create_collection are shared functions defined in
-        # scrape_byu_speeches and imported by name into scrape_byui_speeches,
-        # so setting the global here is enough for both modules.
+        # scrape_byu_speeches and imported by name into scrape_byui_speeches
+        # and scrape_byuh_speeches, so setting the global here is enough for
+        # all three modules.
         scrape_byu_speeches.ADMIN_USER_ID = admin_id
         scrape_gospel_library.ADMIN_USER_ID = admin_id
         print(f"Admin: {admin_id[:8]}...")
@@ -54,6 +57,10 @@ def main():
         if args.site in ('byui', 'all'):
             print("\n=== byui.edu/speeches ===")
             scrape_byui_speeches.run_import(dry_run=args.dry_run)
+
+        if args.site in ('byuh', 'all'):
+            print("\n=== speeches.byuh.edu ===")
+            scrape_byuh_speeches.run_import(dry_run=args.dry_run)
 
         if args.site in ('gc', 'all'):
             print("\n=== General Conference ===")

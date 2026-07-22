@@ -56,10 +56,12 @@ def index(username: str):
 @login_required
 @permission_required_read(PERM_QUOTE)
 def add(username: str):
+    all_tags = QuoteModel.get_all_tags(session['user_id'])
     return render_template(
         'quote_add.html',
         username=username,
         area='quote',
+        all_tags=all_tags,
         prefill={
             'text':   request.args.get('text', ''),
             'author': request.args.get('author', ''),
