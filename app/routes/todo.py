@@ -361,14 +361,22 @@ def toggle(username: str, todo_id: str):
     ---------------
     todo_id : str   The todoID UUID to toggle.
     """
+    from flask import jsonify  # noqa: PLC0415
+
     user_id = session['user_id']
     todo = TodoModel.get_todo_by_id(todo_id, user_id)
 
     if todo is None:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'status': 'error', 'message': 'Item not found'}), 404
         flash('Item not found.', 'error')
         return _redirect_to_index(username, user_today())
 
     TodoModel.toggle_complete(todo_id, user_id)
+    now_completed = todo['completed'] is None
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'status': 'ok', 'completed': now_completed})
 
     # Redirect back to the referring page (or today's index)
     referrer = request.referrer

@@ -443,4 +443,113 @@
     });
   }());
 
+  /* ── Collection detail: calendar drag-and-drop scheduler ──── */
+  (function() {
+    const grid = document.querySelector('.calendar-grid');
+    if (!grid) return;
+
+    const username = grid.dataset.username;
+    let selected = new Set();
+
+    function chipFor(id) {
+      return document.querySelector('.calendar-item[data-source-id="' + id + '"]');
+    }
+
+    function setSelected(id, on) {
+      if (on) selected.add(id); else selected.delete(id);
+      const el = chipFor(id);
+      if (el) el.classList.toggle('calendar-item--selected', on);
+    }
+
+    function clearSelection() {
+      selected.forEach(id => setSelected(id, false));
+    }
+
+    function updateUnscheduledCount() {
+      const heading = document.getElementById('unscheduled-heading');
+      const list = document.querySelector('.calendar-unscheduled .calendar-item-list');
+      if (heading && list) heading.textContent = 'Unscheduled (' + list.children.length + ')';
+    }
+
+    // Insert el among list's children in order_by order, instead of just
+    // appending — keeps a dropped item's original position (e.g. dragging
+    // it back to Unscheduled restores where it sat before it was scheduled).
+    function insertSorted(list, el) {
+      const order = parseInt(el.dataset.order, 10) || 0;
+      const sibling = Array.from(list.children).find(li => (parseInt(li.dataset.order, 10) || 0) > order);
+      if (sibling) list.insertBefore(el, sibling); else list.appendChild(el);
+    }
+
+    document.querySelectorAll('.calendar-item').forEach(item => {
+      const id = item.dataset.sourceId;
+
+      item.addEventListener('click', () => setSelected(id, !selected.has(id)));
+
+      item.addEventListener('keydown', e => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        setSelected(id, !selected.has(id));
+      });
+
+      item.addEventListener('dragstart', e => {
+        if (!selected.has(id)) {
+          clearSelection();
+          setSelected(id, true);
+        }
+        selected.forEach(sid => {
+          const el = chipFor(sid);
+          if (el) el.classList.add('calendar-item--dragging');
+        });
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', JSON.stringify([...selected]));
+      });
+
+      item.addEventListener('dragend', () => {
+        document.querySelectorAll('.calendar-item--dragging').forEach(el => el.classList.remove('calendar-item--dragging'));
+      });
+    });
+
+    const dropZones = [...document.querySelectorAll('.calendar-day'), document.querySelector('.calendar-unscheduled')]
+      .filter(Boolean);
+
+    dropZones.forEach(zone => {
+      zone.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        zone.classList.add('calendar-day--drag-over');
+      });
+
+      zone.addEventListener('dragleave', () => zone.classList.remove('calendar-day--drag-over'));
+
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('calendar-day--drag-over');
+
+        let ids;
+        try { ids = JSON.parse(e.dataTransfer.getData('text/plain')); } catch (err) { return; }
+        if (!Array.isArray(ids) || !ids.length) return;
+
+        const list = zone.querySelector('.calendar-item-list');
+        if (!list) return;
+
+        fetch('/' + username + '/study/source/schedule/post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          body: JSON.stringify({ source_ids: ids, scheduled_date: zone.dataset.date || null })
+        })
+          .then(r => r.json())
+          .then(resp => {
+            if (resp.status !== 'ok') return;
+            resp.updated.forEach(sid => {
+              const el = chipFor(sid);
+              if (el) insertSorted(list, el);
+            });
+            clearSelection();
+            updateUnscheduledCount();
+          })
+          .catch(() => {});
+      });
+    });
+  }());
+
 }());

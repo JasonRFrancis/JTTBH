@@ -174,6 +174,56 @@
   </form>
 </section>
 
+{% if collection.mode == 'calendar' and calendar %}
+<section class="study-calendar" aria-labelledby="calendar-heading">
+  <header class="calendar-header">
+    <h3 id="calendar-heading">{{ calendar.month_label }}</h3>
+    <nav class="calendar-nav" aria-label="Month navigation">
+      <a class="btn-nav" href="{{ url_for('study.collection_detail', username=username, collection_id=collection.collectionID, month=calendar.prev_month_str) }}">&larr; Prev</a>
+      <a class="btn-nav" href="{{ url_for('study.collection_detail', username=username, collection_id=collection.collectionID, month=calendar.next_month_str) }}">Next &rarr;</a>
+    </nav>
+  </header>
+
+  <p class="calendar-hint">Drag sources onto a day to schedule them. Click to select multiple, then drag any selected item to move them together.</p>
+
+  <div class="calendar-layout">
+    <div class="calendar-grid" data-username="{{ username }}">
+      <div class="calendar-weekdays">
+        <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+      </div>
+      {% for week in calendar.weeks %}
+      <div class="calendar-week">
+        {% for day in week %}
+        <div class="calendar-day{% if day.month != calendar.month %} calendar-day--outside{% endif %}{% if day == calendar.today %} calendar-day--today{% endif %}"
+             data-date="{{ day.isoformat() }}">
+          <span class="calendar-day-number">{{ day.day }}</span>
+          <ul class="calendar-item-list" role="list">
+            {% for source in calendar.by_date.get(day, []) %}
+            <li class="calendar-item" draggable="true" data-source-id="{{ source.sourceID }}" data-order="{{ source.order_by }}" tabindex="0" role="button">
+              {% if source.category %}<span class="source-category">{{ source.category }}</span>{% endif %}{{ source.title }}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+
+    <aside class="calendar-unscheduled" aria-labelledby="unscheduled-heading" data-date="">
+      <h4 id="unscheduled-heading">Unscheduled ({{ calendar.unscheduled | length }})</h4>
+      <ul class="calendar-item-list" role="list">
+        {% for source in calendar.unscheduled %}
+        <li class="calendar-item" draggable="true" data-source-id="{{ source.sourceID }}" data-order="{{ source.order_by }}" tabindex="0" role="button">
+          {% if source.category %}<span class="source-category">{{ source.category }}</span>{% endif %}{{ source.title }}
+        </li>
+        {% endfor %}
+      </ul>
+    </aside>
+  </div>
+</section>
+{% endif %}
+
 {% if collection.mode == 'calendar' %}
 <section aria-labelledby="import-heading">
   <h2 id="import-heading">Import from Another Collection</h2>
@@ -236,3 +286,5 @@
 </section>
 {% endif %}
 {% endblock %}
+
+{% block js %}<script src="{{ url_for('static', filename='js/study.js') }}" defer></script>{% endblock %}

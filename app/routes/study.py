@@ -18,6 +18,7 @@ POST /<username>/study/collection/delete/post/<collection_id>
 POST /<username>/study/source/create/post
 POST /<username>/study/source/update/post/<source_id>
 POST /<username>/study/source/delete/post/<source_id>
+POST /<username>/study/source/schedule/post           (JSON — batch calendar drag-drop)
 POST /<username>/study/source/import/post
 POST /<username>/study/subscribe/post/<collection_id>
 POST /<username>/study/subscription/update/post/<subscription_id>
@@ -27,6 +28,7 @@ POST /<username>/study/subscription/<subscription_id>/schedule/set/post
 POST /<username>/study/subscription/<subscription_id>/schedule/clear/post/<source_id>
 """
 
+import calendar as cal_module
 import json
 from datetime import date, timedelta
 
@@ -80,6 +82,50 @@ def _normalise_csv(raw: str) -> str:
         if p not in seen:
             seen.append(p)
     return ', '.join(seen)
+
+
+def _build_calendar_context(sources: list[dict], month_str: str, today: date) -> dict:
+    """
+    Build a month-grid view of *sources* for the calendar-drag-drop UI.
+
+    Groups sources by ``scheduled_date`` (Python-side — collections are small
+    enough that a second SQL query isn't worth it) and lays out a Sunday-first
+    month grid via the stdlib ``calendar`` module.
+    """
+    if month_str:
+        try:
+            year, month = (int(p) for p in month_str.split('-', 1))
+            date(year, month, 1)  # validate
+        except (ValueError, TypeError):
+            year, month = today.year, today.month
+    else:
+        year, month = today.year, today.month
+
+    weeks = cal_module.Calendar(firstweekday=6).monthdatescalendar(year, month)
+
+    by_date: dict[date, list[dict]] = {}
+    unscheduled = []
+    for source in sources:
+        sched = source.get('scheduled_date')
+        if sched:
+            by_date.setdefault(sched, []).append(source)
+        else:
+            unscheduled.append(source)
+
+    prev_year, prev_month = (year - 1, 12) if month == 1 else (year, month - 1)
+    next_year, next_month = (year + 1, 1) if month == 12 else (year, month + 1)
+
+    return {
+        'year': year,
+        'month': month,
+        'month_label': date(year, month, 1).strftime('%B %Y'),
+        'weeks': weeks,
+        'by_date': by_date,
+        'unscheduled': unscheduled,
+        'today': today,
+        'prev_month_str': f'{prev_year:04d}-{prev_month:02d}',
+        'next_month_str': f'{next_year:04d}-{next_month:02d}',
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -178,6 +224,7 @@ def collection_detail(username: str, collection_id: str):
     from_collection = None
     from_sources = []
     all_collections = []
+    calendar_ctx = None
     if collection['mode'] == 'calendar':
         all_collections = StudyModel.get_all_collections()
         from_collection_id = request.args.get('from_collection', '').strip()
@@ -185,6 +232,9 @@ def collection_detail(username: str, collection_id: str):
             from_collection = StudyModel.get_collection(from_collection_id)
             if from_collection:
                 from_sources = StudyModel.get_sources(from_collection_id)
+
+        today = today_for_tz(session.get('timezone', 'UTC'))
+        calendar_ctx = _build_calendar_context(sources, request.args.get('month', '').strip(), today)
 
     return render_template(
         'study_collection_detail.html',
@@ -195,6 +245,7 @@ def collection_detail(username: str, collection_id: str):
         all_collections=all_collections,
         from_collection=from_collection,
         from_sources=from_sources,
+        calendar=calendar_ctx,
     )
 
 
@@ -453,6 +504,54 @@ def source_delete(username: str, source_id: str):
     StudyModel.delete_source(source_id, source['collectionID'], session['user_id'])
     flash('Source deleted.', 'success')
     return redirect(url_for('study.collection_detail', username=username, collection_id=source['collectionID']))
+
+
+@study_bp.route('/source/schedule/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_STUDY)
+@permission_required_write(PERM_STUDY)
+def source_schedule(username: str):
+    """
+    Batch-set (or clear) ``scheduled_date`` for one or more sources — the
+    drag-and-drop calendar endpoint. Body: JSON
+    ``{"source_ids": [...], "scheduled_date": "YYYY-MM-DD" | null}``.
+    """
+    data = request.get_json(silent=True) or {}
+    source_ids = data.get('source_ids') or []
+    if not isinstance(source_ids, list) or not source_ids:
+        return jsonify({'status': 'error', 'message': 'No sources given'}), 400
+
+    date_str = (data.get('scheduled_date') or '').strip()
+    target_date = _parse_date(date_str) if date_str else None
+    if date_str and target_date is None:
+        return jsonify({'status': 'error', 'message': 'Invalid date'}), 400
+
+    user_id = session['user_id']
+    updated = []
+    for source_id in source_ids:
+        source = StudyModel.get_source(source_id)
+        if not source:
+            continue
+        collection = StudyModel.get_collection(source['collectionID'])
+        if not collection or collection['userID'] != user_id:
+            continue
+        StudyModel.update_source(
+            source_id=source_id,
+            collection_id=source['collectionID'],
+            user_id=user_id,
+            category=source.get('category') or '',
+            title=source['title'],
+            subtitle=source.get('subtitle') or '',
+            author=source.get('author') or '',
+            url=source.get('url') or '',
+            audio_url=source.get('audio_url') or '',
+            audio_length=source.get('audio_length') or '',
+            order_by=source.get('order_by') or 0,
+            scheduled_date=target_date,
+        )
+        updated.append(source_id)
+
+    return jsonify({'status': 'ok', 'updated': updated, 'scheduled_date': date_str or None})
 
 
 @study_bp.route('/source/import/post', methods=['POST'])

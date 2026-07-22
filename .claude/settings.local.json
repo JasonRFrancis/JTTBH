@@ -90,7 +90,15 @@
       "mcp__playwright__browser_navigate",
       "mcp__playwright__browser_find",
       "mcp__playwright__browser_click",
-      "mcp__playwright__browser_take_screenshot"
+      "mcp__playwright__browser_take_screenshot",
+      "Bash(node --check app/static/js/dashboard.js)",
+      "Bash(node --check /Users/jason/Documents/JTTBH/app/static/js/dashboard.js)",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_close",
+      "Bash(node --check /Users/jason/Documents/JTTBH/app/static/js/study.js)",
+      "mcp__playwright__browser_drag",
+      "mcp__playwright__browser_snapshot",
+      "Bash(md5 /Users/jason/Documents/JTTBH/app/routes/study.py /Users/jason/Documents/JTTBH/app/static/js/study.js)"
     ],
     "deny": [],
     "ask": []

@@ -37,7 +37,7 @@
         <h3 id="habit-widget-heading">
           <a href="{{ url_for('habit.index', username=username) }}">Habits</a>
         </h3>
-        <span class="widget-meta">{{ habit_completed }}/{{ habit_total }} today</span>
+        <span class="widget-meta" id="habit-widget-meta">{{ habit_completed }}/{{ habit_total }} today</span>
       </header>
 
       {% if habit_total > 0 %}
@@ -52,7 +52,7 @@
     <section class="widget todo-widget" aria-labelledby="todo-widget-heading">
       <header class="widget-header">
         <h3><a href="{{ url_for('todo.index', username=username) }}">To-dos</a></h3>
-        <span class="widget-meta">{% if todos %}{{ todos | selectattr('completed') | list | length }}/{{ todos | length }} today{% else %}0 items, <a href="{{ url_for('todo.index', username=username) }}">add an item?</a>{% endif %}</span>
+        <span class="widget-meta">{% if todos %}<span id="todo-widget-count">{{ todos | selectattr('completed') | list | length }}/{{ todos | length }}</span> today{% else %}0 items, <a href="{{ url_for('todo.index', username=username) }}">add an item?</a>{% endif %}</span>
       </header>
       {% if todos %}
       <ol class="todo-list" data-username="{{ username }}">
@@ -70,7 +70,7 @@
         <h3 id="study-widget-heading">
           <a href="{{ url_for('study.index', username=username) }}">Study</a>
         </h3>
-        <span class="widget-meta">{{ study.completed }}/{{ study.total }} today{% if study.streak > 0 %} · {{ study.streak }}-day streak{% endif %}</span>
+        <span class="widget-meta"><span id="study-widget-count">{{ study.completed }}/{{ study.total }}</span> today{% if study.streak > 0 %} · {{ study.streak }}-day streak{% endif %}</span>
       </header>
       {% if study.sources %}
       <ul class="study-item-list source-list">

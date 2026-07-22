@@ -1,5 +1,5 @@
 {% macro study_widget_item(item, username, today) %}
-<li class="source-item{% if item.completed %} source-item--done{% endif %}">
+<li class="source-item{% if item.completed %} source-item--done{% endif %}" data-source-id="{{ item.sourceID }}">
   <div class="source-top">
     <form class="complete-form" method="post"
           action="{{ url_for('study.source_complete', username=username, source_id=item.sourceID) }}">
