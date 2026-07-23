@@ -23,6 +23,7 @@ import argparse
 import os
 import re
 import sys
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import create_app
@@ -36,6 +37,18 @@ from scrape_byu_speeches import (
 from scrape_byui_speeches import build_gc_index, match_gc_author
 
 BYUH = 'https://speeches.byuh.edu'
+
+# speeches.byuh.edu/robots.txt declares "Crawl-delay: 10" — much longer than
+# the 0.6s baked into scrape_byu_speeches.fetch() (fine for byu.edu/byui.edu,
+# which declare no crawl-delay). Ignoring the site's own stated pacing is
+# what gets a persistent server IP rate-limited/blocked, so every request to
+# this host goes through fetch_byuh() instead of the shared fetch() directly.
+BYUH_DELAY = 10
+
+
+def fetch_byuh(url):
+    time.sleep(BYUH_DELAY)
+    return fetch(url)
 
 
 # ---------------------------------------------------------------------------
@@ -51,7 +64,7 @@ def load_byuh_speakers():
     0 is a dummy talk-count so this shape matches scrape_byu_speeches's
     (last, first, display, count) and its match_speakers() can be reused as-is.
     """
-    soup = fetch(f'{BYUH}/speakers')
+    soup = fetch_byuh(f'{BYUH}/speakers')
     speakers = {}
     for a in soup.find_all('a', class_='ListLinks-link', href=True):
         href = a['href']
@@ -77,7 +90,7 @@ def scrape_speaker_talks(speaker_url, gc_name, gc_index):
 
     Returns list of (order_by_int, title, url, date_str).
     """
-    soup = fetch(speaker_url)
+    soup = fetch_byuh(speaker_url)
     talks = []
 
     for card in soup.find_all('div', class_='PromoCardImageOnTop'):
