@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Topics{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="admin-header">
+  <h1>Topics</h1>
+  <nav aria-label="Admin navigation">
+    <a href="{{ url_for('admin.dashboard', username=username) }}">Dashboard</a>
+    <a href="{{ url_for('admin.users',     username=username) }}">Users</a>
+    <a href="{{ url_for('admin.icons',     username=username) }}">Icons</a>
+    <a href="{{ url_for('admin.topics',    username=username) }}" aria-current="page">Topics</a>
+    <a href="{{ url_for('admin.log',       username=username) }}">Log</a>
+    <a href="{{ url_for('admin.errors',    username=username) }}">Errors</a>
+  </nav>
+</header>
+
+<p>
+  The master tag vocabulary shared across features (study, quote) for prefilling tags.
+  Seeded from the church's General Conference topics list.
+</p>
+
+<section class="admin-section" aria-labelledby="add-topic-heading">
+  <h2 id="add-topic-heading">Add Topic</h2>
+  <form method="post" action="{{ url_for('admin.topic_create', username=username) }}" class="icon-form">
+    <div class="form-row">
+      <label for="new-topic-name">Name <span aria-hidden="true">*</span></label>
+      <input type="text" id="new-topic-name" name="name" required maxlength="200"
+             placeholder="e.g. Faith">
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Add Topic</button>
+    </div>
+  </form>
+</section>
+
+<section class="admin-section" aria-labelledby="topics-heading">
+  <h2 id="topics-heading">Current Topics ({{ topics | length }})</h2>
+
+  {% if topics %}
+  <ul class="topic-list" role="list">
+    {% for topic in topics %}
+    <li class="topic-row">
+      <span><strong>{{ topic.name }}</strong></span>
+      <form method="post" action="{{ url_for('admin.topic_delete', username=username, topic_id=topic.id) }}"
+            onsubmit="return confirm('Delete topic \'{{ topic.name }}\'?')">
+        <button type="submit" class="btn btn-danger">Delete</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>No topics yet. Add one above.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -74,20 +74,6 @@ function initTagChips() {
   });
 }
 
-// Pre-seeded gospel-principles categories for autocomplete
-const GOSPEL_TAGS = [
-  'God','Jesus Christ','Holy Ghost','Scripture','Prayer','Faith','Repentance',
-  'Baptism','Confirmation','Atonement','Resurrection','Eternal Life',
-  'Agency','Obedience','Commandments','Tithing','Fasting','Sabbath',
-  'Priesthood','Ordinances','Covenants','Temple','Marriage','Family',
-  'Parenting','Service','Charity','Love','Humility','Honesty',
-  'Forgiveness','Gratitude','Wisdom','Knowledge','Intelligence',
-  'Revelation','Prophecy','Church','Missionary','Word of Wisdom',
-  'Eternal Progression','Plan of Salvation','Creation','Spirit World',
-  'Judgment','Kingdoms of Glory','Second Coming','Millennium','Death',
-  'Premortal Life','Apostasy','Restoration','Book of Mormon','Prophets'
-];
-
 function initTagAutocomplete() {
   document.querySelectorAll('.tag-chips-input[list]').forEach(input => {
     const listId = input.getAttribute('list');
@@ -97,13 +83,14 @@ function initTagAutocomplete() {
       dl.id = listId;
       document.body.appendChild(dl);
     }
-    // Get existing tags from the page
+    // Existing tags + the study feature's master topic list, both rendered
+    // onto the page as .tag-pill/.tag-chip elements (visible or hidden).
     const existing = [];
     document.querySelectorAll('.tag-pill, .tag-chip').forEach(el => {
       const text = el.textContent.trim();
       if (text && text !== 'All' && !existing.includes(text)) existing.push(text);
     });
-    const all = [...new Set([...GOSPEL_TAGS, ...existing])].sort();
+    const all = [...new Set(existing)].sort();
     dl.innerHTML = all.map(t => `<option value="${t}">`).join('');
   });
 }

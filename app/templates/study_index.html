@@ -58,6 +58,7 @@
         </form>
         {% if source.subtitle %}<p class="source-subtitle">{{ source.subtitle }}</p>{% endif %}
         {% if source.category %}<span class="source-category">{{ source.category }}</span>{% endif %}
+        {% if source.tags %}<span class="source-tags">{{ source.tags | join(', ') }}</span>{% endif %}
       </div>
       {% if source.audio_url %}
       <div class="source-audio">

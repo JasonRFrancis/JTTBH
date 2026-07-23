@@ -50,6 +50,82 @@
   {% endif %}
 </section>
 
+<section aria-labelledby="author-subs-heading">
+  <h3 id="author-subs-heading">Author Subscriptions</h3>
+  {% if author_subs %}
+  <ul class="sub-list" role="list">
+    {% for sub in author_subs %}
+    <li class="sub-row">
+      <span class="sub-info">
+        <strong>{{ sub.subscription_name or sub.filter_author }}</strong>
+      </span>
+      <a href="{{ url_for('study.subscription_edit', username=username, subscription_id=sub.subscriptionID) }}"
+         class="btn btn-secondary btn-sm">Edit</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>No author subscriptions yet.</p>
+  {% endif %}
+
+  {% if all_authors %}
+  <form method="post" action="{{ url_for('study.subscribe_authors', username=username) }}" class="sub-edit-page-form">
+    <div class="filter-group" id="collections-author-filter-group">
+      <div class="filter-group-header">
+        <label class="filter-group-label">Authors</label>
+        <input type="text" id="collections-author-search" class="filter-search"
+               placeholder="Search authors…" autocomplete="off">
+      </div>
+      <ul class="filter-checklist" id="collections-author-checklist" role="list">
+        {% for author in all_authors %}
+        <li class="filter-check-item">
+          <label><input type="checkbox" name="authors" value="{{ author }}"> {{ author }}</label>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="form-row">
+      <label for="author-sub-name">Subscription name <span class="field-hint">(optional — defaults to author names)</span></label>
+      <input type="text" id="author-sub-name" name="name" maxlength="200">
+    </div>
+
+    <div class="form-row">
+      <label for="author-sub-mode">Delivery</label>
+      <select id="author-sub-mode" name="mode">
+        <option value="rate">Rate-based (N per day, cycling)</option>
+        <option value="calendar">Calendar-pinned (by each talk's date)</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label for="author-sub-per-day">Cadence</label>
+      <select id="author-sub-per-day" name="per_day">
+        <option value="1" selected>1 per day</option>
+        <option value="2">2 per day</option>
+        <option value="3">3 per day</option>
+        <option value="4">4 per day</option>
+        <option value="5">5 per day</option>
+        <option value="6">6 per day</option>
+        <option value="7">7 per day</option>
+        <option value="-2">Even days (start date, then every other)</option>
+        <option value="-1">Odd days (day after start, then every other)</option>
+        <option value="-7">Weekly (every 7th day)</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label for="author-sub-start">Start date</label>
+      <input type="date" id="author-sub-start" name="start_date">
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Subscribe</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+
 <section aria-labelledby="create-heading">
   <h2 id="create-heading">Create Collection</h2>
   <form method="post" action="{{ url_for('study.collection_create', username=username) }}" class="create-collection-form">
@@ -73,4 +149,8 @@
     </div>
   </form>
 </section>
+{% endblock %}
+
+{% block js %}
+<script src="{{ url_for('static', filename='js/study.js') }}" defer></script>
 {% endblock %}

@@ -21,6 +21,17 @@
 </nav>
 {% endif %}
 
+{% if all_topics %}
+{# Not rendered visually — quote.js's autocomplete scans .tag-chip/.tag-pill
+   text on the page for suggestions; this seeds it with the study feature's
+   master topic list (see TopicModel.get_all). #}
+<ul hidden>
+  {% for topic in all_topics %}
+  <li class="tag-chip">{{ topic.name }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
 <section class="quote-list" aria-label="Quotes">
   {% if quotes %}
     {% for q in quotes %}

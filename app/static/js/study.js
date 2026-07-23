@@ -64,6 +64,9 @@
       const cats = getSelected('category-cb');
       if (cats.size) r = r.filter(s => s.category && cats.has(s.category.toLowerCase()));
 
+      const tags = getSelected('tag-cb');
+      if (tags.size) r = r.filter(s => s.tags && s.tags.some(t => tags.has(t.toLowerCase())));
+
       if ((document.getElementById('filter_has_audio') || {}).checked) {
         r = r.filter(s => s.has_audio);
       }
@@ -79,6 +82,9 @@
 
       const subtitleQ = ((document.getElementById('filter_subtitle_text') || {}).value || '').toLowerCase().trim();
       if (subtitleQ) r = r.filter(s => s.subtitle && s.subtitle.toLowerCase().includes(subtitleQ));
+
+      const tagQ = ((document.getElementById('filter_tag_text') || {}).value || '').toLowerCase().trim();
+      if (tagQ) r = r.filter(s => s.tags && s.tags.some(t => t.toLowerCase().includes(tagQ)));
 
       const sort = (document.querySelector('input[name="sort_order"]:checked') || {}).value || 'natural';
       if (sort === 'newest') r.sort((a, b) => b.order_by - a.order_by);
@@ -264,6 +270,7 @@
     function onFilterChange() {
       syncHidden('author-cb', 'filter_author_hidden');
       syncHidden('category-cb', 'filter_category_hidden');
+      syncHidden('tag-cb', 'filter_tag_hidden');
 
       // Re-resolve selected item position after filter change
       const base = getBaseFiltered();
@@ -308,6 +315,7 @@
 
     wireChecklist('author-cb',   'filter_author_hidden',   'author-search',   'author');
     wireChecklist('category-cb', 'filter_category_hidden', 'category-search', 'category');
+    wireChecklist('tag-cb',      'filter_tag_hidden',      'tag-search',      'tag');
 
     ['per_day', 'start_date', 'limit_count'].forEach(id => {
       const el = document.getElementById(id);
@@ -328,6 +336,9 @@
 
     const subtitleTextInput = document.getElementById('filter_subtitle_text');
     if (subtitleTextInput) subtitleTextInput.addEventListener('input', onFilterChange);
+
+    const tagTextInput = document.getElementById('filter_tag_text');
+    if (tagTextInput) tagTextInput.addEventListener('input', onFilterChange);
     document.querySelectorAll('input[name="sort_order"]').forEach(r => r.addEventListener('change', onFilterChange));
     const repeatCb = document.getElementById('repeat');
     if (repeatCb) repeatCb.addEventListener('change', updatePreview);
@@ -349,6 +360,23 @@
 
     updatePreview();
   }
+
+  /* ════════════════════════════════════════════════════════════
+     COLLECTIONS PAGE — subscribe-by-author search filter
+  ════════════════════════════════════════════════════════════ */
+
+  (function () {
+    const search = document.getElementById('collections-author-search');
+    if (!search) return;
+    const items = document.querySelectorAll('#collections-author-checklist .filter-check-item');
+    search.addEventListener('input', function () {
+      const q = this.value.toLowerCase();
+      items.forEach(li => {
+        const cb = li.querySelector('input[type="checkbox"]');
+        li.style.display = cb.value.toLowerCase().includes(q) ? '' : 'none';
+      });
+    });
+  }());
 
   /* ════════════════════════════════════════════════════════════
      SCHEDULE PAGE

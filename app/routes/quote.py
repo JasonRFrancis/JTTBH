@@ -24,6 +24,7 @@ from flask import (
 )
 
 from app.models.quote_model import QuoteModel
+from app.models.topic_model import TopicModel
 from app.services.decorators import (
     PERM_QUOTE,
     login_required,
@@ -42,12 +43,14 @@ def index(username: str):
     tag = request.args.get('tag', '').strip() or None
     quotes = QuoteModel.get_all(user_id, tag=tag)
     all_tags = QuoteModel.get_all_tags(user_id)
+    all_topics = TopicModel.get_all()
     return render_template(
         'quote_index.html',
         username=username,
         area='quote',
         quotes=quotes,
         all_tags=all_tags,
+        all_topics=all_topics,
         active_tag=tag,
     )
 
@@ -57,11 +60,13 @@ def index(username: str):
 @permission_required_read(PERM_QUOTE)
 def add(username: str):
     all_tags = QuoteModel.get_all_tags(session['user_id'])
+    all_topics = TopicModel.get_all()
     return render_template(
         'quote_add.html',
         username=username,
         area='quote',
         all_tags=all_tags,
+        all_topics=all_topics,
         prefill={
             'text':   request.args.get('text', ''),
             'author': request.args.get('author', ''),

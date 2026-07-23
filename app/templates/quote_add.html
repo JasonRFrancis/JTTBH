@@ -46,13 +46,17 @@
   </form>
 </section>
 
-{% if all_tags %}
+{% if all_tags or all_topics %}
 {# Not rendered visually — quote.js's autocomplete builds its suggestion list
    by scanning .tag-chip/.tag-pill text already on the page, same as it does
-   from the tag nav and quote cards on quote_index.html. #}
+   from the tag nav and quote cards on quote_index.html. Topics come from the
+   study feature's master list (see TopicModel.get_all). #}
 <ul hidden>
   {% for tag in all_tags %}
   <li class="tag-chip">{{ tag }}</li>
+  {% endfor %}
+  {% for topic in all_topics %}
+  <li class="tag-chip">{{ topic.name }}</li>
   {% endfor %}
 </ul>
 {% endif %}

@@ -11,6 +11,11 @@
     </nav>
     <div class="filler"></div>
   </header>
+  <datalist id="gc-topics-datalist">
+    {% for topic in topics %}
+    <option value="{{ topic.name }}">
+    {% endfor %}
+  </datalist>
   <div class="collection-detail-header">
     {% if collection.description %}<p>{{ collection.description }}</p>{% endif %}
     <p><span class="badge-mode">{{ 'Rate-based' if collection.mode == 'rate' else 'Calendar-pinned' }}</span></p>
@@ -56,6 +61,7 @@
         <summary>
           {% if source.category %}<span class="source-category">{{ source.category }}</span>{% endif %}
           {{ source.title }}
+          {% if source.tags %}<span class="source-tags">{{ source.tags | join(', ') }}</span>{% endif %}
           <span style="color:var(--color-muted,#999);font-size:0.75rem;font-weight:400;margin-left:auto;">#{{ source.order_by }}</span>
         </summary>
         <form method="post"
@@ -80,6 +86,12 @@
             <label for="author-{{ source.sourceID }}">Author</label>
             <input type="text" id="author-{{ source.sourceID }}" name="author" maxlength="200"
                    value="{{ source.author or '' }}">
+          </div>
+          <div class="form-row">
+            <label for="tags-{{ source.sourceID }}">Tags <span class="field-hint">(comma-separated)</span></label>
+            <input type="text" id="tags-{{ source.sourceID }}" name="tags" maxlength="500"
+                   value="{{ source.tags | join(', ') if source.tags else '' }}"
+                   placeholder="e.g. Faith, Family" list="gc-topics-datalist">
           </div>
           <div class="form-row">
             <label for="url-{{ source.sourceID }}">URL</label>
@@ -145,6 +157,10 @@
     <div class="form-row">
       <label for="new-author">Author</label>
       <input type="text" id="new-author" name="author" maxlength="200">
+    </div>
+    <div class="form-row">
+      <label for="new-tags">Tags <span class="field-hint">(comma-separated)</span></label>
+      <input type="text" id="new-tags" name="tags" maxlength="500" placeholder="e.g. Faith, Family" list="gc-topics-datalist">
     </div>
     <div class="form-row">
       <label for="new-url">URL</label>

@@ -24,6 +24,10 @@ POST /<username>/admin/users/permissions/post/<user_id>
 GET  /<username>/admin/log
     Show the 200 most recent rows from the ``log`` table.
 
+GET  /<username>/admin/topics
+    Manage the master topic list (shared tag vocabulary used by study and
+    quote to prefill tagging).
+
 Default permissions on approval
 --------------------------------
 read  = 32766  (2+4+8+16+32+64+128+256+512+1024+2048+4096+8192+16384 – everything except admin)
@@ -48,6 +52,7 @@ from flask import (
     abort,
 )
 
+from app.models.topic_model import TopicModel
 from app.services.database import db_manager
 from app.services.email_service import email_service
 from app.services.decorators import (
@@ -623,3 +628,48 @@ def icon_delete(username: str, image_id: str):
     db_manager.execute_update('DELETE FROM svg WHERE imageID=%s', (image_id,))
     flash(f'Icon "{icon["name"]}" deleted.', 'success')
     return redirect(url_for('admin.icons', username=username))
+
+
+# ---------------------------------------------------------------------------
+# Routes – Topics (master tag list, shared across features)
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/topics')
+@login_required
+@permission_required_read(PERM_ADMIN)
+def topics(username: str):
+    """Render the topic management page."""
+    return render_template(
+        'admin_topics.html',
+        username=username,
+        area='admin',
+        topics=TopicModel.get_all(),
+    )
+
+
+@admin_bp.route('/topic/create/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_ADMIN)
+@permission_required_write(PERM_ADMIN)
+def topic_create(username: str):
+    """Add a new topic."""
+    name = request.form.get('name', '').strip()
+    if not name:
+        flash('Topic name is required.', 'error')
+        return redirect(url_for('admin.topics', username=username))
+    if TopicModel.create(name, session['user_id']) is None:
+        flash(f'Topic "{name}" already exists.', 'warning')
+    else:
+        flash(f'Topic "{name}" added.', 'success')
+    return redirect(url_for('admin.topics', username=username))
+
+
+@admin_bp.route('/topic/delete/post/<int:topic_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_ADMIN)
+@permission_required_write(PERM_ADMIN)
+def topic_delete(username: str, topic_id: int):
+    """Delete a topic."""
+    TopicModel.delete(topic_id)
+    flash('Topic deleted.', 'success')
+    return redirect(url_for('admin.topics', username=username))

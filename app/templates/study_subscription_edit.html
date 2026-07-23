@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Edit Subscription — {{ collection.name }}{% endblock %}
+{% block title %}Edit Subscription — {{ page_title }}{% endblock %}
 {% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}">{% endblock %}
 
 {% block content %}
 <header>
-  <h1>{{ collection.name }}</h1>
+  <h1>{{ page_title }}</h1>
   <nav class="study-nav" aria-label="Study navigation">
     <a href="{{ url_for('study.collections', username=username) }}">Collections</a>
     <a href="{{ url_for('study.index', username=username) }}">Today</a>
@@ -20,7 +20,7 @@
     <div class="form-row">
       <label for="sub_name">Subscription name <span class="field-hint">(leave blank to use collection name)</span></label>
       <input type="text" id="sub_name" name="name" maxlength="200"
-             placeholder="{{ collection.name }}"
+             placeholder="{{ page_title }}"
              value="{{ sub.name or '' }}">
     </div>
   </section>
@@ -28,6 +28,16 @@
   {# ── Delivery ─────────────────────────────────────────────── #}
   <section class="edit-section" aria-labelledby="delivery-heading">
     <h2 id="delivery-heading">Delivery</h2>
+
+    {% if not collection %}
+    <div class="form-row">
+      <label for="sub_mode">Mode</label>
+      <select id="sub_mode" name="mode">
+        <option value="rate" {% if (sub.mode or 'rate') == 'rate' %}selected{% endif %}>Rate-based (N per day, cycling)</option>
+        <option value="calendar" {% if sub.mode == 'calendar' %}selected{% endif %}>Calendar-pinned (by each talk's date)</option>
+      </select>
+    </div>
+    {% endif %}
 
     <div class="form-row">
       <label for="per_day">Cadence</label>
@@ -118,6 +128,14 @@
              placeholder="e.g. October 2025, April 2019">
     </div>
 
+    {# Tag contains #}
+    <div class="form-row">
+      <label for="filter_tag_text">Tag contains</label>
+      <input type="text" id="filter_tag_text" name="filter_tag_text"
+             value="{{ sub.filter_tag_text or '' }}"
+             placeholder="e.g. Faith, Family">
+    </div>
+
     {# Sort order #}
     <fieldset class="form-fieldset">
       <legend>Sort order</legend>
@@ -204,6 +222,32 @@
       </ul>
     </div>
     {% endif %}
+
+    {# Tag filter #}
+    {% if distinct_tags %}
+    <div class="filter-group" id="tag-filter-group">
+      <div class="filter-group-header">
+        <label class="filter-group-label">Filter by tag</label>
+        <input type="text" id="tag-search" class="filter-search"
+               placeholder="Search tags…" autocomplete="off">
+        <button type="button" class="btn-filter-clear" data-target="tag">Clear</button>
+      </div>
+      <input type="hidden" id="filter_tag_hidden" name="filter_tag"
+             value="{{ sub.filter_tag or '' }}">
+      <ul class="filter-checklist" id="tag-checklist" role="list">
+        {% for tag in distinct_tags %}
+        <li class="filter-check-item">
+          <label>
+            <input type="checkbox" class="tag-cb"
+                   value="{{ tag }}"
+                   {% if tag in selected_tags %}checked{% endif %}>
+            {{ tag }}
+          </label>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
   </section>
 
   {# ── Preview — rendered live by JS ──────────────────────── #}
@@ -219,7 +263,7 @@
     <a href="{{ url_for('study.collections', username=username) }}" class="btn-cancel-link">Back to collections</a>
     <form method="post" action="{{ url_for('study.unsubscribe', username=username, subscription_id=sub.subscriptionID) }}"
           style="display:inline"
-          onsubmit="return confirm('Unsubscribe from \'{{ collection.name }}\'?')">
+          onsubmit="return confirm('Unsubscribe from \'{{ page_title }}\'?')">
       <button type="submit" class="btn btn-danger">Unsubscribe</button>
     </form>
   </div>

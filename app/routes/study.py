@@ -21,6 +21,7 @@ POST /<username>/study/source/delete/post/<source_id>
 POST /<username>/study/source/schedule/post           (JSON — batch calendar drag-drop)
 POST /<username>/study/source/import/post
 POST /<username>/study/subscribe/post/<collection_id>
+POST /<username>/study/subscribe/authors/post              (cross-collection author subscription)
 POST /<username>/study/subscription/update/post/<subscription_id>
 POST /<username>/study/unsubscribe/post/<subscription_id>
 POST /<username>/study/source/complete/post/<source_id>
@@ -45,6 +46,7 @@ from flask import (
 )
 
 from app.models.study_model import StudyModel
+from app.models.topic_model import TopicModel
 from app.services.database import db_manager
 from app.services.decorators import (
     login_required,
@@ -149,7 +151,7 @@ def index(username: str, date_str: str = None):
 
     day_sources = []
     for sub in subscriptions:
-        sources = StudyModel.get_sources(sub['collectionID'])
+        sources = StudyModel.get_subscription_sources(sub)
         items = StudyModel.sources_for_date(sub, sources, target_date, user_id)
         if items:
             day_sources.append({
@@ -191,8 +193,13 @@ def collections(username: str):
     all_collections = StudyModel.get_all_collections()
     subs_list = StudyModel.get_user_subscriptions(session['user_id'])
     user_subs: dict[str, list] = {}
+    author_subs = []
     for s in subs_list:
-        user_subs.setdefault(s['collectionID'], []).append(s)
+        if s['collectionID']:
+            user_subs.setdefault(s['collectionID'], []).append(s)
+        else:
+            author_subs.append(s)
+    all_authors = StudyModel.get_all_distinct_authors()
     today = today_for_tz(session.get('timezone', 'UTC'))
     return render_template(
         'study_collections.html',
@@ -200,6 +207,8 @@ def collections(username: str):
         area='study',
         collections=all_collections,
         user_subs=user_subs,
+        author_subs=author_subs,
+        all_authors=all_authors,
         today=today,
     )
 
@@ -236,6 +245,8 @@ def collection_detail(username: str, collection_id: str):
         today = today_for_tz(session.get('timezone', 'UTC'))
         calendar_ctx = _build_calendar_context(sources, request.args.get('month', '').strip(), today)
 
+    topics = TopicModel.get_all()
+
     return render_template(
         'study_collection_detail.html',
         username=username,
@@ -246,6 +257,7 @@ def collection_detail(username: str, collection_id: str):
         from_collection=from_collection,
         from_sources=from_sources,
         calendar=calendar_ctx,
+        topics=topics,
     )
 
 
@@ -261,13 +273,24 @@ def subscription_edit(username: str, subscription_id: str):
     if not sub or sub['userID'] != session['user_id']:
         flash('Subscription not found.', 'error')
         return redirect(url_for('study.collections', username=username))
-    collection = StudyModel.get_collection(sub['collectionID'])
-    if not collection:
-        flash('Collection not found.', 'error')
-        return redirect(url_for('study.collections', username=username))
 
-    distinct_authors    = StudyModel.get_distinct_authors(sub['collectionID'])
-    distinct_categories = StudyModel.get_distinct_categories(sub['collectionID'])
+    if sub['collectionID']:
+        collection = StudyModel.get_collection(sub['collectionID'])
+        if not collection:
+            flash('Collection not found.', 'error')
+            return redirect(url_for('study.collections', username=username))
+        distinct_authors    = StudyModel.get_distinct_authors(sub['collectionID'])
+        distinct_categories = StudyModel.get_distinct_categories(sub['collectionID'])
+        distinct_tags       = StudyModel.get_distinct_tags(sub['collectionID'])
+        all_sources = StudyModel.get_sources(sub['collectionID'])
+        page_title = collection['name']
+    else:
+        collection = None
+        distinct_authors    = StudyModel.get_all_distinct_authors()
+        distinct_categories = StudyModel.get_all_distinct_categories()
+        distinct_tags       = StudyModel.get_all_distinct_tags()
+        all_sources = StudyModel.get_all_sources()
+        page_title = sub.get('name') or 'Author Subscription'
 
     selected_authors = set()
     if sub.get('filter_author'):
@@ -275,8 +298,10 @@ def subscription_edit(username: str, subscription_id: str):
     selected_categories = set()
     if sub.get('filter_category'):
         selected_categories = {c.strip() for c in sub['filter_category'].split(',') if c.strip()}
+    selected_tags = set()
+    if sub.get('filter_tag'):
+        selected_tags = {t.strip() for t in sub['filter_tag'].split(',') if t.strip()}
 
-    all_sources = StudyModel.get_sources(sub['collectionID'])
     today_str   = today_for_tz(session.get('timezone', 'UTC')).isoformat()
 
     all_sources_json = json.dumps({
@@ -289,6 +314,7 @@ def subscription_edit(username: str, subscription_id: str):
                 'subtitle':  s['subtitle'] or '',
                 'order_by':  s.get('order_by') or 0,
                 'has_audio': bool(s.get('audio_url')),
+                'tags':      s.get('tags') or [],
             }
             for s in all_sources
         ],
@@ -302,10 +328,13 @@ def subscription_edit(username: str, subscription_id: str):
         area='study',
         sub=sub,
         collection=collection,
+        page_title=page_title,
         distinct_authors=distinct_authors,
         distinct_categories=distinct_categories,
+        distinct_tags=distinct_tags,
         selected_authors=selected_authors,
         selected_categories=selected_categories,
+        selected_tags=selected_tags,
         total_all=len(all_sources),
         all_sources_json=all_sources_json,
     )
@@ -323,12 +352,18 @@ def subscription_schedule(username: str, subscription_id: str):
     if not sub or sub['userID'] != session['user_id']:
         flash('Subscription not found.', 'error')
         return redirect(url_for('study.collections', username=username))
-    collection = StudyModel.get_collection(sub['collectionID'])
-    if not collection:
-        flash('Collection not found.', 'error')
-        return redirect(url_for('study.collections', username=username))
 
-    all_sources = StudyModel.get_sources(sub['collectionID'])
+    if sub['collectionID']:
+        collection = StudyModel.get_collection(sub['collectionID'])
+        if not collection:
+            flash('Collection not found.', 'error')
+            return redirect(url_for('study.collections', username=username))
+        page_title = collection['name']
+    else:
+        collection = None
+        page_title = sub.get('name') or 'Author Subscription'
+
+    all_sources = StudyModel.get_subscription_sources(sub)
     filtered    = StudyModel.get_filtered_sources(sub, all_sources)
     source_ids  = [s['sourceID'] for s in filtered]
     schedule_map = StudyModel.get_personal_schedule_for_sources(session['user_id'], source_ids)
@@ -339,6 +374,7 @@ def subscription_schedule(username: str, subscription_id: str):
         area='study',
         sub=sub,
         collection=collection,
+        page_title=page_title,
         sources=filtered,
         schedule_map=schedule_map,
     )
@@ -428,7 +464,7 @@ def source_create(username: str):
     scheduled_date_raw = request.form.get('scheduled_date', '').strip()
     scheduled_date = _parse_date(scheduled_date_raw) if scheduled_date_raw else None
 
-    StudyModel.create_source(
+    source_id = StudyModel.create_source(
         user_id=session['user_id'],
         collection_id=collection_id,
         category=request.form.get('category', '').strip(),
@@ -441,6 +477,9 @@ def source_create(username: str):
         order_by=order_by,
         scheduled_date=scheduled_date,
     )
+    tags = [t.strip() for t in request.form.get('tags', '').split(',') if t.strip()]
+    if tags:
+        StudyModel.set_source_tags(source_id, tags, session['user_id'])
     flash(f'Source "{title}" added.', 'success')
     return redirect(url_for('study.collection_detail', username=username, collection_id=collection_id))
 
@@ -484,6 +523,8 @@ def source_update(username: str, source_id: str):
         order_by=order_by,
         scheduled_date=scheduled_date,
     )
+    tags = [t.strip() for t in request.form.get('tags', '').split(',') if t.strip()]
+    StudyModel.set_source_tags(source_id, tags, session['user_id'])
     flash('Source updated.', 'success')
     return redirect(url_for('study.collection_detail', username=username, collection_id=source['collectionID']))
 
@@ -597,6 +638,27 @@ def subscribe(username: str, collection_id: str):
     return redirect(url_for('study.subscription_edit', username=username, subscription_id=sub_id))
 
 
+@study_bp.route('/subscribe/authors/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_STUDY)
+@permission_required_write(PERM_STUDY)
+def subscribe_authors(username: str):
+    authors = [a.strip() for a in request.form.getlist('authors') if a.strip()]
+    if not authors:
+        flash('Select at least one author.', 'error')
+        return redirect(url_for('study.collections', username=username))
+    per_day = _parse_per_day(request.form.get('per_day', '1'))
+    mode = request.form.get('mode', 'rate')
+    if mode not in ('rate', 'calendar'):
+        mode = 'rate'
+    start_date_raw = request.form.get('start_date', '').strip()
+    start_date = _parse_date(start_date_raw) if start_date_raw else today_for_tz(session.get('timezone', 'UTC'))
+    name = request.form.get('name', '').strip() or ', '.join(authors)
+    sub_id = StudyModel.create_author_subscription(session['user_id'], authors, per_day, start_date, mode, name)
+    flash('Subscribed. Configure filters and name below.', 'success')
+    return redirect(url_for('study.subscription_edit', username=username, subscription_id=sub_id))
+
+
 @study_bp.route('/subscription/update/post/<subscription_id>', methods=['POST'])
 @login_required
 @permission_required_read(PERM_STUDY)
@@ -614,11 +676,13 @@ def subscription_update(username: str, subscription_id: str):
 
     filter_author   = _normalise_csv(request.form.get('filter_author', ''))
     filter_category = _normalise_csv(request.form.get('filter_category', ''))
+    filter_tag      = _normalise_csv(request.form.get('filter_tag', ''))
     filter_has_audio = 1 if request.form.get('filter_has_audio') else 0
     filter_title = request.form.get('filter_title', '').strip()
     filter_author_text = request.form.get('filter_author_text', '').strip()
     filter_category_text = request.form.get('filter_category_text', '').strip()
     filter_subtitle_text = request.form.get('filter_subtitle_text', '').strip()
+    filter_tag_text = request.form.get('filter_tag_text', '').strip()
 
     sort_order = request.form.get('sort_order', 'natural')
     if sort_order not in ('natural', 'newest', 'oldest'):
@@ -636,6 +700,13 @@ def subscription_update(username: str, subscription_id: str):
     repeat               = 1 if request.form.get('repeat') else 0
     use_personal_schedule = 1 if request.form.get('use_personal_schedule') else 0
 
+    if sub['collectionID']:
+        mode = sub.get('mode') or 'rate'
+    else:
+        mode = request.form.get('mode', 'rate')
+        if mode not in ('rate', 'calendar'):
+            mode = 'rate'
+
     name = request.form.get('name', '').strip() or None
     StudyModel.update_subscription(
         subscription_id, name, per_day, start_date,
@@ -643,7 +714,8 @@ def subscription_update(username: str, subscription_id: str):
         filter_has_audio, filter_title, filter_author_text, filter_category_text,
         filter_subtitle_text,
         sort_order, limit_count, start_offset,
-        repeat, use_personal_schedule,
+        repeat, use_personal_schedule, mode,
+        filter_tag, filter_tag_text,
     )
     flash('Subscription updated.', 'success')
     return redirect(url_for('study.subscription_edit', username=username, subscription_id=subscription_id))
@@ -767,7 +839,7 @@ def feed_xml(username: str):
     seen_urls = set()
     sources = []
     for sub in subscriptions:
-        all_sources = StudyModel.get_sources(sub['collectionID'])
+        all_sources = StudyModel.get_subscription_sources(sub)
         items = StudyModel.sources_for_date(sub, all_sources, today, user_id)
         for item in items:
             sid = item['sourceID']

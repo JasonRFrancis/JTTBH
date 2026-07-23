@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Schedule — {{ collection.name }}{% endblock %}
+{% block title %}Schedule — {{ page_title }}{% endblock %}
 {% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}">{% endblock %}
 
 {% block content %}
 <header>
-  <h1>{{ collection.name }}</h1>
+  <h1>{{ page_title }}</h1>
   <nav class="study-nav" aria-label="Study navigation">
     <a href="{{ url_for('study.subscription_edit', username=username, subscription_id=sub.subscriptionID) }}">← Edit filters</a>
     <a href="{{ url_for('study.index', username=username) }}">Today</a>

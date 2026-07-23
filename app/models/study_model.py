@@ -6,6 +6,18 @@ from app.services.database import db_manager
 
 class StudyModel:
 
+    # Shared subquery + post-processor so every source-fetch method attaches
+    # a `tags: list[str]` field the same way `get_filtered_sources` already
+    # reads `author`/`category`.
+    _TAGS_SUBQUERY = """(SELECT GROUP_CONCAT(sst.tag ORDER BY sst.tag SEPARATOR ', ')
+                         FROM study_source_tag sst WHERE sst.sourceID = ss.sourceID) AS tags_csv"""
+
+    @staticmethod
+    def _split_tags(rows: list[dict]) -> list[dict]:
+        for r in rows:
+            r['tags'] = [t.strip() for t in (r.pop('tags_csv', None) or '').split(',') if t.strip()]
+        return rows
+
     # ------------------------------------------------------------------
     # Collections
     # ------------------------------------------------------------------
@@ -68,28 +80,30 @@ class StudyModel:
 
     @staticmethod
     def get_sources(collection_id: str) -> list[dict]:
-        return db_manager.execute_query("""
+        rows = db_manager.execute_query(f"""
             SELECT ss.sourceID, ss.collectionID, ss.userID, ss.category, ss.title,
                    ss.subtitle, ss.author, ss.url, ss.audio_url, ss.audio_length,
-                   ss.order_by, ss.scheduled_date
+                   ss.order_by, ss.scheduled_date, {StudyModel._TAGS_SUBQUERY}
             FROM study_source ss
             WHERE ss.collectionID = %s
               AND ss.id = (SELECT MAX(ss2.id) FROM study_source ss2 WHERE ss2.sourceID = ss.sourceID)
               AND ss.title IS NOT NULL
             ORDER BY ss.order_by, ss.id
         """, (collection_id,))
+        return StudyModel._split_tags(rows)
 
     @staticmethod
     def get_source(source_id: str) -> dict | None:
-        return db_manager.execute_one("""
+        row = db_manager.execute_one(f"""
             SELECT ss.sourceID, ss.collectionID, ss.userID, ss.category, ss.title,
                    ss.subtitle, ss.author, ss.url, ss.audio_url, ss.audio_length,
-                   ss.order_by, ss.scheduled_date
+                   ss.order_by, ss.scheduled_date, {StudyModel._TAGS_SUBQUERY}
             FROM study_source ss
             WHERE ss.sourceID = %s
               AND ss.id = (SELECT MAX(ss2.id) FROM study_source ss2 WHERE ss2.sourceID = ss.sourceID)
               AND ss.title IS NOT NULL
         """, (source_id,))
+        return StudyModel._split_tags([row])[0] if row else None
 
     @staticmethod
     def create_source(user_id: str, collection_id: str, category: str, title: str,
@@ -129,6 +143,20 @@ class StudyModel:
         )
 
     @staticmethod
+    def set_source_tags(source_id: str, tags: list[str], user_id: str) -> None:
+        db_manager.execute_update("DELETE FROM study_source_tag WHERE sourceID=%s", (source_id,))
+        seen = set()
+        for tag in tags:
+            tag = tag.strip()
+            if not tag or tag.lower() in seen:
+                continue
+            seen.add(tag.lower())
+            db_manager.execute_insert(
+                "INSERT INTO study_source_tag (sourceID, tag, userID, created, created_by) VALUES (%s,%s,%s,NOW(),%s)",
+                (source_id, tag, user_id, user_id),
+            )
+
+    @staticmethod
     def copy_sources(user_id: str, dest_collection_id: str, source_ids: list[str], override_date=None) -> int:
         count = 0
         for source_id in source_ids:
@@ -136,7 +164,7 @@ class StudyModel:
             if not source:
                 continue
             scheduled_date = override_date if override_date is not None else source.get('scheduled_date')
-            StudyModel.create_source(
+            new_source_id = StudyModel.create_source(
                 user_id=user_id,
                 collection_id=dest_collection_id,
                 category=source.get('category') or '',
@@ -149,6 +177,8 @@ class StudyModel:
                 order_by=source.get('order_by') or 0,
                 scheduled_date=scheduled_date,
             )
+            if source.get('tags'):
+                StudyModel.set_source_tags(new_source_id, source['tags'], user_id)
             count += 1
         return count
 
@@ -180,6 +210,91 @@ class StudyModel:
         """, (collection_id,))
         return [r['category'] for r in rows]
 
+    @staticmethod
+    def get_all_distinct_authors() -> list[str]:
+        rows = db_manager.execute_query("""
+            SELECT DISTINCT ss.author
+            FROM study_source ss
+            WHERE ss.id = (SELECT MAX(ss2.id) FROM study_source ss2 WHERE ss2.sourceID = ss.sourceID)
+              AND ss.title IS NOT NULL
+              AND ss.author IS NOT NULL
+              AND ss.author != ''
+            ORDER BY ss.author
+        """, ())
+        return [r['author'] for r in rows]
+
+    @staticmethod
+    def get_all_distinct_categories() -> list[str]:
+        rows = db_manager.execute_query("""
+            SELECT DISTINCT ss.category
+            FROM study_source ss
+            WHERE ss.id = (SELECT MAX(ss2.id) FROM study_source ss2 WHERE ss2.sourceID = ss.sourceID)
+              AND ss.title IS NOT NULL
+              AND ss.category IS NOT NULL
+              AND ss.category != ''
+            ORDER BY ss.category
+        """, ())
+        return [r['category'] for r in rows]
+
+    @staticmethod
+    def get_distinct_tags(collection_id: str) -> list[str]:
+        rows = db_manager.execute_query("""
+            SELECT DISTINCT sst.tag
+            FROM study_source_tag sst
+            JOIN study_source ss ON ss.sourceID = sst.sourceID
+              AND ss.collectionID = %s
+              AND ss.id = (SELECT MAX(ss2.id) FROM study_source ss2 WHERE ss2.sourceID = ss.sourceID)
+              AND ss.title IS NOT NULL
+            ORDER BY sst.tag
+        """, (collection_id,))
+        return [r['tag'] for r in rows]
+
+    @staticmethod
+    def get_all_distinct_tags() -> list[str]:
+        rows = db_manager.execute_query("""
+            SELECT DISTINCT sst.tag
+            FROM study_source_tag sst
+            JOIN study_source ss ON ss.sourceID = sst.sourceID
+              AND ss.id = (SELECT MAX(ss2.id) FROM study_source ss2 WHERE ss2.sourceID = ss.sourceID)
+              AND ss.title IS NOT NULL
+            ORDER BY sst.tag
+        """, ())
+        return [r['tag'] for r in rows]
+
+    @staticmethod
+    def get_sources_by_authors(authors: list[str]) -> list[dict]:
+        """Cross-collection source lookup for author-subscriptions (collectionID IS NULL)."""
+        if not authors:
+            return []
+        placeholders = ','.join(['%s'] * len(authors))
+        rows = db_manager.execute_query(f"""
+            SELECT ss.sourceID, ss.collectionID, ss.userID, ss.category, ss.title,
+                   ss.subtitle, ss.author, ss.url, ss.audio_url, ss.audio_length,
+                   ss.order_by, ss.scheduled_date, {StudyModel._TAGS_SUBQUERY}
+            FROM study_source ss
+            WHERE LOWER(ss.author) IN ({placeholders})
+              AND ss.id = (SELECT MAX(ss2.id) FROM study_source ss2 WHERE ss2.sourceID = ss.sourceID)
+              AND ss.title IS NOT NULL
+            ORDER BY ss.author, ss.order_by, ss.id
+        """, tuple(a.lower() for a in authors))
+        return StudyModel._split_tags(rows)
+
+    @staticmethod
+    def get_all_sources() -> list[dict]:
+        # ponytail: full-table scan (~12k rows at current scale); only used on
+        # the author-subscription edit page as the candidate pool. Paginate or
+        # index if this becomes slow.
+        rows = db_manager.execute_query(f"""
+            SELECT ss.sourceID, ss.collectionID, ss.userID, ss.category, ss.title,
+                   ss.subtitle, ss.author, ss.url, ss.audio_url, ss.audio_length,
+                   ss.order_by, ss.scheduled_date, {StudyModel._TAGS_SUBQUERY}
+            FROM study_source ss
+            WHERE ss.id = (SELECT MAX(ss2.id) FROM study_source ss2 WHERE ss2.sourceID = ss.sourceID)
+              AND ss.title IS NOT NULL
+            ORDER BY ss.author, ss.order_by, ss.id
+        """, ())
+        return StudyModel._split_tags(rows)
+
     # ------------------------------------------------------------------
     # Subscriptions
     # ------------------------------------------------------------------
@@ -197,9 +312,9 @@ class StudyModel:
                    sub.sort_order, sub.limit_count, sub.start_offset,
                    sub.`repeat`, sub.use_personal_schedule,
                    sc.name AS collection_name, sc.description AS collection_description,
-                   sc.mode
+                   COALESCE(sc.mode, sub.mode) AS mode
             FROM study_subscription sub
-            JOIN study_collection sc ON sc.collectionID = sub.collectionID
+            LEFT JOIN study_collection sc ON sc.collectionID = sub.collectionID
               AND sc.id = (SELECT MAX(sc2.id) FROM study_collection sc2 WHERE sc2.collectionID = sc.collectionID)
               AND sc.name IS NOT NULL
             WHERE sub.userID = %s
@@ -231,13 +346,36 @@ class StudyModel:
         return subscription_id
 
     @staticmethod
+    def create_author_subscription(user_id: str, authors: list[str], per_day: int,
+                                   start_date, mode: str, name: str = None) -> str:
+        subscription_id = str(uuid.uuid4())
+        filter_author = ', '.join(authors)
+        db_manager.execute_insert(
+            """INSERT INTO study_subscription
+               (subscriptionID, userID, collectionID, name, per_day, start_date, mode,
+                filter_author, created, created_by)
+               VALUES (%s,%s,NULL,%s,%s,%s,%s,%s,NOW(),%s)""",
+            (subscription_id, user_id, name or None, per_day, start_date, mode,
+             filter_author, user_id),
+        )
+        return subscription_id
+
+    @staticmethod
+    def get_subscription_sources(sub: dict) -> list[dict]:
+        if sub.get('collectionID'):
+            return StudyModel.get_sources(sub['collectionID'])
+        authors = [a.strip() for a in (sub.get('filter_author') or '').split(',') if a.strip()]
+        return StudyModel.get_sources_by_authors(authors)
+
+    @staticmethod
     def update_subscription(subscription_id: str, name: str, per_day: int, start_date,
                             filter_author: str, filter_category: str,
                             filter_has_audio: int, filter_title: str,
                             filter_author_text: str, filter_category_text: str,
                             filter_subtitle_text: str,
                             sort_order: str, limit_count, start_offset: int,
-                            repeat: int, use_personal_schedule: int):
+                            repeat: int, use_personal_schedule: int, mode: str,
+                            filter_tag: str, filter_tag_text: str):
         db_manager.execute_update(
             """UPDATE study_subscription
                SET name=%s, per_day=%s, start_date=%s,
@@ -246,7 +384,8 @@ class StudyModel:
                    filter_author_text=%s, filter_category_text=%s,
                    filter_subtitle_text=%s,
                    sort_order=%s, limit_count=%s, start_offset=%s,
-                   `repeat`=%s, use_personal_schedule=%s
+                   `repeat`=%s, use_personal_schedule=%s, mode=%s,
+                   filter_tag=%s, filter_tag_text=%s
                WHERE subscriptionID=%s""",
             (name or None, per_day, start_date,
              filter_author or None, filter_category or None,
@@ -254,7 +393,8 @@ class StudyModel:
              filter_author_text or None, filter_category_text or None,
              filter_subtitle_text or None,
              sort_order, limit_count or None, start_offset,
-             repeat, use_personal_schedule,
+             repeat, use_personal_schedule, mode,
+             filter_tag or None, filter_tag_text or None,
              subscription_id),
         )
 
@@ -283,6 +423,16 @@ class StudyModel:
         if filter_category:
             allowed = {c.strip().lower() for c in filter_category.split(',') if c.strip()}
             result = [s for s in result if s.get('category') and s['category'].lower() in allowed]
+
+        filter_tag = subscription.get('filter_tag')
+        if filter_tag:
+            allowed = {t.strip().lower() for t in filter_tag.split(',') if t.strip()}
+            result = [s for s in result if allowed & {t.lower() for t in (s.get('tags') or [])}]
+
+        filter_tag_text = subscription.get('filter_tag_text')
+        if filter_tag_text:
+            q = filter_tag_text.lower()
+            result = [s for s in result if any(q in t.lower() for t in (s.get('tags') or []))]
 
         filter_category_text = subscription.get('filter_category_text')
         if filter_category_text:
