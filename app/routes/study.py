@@ -199,7 +199,7 @@ def collections(username: str):
             user_subs.setdefault(s['collectionID'], []).append(s)
         else:
             author_subs.append(s)
-    all_authors = StudyModel.get_all_distinct_authors()
+    all_authors = StudyModel.get_all_author_counts()
     today = today_for_tz(session.get('timezone', 'UTC'))
     return render_template(
         'study_collections.html',

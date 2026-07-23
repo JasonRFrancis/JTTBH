@@ -72,17 +72,20 @@
   <form method="post" action="{{ url_for('study.subscribe_authors', username=username) }}" class="sub-edit-page-form">
     <div class="filter-group" id="collections-author-filter-group">
       <div class="filter-group-header">
-        <label class="filter-group-label">Authors</label>
+        <label class="filter-group-label" for="collections-author-search">Authors</label>
         <input type="text" id="collections-author-search" class="filter-search"
                placeholder="Search authors…" autocomplete="off">
       </div>
-      <ul class="filter-checklist" id="collections-author-checklist" role="list">
-        {% for author in all_authors %}
-        <li class="filter-check-item">
-          <label><input type="checkbox" name="authors" value="{{ author }}"> {{ author }}</label>
-        </li>
-        {% endfor %}
-      </ul>
+      <details id="collections-author-details">
+        <summary>Show all {{ all_authors | length }} authors</summary>
+        <ul class="filter-checklist" id="collections-author-checklist" role="list">
+          {% for a in all_authors %}
+          <li class="filter-check-item">
+            <label><input type="checkbox" name="authors" value="{{ a.author }}"> {{ a.author }} ({{ a.count }})</label>
+          </li>
+          {% endfor %}
+        </ul>
+      </details>
     </div>
 
     <div class="form-row">

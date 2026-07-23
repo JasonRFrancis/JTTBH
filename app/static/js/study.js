@@ -368,13 +368,19 @@
   (function () {
     const search = document.getElementById('collections-author-search');
     if (!search) return;
+    const details = document.getElementById('collections-author-details');
     const items = document.querySelectorAll('#collections-author-checklist .filter-check-item');
+    const MIN_CHARS = 2;
     search.addEventListener('input', function () {
       const q = this.value.toLowerCase();
       items.forEach(li => {
         const cb = li.querySelector('input[type="checkbox"]');
         li.style.display = cb.value.toLowerCase().includes(q) ? '' : 'none';
       });
+      // Auto-reveal the list once the query is long enough to be useful;
+      // collapse it again when the box is cleared. Manually clicking the
+      // <summary> still works regardless (native <details> behavior).
+      if (details) details.open = q.length >= MIN_CHARS;
     });
   }());
 

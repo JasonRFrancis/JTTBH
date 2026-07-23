@@ -224,6 +224,21 @@ class StudyModel:
         return [r['author'] for r in rows]
 
     @staticmethod
+    def get_all_author_counts() -> list[dict]:
+        """Distinct authors with how many current sources each has, for the
+        subscribe-by-author picker on the Collections page."""
+        return db_manager.execute_query("""
+            SELECT ss.author, COUNT(*) AS count
+            FROM study_source ss
+            WHERE ss.id = (SELECT MAX(ss2.id) FROM study_source ss2 WHERE ss2.sourceID = ss.sourceID)
+              AND ss.title IS NOT NULL
+              AND ss.author IS NOT NULL
+              AND ss.author != ''
+            GROUP BY ss.author
+            ORDER BY ss.author
+        """, ())
+
+    @staticmethod
     def get_all_distinct_categories() -> list[str]:
         rows = db_manager.execute_query("""
             SELECT DISTINCT ss.category
