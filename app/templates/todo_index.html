@@ -11,13 +11,11 @@
 
 {% block content %}
 <header class="page-header">
-  <h1>Todo</h1>
-
-  <nav class="date-nav" aria-label="Date navigation">
-    <a class="date-nav__prev"
-       href="{{ url_for('todo.index_date', username=username, date_str=(current_date - timedelta(days=1)).isoformat()) }}"
-       aria-label="Previous day">&#8592;</a>
-
+  <h2>To-Do</h2>
+  <nav>
+    <a class="todo-search-link" href="{{ url_for('todo.search', username=username) }}">Search</a>
+  </nav>
+  <nav class="date" aria-label="Date navigation">
     {#
       The date input is wired in todo.js to navigate directly to the
       dated URL (/<username>/todo/index/<date>). The form/action below
@@ -27,19 +25,17 @@
     <form class="date-nav__picker" method="get"
           action="{{ url_for('todo.index_jump', username=username) }}"
           id="date-picker-form">
+      <a class="btn-nav" href="{{ url_for('todo.index_date', username=username, date_str=(current_date - timedelta(days=1)).isoformat()) }}" aria-label="Previous day">&#x2B05;</a>
       <label for="date-picker" class="sr-only">Jump to date</label>
       <input type="date" id="date-picker" name="date_str"
              value="{{ current_date.isoformat() }}"
              aria-label="Select date">
       <noscript><button type="submit" class="sr-only">Go</button></noscript>
+      <a class="btn-nav" href="{{ url_for('todo.index_date', username=username, date_str=(current_date + timedelta(days=1)).isoformat()) }}" aria-label="Next day">&#x2B95;</a>
     </form>
 
-    <a class="date-nav__next"
-       href="{{ url_for('todo.index_date', username=username, date_str=(current_date + timedelta(days=1)).isoformat()) }}"
-       aria-label="Next day">&#8594;</a>
   </nav>
 
-  <a class="todo-search-link" href="{{ url_for('todo.search', username=username) }}">Search</a>
 </header>
 
 {# =====================================================================
@@ -47,17 +43,16 @@
    ===================================================================== #}
 <section class="todo-weekly" aria-label="Weekly view">
   {% for day in daily_lists %}
-  <article class="todo-day{% if day.is_current %} todo-day--current{% endif %}{% if day.is_today %} todo-day--today{% endif %}"
-           data-date="{{ day.date_str }}">
+  <todo-day class="{% if day.is_current %}current{% endif %}{% if day.is_today %} today{% endif %}" data-date="{{ day.date_str }}">
     <header class="todo-day__header">
-      <h2 class="todo-day__heading">
+      <h3 class="todo-day__heading">
         <a href="{{ url_for('todo.index_date', username=username, date_str=day.date_str) }}">
-          <time datetime="{{ day.date_str }}">
-            {{- day.date.strftime('%a') -}}<br>
-            <span class="todo-day__date-num">{{ day.date.strftime('%-d') }}</span>
-          </time>
+          <todo-date>{{ day.date.strftime('%-d %B %Y') }}</todo-date>
+          <todo-label datetime="{{ day.date_str }}">
+            {{- day.date.strftime('%A') -}}<br>
+          </todo-label>
         </a>
-      </h2>
+      </h3>
     </header>
 
     {{ todo_macros.todo_list(day.todos, daily_default_length, username,
@@ -65,7 +60,7 @@
                               hidden={'list_type': 'daily', 'due': day.date_str},
                               list_type='daily', date_str=day.date_str,
                               new_item_label='New todo for ' ~ day.date_str) }}
-  </article>
+  </todo-day>
   {% endfor %}
 </section>
 

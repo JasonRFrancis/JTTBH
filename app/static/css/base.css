@@ -53,7 +53,7 @@
 
   /* Per-section accent colors */
   --accent-dashboard:   var(--oc-orange-6);
-  --accent-todo:        var(--oc-red-5);
+  --accent-todo:        var(--oc-red-9);
   --accent-habit:       var(--oc-violet-6);
   --accent-project:     var(--oc-teal-6);
   --accent-book:        var(--oc-gray-7);
@@ -246,6 +246,39 @@ main {
   }
 }
 
+/* Date navigation */
+nav.date {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  .date-label {
+    font-size: 1rem;
+  }
+  
+  a.btn-nav {
+    padding: 0.3rem 0.45rem 0.2rem 0.45rem;
+    margin: 0 0.25rem 0 0.25rem;
+    border: 1px solid #fff;
+    background-color: rgba(0,0,0,0.5);
+    color: #fff;
+    border-radius: 30px;
+    text-decoration: none;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    &:hover {
+      color: #fff;
+    }
+  }
+  
+  a.btn-today {
+    font-size: 0.8rem;
+    color: var(--color-muted, #888);
+  }
+}
+
+
 /* ------------------------------------------------------------
    Typography
    ------------------------------------------------------------ */
@@ -317,6 +350,7 @@ body.dashboard {
   a:hover { color: var(--accent-dashboard); } 
   button:hover { background-color: var(--accent-dashboard); } 
   &> nav b { color: var(--accent-dashboard); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-dashboard); }
 }
 body.todo {
   login a:hover { color: #fff; background-color: var(--accent-todo); }
@@ -324,6 +358,7 @@ body.todo {
   a:hover { color: var(--accent-todo); } 
   button:hover { background-color: var(--accent-todo); } 
   &> nav b { color: var(--accent-todo); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-todo); }
 }
 body.habit {
   login a:hover { color: #fff; background-color: var(--accent-habit); }
@@ -331,6 +366,7 @@ body.habit {
   a:hover { color: var(--accent-habit); } 
   button:hover { background-color: var(--accent-habit); } 
   &> nav b { color: var(--accent-habit); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-habit); }
 }
 body.project {
   login a:hover { color: #fff; background-color: var(--accent-project); }
@@ -338,6 +374,7 @@ body.project {
   a:hover { color: var(--accent-project); } 
   button:hover { background-color: var(--accent-project); } 
   &> nav b { color: var(--accent-project); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-project); }
 }
 body.book {
   login a:hover { color: #fff; background-color: var(--accent-book); }
@@ -345,6 +382,7 @@ body.book {
   a:hover { color: var(--accent-book); } 
   button:hover { background-color: var(--accent-book); } 
   &> nav b { color: var(--accent-book); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-book); }
 }
 body.journal {
   login a:hover { color: #fff; background-color: var(--accent-journal); }
@@ -352,6 +390,7 @@ body.journal {
   a:hover { color: var(--accent-journal); } 
   button:hover { background-color: var(--accent-journal); } 
   &> nav b { color: var(--accent-journal); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-journal); }
 }
 body.bookmark {
   login a:hover { color: #fff; background-color: var(--accent-bookmark); }
@@ -359,6 +398,7 @@ body.bookmark {
   a:hover { color: var(--accent-bookmark); } 
   button:hover { background-color: var(--accent-bookmark); } 
   &> nav b { color: var(--accent-bookmark); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-bookmark); }
 }
 body.fitness {
   login a:hover { color: #fff; background-color: var(--accent-fitness); }
@@ -366,6 +406,7 @@ body.fitness {
   a:hover { color: var(--accent-fitness); } 
   button:hover { background-color: var(--accent-fitness); } 
   &> nav b { color: var(--accent-fitness); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-fitness); }
 }
 body.podcast {
   login a:hover { color: #fff; background-color: var(--accent-podcast); }
@@ -373,6 +414,7 @@ body.podcast {
   a:hover { color: var(--accent-podcast); } 
   button:hover { background-color: var(--accent-podcast); } 
   &> nav b { color: var(--accent-podcast); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-podcast); }
 }
 body.chore {
   login a:hover { color: #fff; background-color: var(--accent-chore); }
@@ -380,6 +422,7 @@ body.chore {
   a:hover { color: var(--accent-chore); } 
   button:hover { background-color: var(--accent-chore); } 
   &> nav b { color: var(--accent-chore); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-chore); }
 }
 body.study {
   login a:hover { color: #fff; background-color: var(--accent-study); }
@@ -387,6 +430,7 @@ body.study {
   a:hover { color: var(--accent-study); } 
   button:hover { background-color: var(--accent-study); } 
   &> nav b { color: var(--accent-study); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-study); }
 }
 body.vacation {
   login a:hover { color: #fff; background-color: var(--accent-vacation); }
@@ -394,6 +438,7 @@ body.vacation {
   a:hover { color: var(--accent-vacation); } 
   button:hover { background-color: var(--accent-vacation); } 
   &> nav b { color: var(--accent-vacation); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-vacation); }
 }
 body.appointment {
   login a:hover { color: #fff; background-color: var(--accent-appointment); }
@@ -401,6 +446,7 @@ body.appointment {
   a:hover { color: var(--accent-appointment); } 
   button:hover { background-color: var(--accent-appointment); } 
   &> nav b { color: var(--accent-appointment); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-appointment); }
 }
 body.admin {
   login a:hover { color: #fff; background-color: var(--accent-admin); }
@@ -408,6 +454,7 @@ body.admin {
   a:hover { color: var(--accent-admin); } 
   button:hover { background-color: var(--accent-admin); } 
   &> nav b { color: var(--accent-admin); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-admin); }
 }
 body.triage {
   login a:hover { color: #fff; background-color: var(--accent-triage); }
@@ -415,6 +462,7 @@ body.triage {
   a:hover { color: var(--accent-triage); } 
   button:hover { background-color: var(--accent-triage); } 
   &> nav b { color: var(--accent-triage); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-triage); }
 }
 body.media {
   login a:hover { color: #fff; background-color: var(--accent-media); }
@@ -422,6 +470,7 @@ body.media {
   a:hover { color: var(--accent-media); } 
   button:hover { background-color: var(--accent-media); } 
   &> nav b { color: var(--accent-media); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-media); }
 }
 body.quote {
   login a:hover { color: #fff; background-color: var(--accent-quote); }
@@ -429,6 +478,7 @@ body.quote {
   a:hover { color: var(--accent-quote); } 
   button:hover { background-color: var(--accent-quote); } 
   &> nav b { color: var(--accent-quote); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-quote); }
 }
 body.recipe {
   login a:hover { color: #fff; background-color: var(--accent-recipe); }
@@ -436,6 +486,7 @@ body.recipe {
   a:hover { color: var(--accent-recipe); } 
   button:hover { background-color: var(--accent-recipe); } 
   &> nav b { color: var(--accent-recipe); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-recipe); }
 }
 body.scripture {
   login a:hover { color: #fff; background-color: var(--accent-scripture); }  
@@ -443,4 +494,5 @@ body.scripture {
   a:hover { color: var(--accent-scripture); } 
   button:hover { background-color: var(--accent-scripture); } 
   &> nav b { color: var(--accent-scripture); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-scripture); }
 }

@@ -1,3 +1,13 @@
+:root {
+  --todo-col-min:       14rem;
+  --todo-col-gap:       1.75rem;
+  --todo-item-height:   2.25rem;
+  --todo-radius:        4px;
+
+
+  --transition-fast:    120ms ease;
+}
+
 .todo {
 
   .sr-only {
@@ -12,61 +22,21 @@
     border: 0;
   }
 
-
-  /* =========================================================================
-     3. Page header & date navigation
-     ========================================================================= */
-
-  .page-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--color-border);
+  input[type=text] {
+    border: 0;
   }
+  input[type=checkbox]{
+    appearance: none;
+    margin-left: -1.5rem;
+    padding-right: 0.2rem;
+    height: 1.5rem;
+    width: 1.5rem;
+    background-color: rgba(201,42,42,0.5);
 
-  .page-header h1 {
-    margin: 0;
-    font-size: 1.4rem;
-  }
-
-  .date-nav {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .date-nav__prev,
-  .date-nav__next {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2rem;
-    height: 2rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--todo-radius);
-    text-decoration: none;
-    color: inherit;
-    font-size: 1.1rem;
-    transition: background var(--transition-fast);
-  }
-
-  .date-nav__prev:hover,
-  .date-nav__next:hover {
-    background: var(--color-hover);
-  }
-
-  .date-nav__picker input[type="date"] {
-    border: 1px solid var(--color-border);
-    border-radius: var(--todo-radius);
-    padding: 0.3rem 0.5rem;
-    font-size: 0.9rem;
-  }
-
-  .todo-search-link {
-    margin-left: auto;
-    font-size: 0.9rem;
+    &:checked {
+      background-color: #2196F3; /* Checked background color */
+      border-color: #2196F3;
+    }
   }
 
 
@@ -84,10 +54,30 @@
 
   /* --- 4a. Day column ---------------------------------------------------- */
 
-  .todo-day {
-    border: 1px solid var(--color-border);
-    border-radius: var(--todo-radius);
-    overflow: hidden;
+  todo-date {
+    display: block;
+    font-size: 0.7rem;
+    font-family: var(--font-family);
+    text-transform: uppercase;
+    color: var(--oc-gray-5);
+  }
+  todo-label {
+    display: block;
+    text-transform: uppercase;
+    margin-left: -0.1rem;
+    line-height: 1;
+    font-size: 2.5rem;
+    color: var(--oc-gray-7);
+  }
+  todo-day {
+    &.current todo-label{
+      color: var(--accent-todo);
+    }
+  }
+  todo-item {
+    input[type=text], .todo-item__form {
+      border-bottom: 1px solid var(--oc-gray-3);      
+    }
   }
 
   .todo-day--current {
@@ -97,7 +87,6 @@
 
   .todo-day__header {
     padding: 0.4rem 0.6rem;
-    border-bottom: 1px solid var(--color-border);
     background: inherit;
   }
 
@@ -110,23 +99,9 @@
     color: #fff;
   }
 
-  .todo-day__heading {
-    margin: 0;
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-align: center;
-  }
-
   .todo-day__heading a {
     text-decoration: none;
     color: inherit;
-  }
-
-  .todo-day__date-num {
-    font-size: 1.2rem;
-    font-weight: 700;
-    display: block;
-    text-align: center;
   }
 
   todo-list {
@@ -143,7 +118,6 @@
     gap: 0.35rem;
     padding: 0.1rem 0.5rem;
     min-height: var(--todo-item-height);
-    border-bottom: 1px solid transparent;
     position: relative;
   }
 
@@ -218,14 +192,13 @@
   /* Title */
   .todo-item__title {
     flex: 1;
-    font-size: 0.88rem;
+    font-size: 1.2rem;
     line-height: 1.4;
-    padding: 0.4rem 0.2rem;
     word-break: break-word;
     cursor: text;
-    border-radius: 2px;
     transition: background var(--transition-fast);
     min-width: 0;
+    border: 1px solid #f00;
   }
 
   .todo-item__title[contenteditable="true"] {
@@ -281,14 +254,11 @@
 
   .todo-new input[type="text"] {
     width: 100%;
-    border: none;
-    border-bottom: 1px solid transparent;
     padding: 0.4rem 0.4rem;
     font-size: 0.88rem;
     font-family: inherit;
     background: transparent;
     outline: none;
-    transition: border-color var(--transition-fast);
   }
 
   .todo-new input[type="text"]:focus {

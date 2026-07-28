@@ -10,16 +10,10 @@
         action="{{ url_for('todo.update', username=username, todo_id=item.todoID) }}">
 
     {# Submit button for toggle — JS hides it and uses checkbox change event instead #}
-    <button type="submit"
-            class="todo-item__toggle-btn"
-            formaction="{{ url_for('todo.toggle', username=username, todo_id=item.todoID) }}"
-            aria-label="{{ 'Mark incomplete' if item.completed else 'Mark complete' }}: {{ item.title }}">&#10003;</button>
-
-    {# --- Completion checkbox ------------------------------------------ #}
     <input type="checkbox"
-           class="todo-item__checkbox"
-           {% if item.completed %}checked{% endif %}
-           aria-label="{{ 'Mark incomplete' if item.completed else 'Mark complete' }}: {{ item.title }}">
+            {% if item.completed %}checked{% endif %}
+            formaction="{{ url_for('todo.toggle', username=username, todo_id=item.todoID) }}"
+            aria-label="{{ 'Mark incomplete' if item.completed else 'Mark complete' }}: {{ item.title }}">
 
     {# Hidden title input kept in sync by inline-editing JS #}
     <input type="hidden" name="title" value="{{ item.title | e }}">
@@ -101,8 +95,7 @@
     {% for name, value in hidden.items() %}
     <input type="hidden" name="{{ name }}" value="{{ value }}">
     {% endfor %}
-    <input type="text" name="title" placeholder="Add item…"
-           autocomplete="off" aria-label="{{ label }}">
+    <input type="text" name="title" placeholder="" autocomplete="off" aria-label="{{ label }}">
   </form>
 </todo-item>
 {% endmacro %}
