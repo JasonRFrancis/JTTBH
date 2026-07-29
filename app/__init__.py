@@ -13,7 +13,7 @@ import sys
 import traceback
 from datetime import datetime, date, timedelta
 
-from flask import Flask, redirect, url_for, request, session, g
+from flask import Flask, redirect, url_for, request, session, g, abort
 
 # Load .env file if present (development convenience)
 try:
@@ -104,6 +104,15 @@ def create_app(config_object=None):
     def index():
         """Redirect bare root URL to the login page."""
         return redirect(url_for('auth.login'))
+
+    @app.route('/icon/<image_id>.svg')
+    def icon_svg(image_id):
+        """Serve a shared icon's raw SVG markup. Static: no user/permission scoping."""
+        from app.services.database import db_manager  # noqa: PLC0415
+        icon = db_manager.execute_one('SELECT svg FROM svg WHERE imageID = %s', (image_id,))
+        if icon is None:
+            abort(404)
+        return icon['svg'], 200, {'Content-Type': 'image/svg+xml'}
 
     return app
 

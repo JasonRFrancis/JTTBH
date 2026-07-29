@@ -28,10 +28,6 @@ GET  /<username>/admin/topics
     Manage the master topic list (shared tag vocabulary used by study and
     quote to prefill tagging).
 
-GET  /<username>/admin/icon/<image_id>.svg
-    Serve a single icon's raw SVG markup (Content-Type: image/svg+xml), for
-    use as an image URL elsewhere in the app.
-
 Default permissions on approval
 --------------------------------
 read  = 32766  (2+4+8+16+32+64+128+256+512+1024+2048+4096+8192+16384 – everything except admin)
@@ -576,17 +572,6 @@ def icons(username: str):
         area='admin',
         icons=_get_all_icons(),
     )
-
-
-@admin_bp.route('/icon/<image_id>.svg')
-@login_required
-@permission_required_read(PERM_ADMIN)
-def icon_svg(username: str, image_id: str):
-    """Serve a single icon's raw SVG markup, for use as an image URL."""
-    icon = _get_icon_by_id(image_id)
-    if icon is None:
-        abort(404)
-    return icon['svg'], 200, {'Content-Type': 'image/svg+xml'}
 
 
 @admin_bp.route('/icon/create/post', methods=['POST'])
