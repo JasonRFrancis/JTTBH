@@ -13,6 +13,7 @@ POST /<u>/fitness/program/activate/post/<fitness_id>
 POST /<u>/fitness/program/delete/post/<fitness_id>
 POST /<u>/fitness/program/exercise/create/post
 POST /<u>/fitness/program/exercise/delete/post/<program_id>
+POST /<u>/fitness/program/exercise/day-toggle/post          → JSON
 
 POST /<u>/fitness/log/set/post                     → JSON
 POST /<u>/fitness/log/set/delete/post/<log_set_id> → JSON
@@ -47,7 +48,7 @@ from app.services.decorators import (
 
 fitness_bp = Blueprint('fitness', __name__)
 
-_DOW_ORDER = [1, 2, 3, 4, 5, 6]  # Mon–Sat (no Sunday)
+_DOW_ORDER = [0, 1, 2, 3, 4, 5, 6]  # Sun–Sat
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -252,13 +253,18 @@ def settings_program(username: str, fitness_id: str):
 @permission_required_read(PERM_FITNESS)
 @permission_required_write(PERM_FITNESS)
 def program_create(username: str):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     name = request.form.get('name', '').strip()
     if not name:
+        if is_ajax:
+            return jsonify({'status': 'error', 'message': 'Program name is required.'}), 400
         flash('Program name is required.', 'error')
         return redirect(url_for('fitness.settings', username=username))
     description = request.form.get('description', '').strip()
     fitness_id = FitnessModel.create_program(session['user_id'], name, description)
     flash(f'"{name}" created.', 'success')
+    if is_ajax:
+        return jsonify({'status': 'ok', 'fitness_id': fitness_id})
     return redirect(url_for('fitness.settings_program', username=username,
                             fitness_id=fitness_id))
 
@@ -270,6 +276,8 @@ def program_create(username: str):
 def program_activate(username: str, fitness_id: str):
     FitnessModel.activate_program(session['user_id'], fitness_id)
     flash('Program activated.', 'success')
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'status': 'ok'})
     return redirect(url_for('fitness.settings', username=username))
 
 
@@ -280,6 +288,8 @@ def program_activate(username: str, fitness_id: str):
 def program_delete(username: str, fitness_id: str):
     FitnessModel.delete_program(fitness_id, session['user_id'])
     flash('Program deleted.', 'success')
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'status': 'ok'})
     return redirect(url_for('fitness.settings', username=username))
 
 
@@ -288,20 +298,27 @@ def program_delete(username: str, fitness_id: str):
 @permission_required_read(PERM_FITNESS)
 @permission_required_write(PERM_FITNESS)
 def program_exercise_create(username: str):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     f = request.form
     fitness_id = f.get('fitness_id', '').strip()
     if not fitness_id:
+        if is_ajax:
+            return jsonify({'status': 'error', 'message': 'Missing program.'}), 400
         flash('Missing program.', 'error')
         return redirect(url_for('fitness.settings', username=username))
 
     # Verify ownership
     programs = FitnessModel.get_programs(session['user_id'])
     if not any(p['fitnessID'] == fitness_id for p in programs):
+        if is_ajax:
+            return jsonify({'status': 'error', 'message': 'Program not found.'}), 404
         flash('Program not found.', 'error')
         return redirect(url_for('fitness.settings', username=username))
 
     exercise_id = f.get('exercise_id', '').strip()
     if not exercise_id:
+        if is_ajax:
+            return jsonify({'status': 'error', 'message': 'Exercise is required.'}), 400
         flash('Exercise is required.', 'error')
         return redirect(url_for('fitness.settings_program', username=username,
                                 fitness_id=fitness_id))
@@ -347,6 +364,8 @@ def program_exercise_create(username: str):
         incline=_float(f.get('incline')),
     )
     flash('Exercise added.', 'success')
+    if is_ajax:
+        return jsonify({'status': 'ok'})
     return redirect(url_for('fitness.settings_program', username=username,
                             fitness_id=fitness_id))
 
@@ -390,6 +409,8 @@ def program_exercise_update(username: str, program_id: str):
             exercise_id, f.get('video_url', '').strip() or None
         )
     flash('Exercise updated.', 'success')
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'status': 'ok'})
     return redirect(
         url_for('fitness.settings_program', username=username, fitness_id=fitness_id)
         if fitness_id else url_for('fitness.settings', username=username)
@@ -404,9 +425,62 @@ def program_exercise_delete(username: str, program_id: str):
     fitness_id = request.form.get('fitness_id', '').strip()
     FitnessModel.delete_program_exercise(program_id, session['user_id'])
     flash('Exercise removed.', 'success')
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'status': 'ok'})
     return redirect(url_for('fitness.settings_program', username=username,
                             fitness_id=fitness_id) if fitness_id
                    else url_for('fitness.settings', username=username))
+
+
+@fitness_bp.route('/program/exercise/day-toggle/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def program_exercise_day_toggle(username: str):
+    """Toggle whether an exercise is scheduled on a given day of the active program."""
+    user_id = session['user_id']
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    f = request.form
+
+    exercise_id = f.get('exercise_id', '').strip()
+    try:
+        day_of_week = int(f.get('day_of_week'))
+    except (TypeError, ValueError):
+        day_of_week = None
+
+    if not exercise_id or day_of_week not in _DOW_ORDER:
+        if is_ajax:
+            return jsonify({'status': 'error', 'message': 'Invalid request.'}), 400
+        flash('Invalid request.', 'error')
+        return redirect(url_for('fitness.exercises', username=username))
+
+    program = FitnessModel.get_active_program(user_id)
+    if not program:
+        if is_ajax:
+            return jsonify({'status': 'error', 'message': 'No active program.'}), 400
+        flash('No active program.', 'error')
+        return redirect(url_for('fitness.exercises', username=username))
+
+    fitness_id = program['fitnessID']
+    day_exercises = FitnessModel.get_day_exercises(fitness_id, day_of_week)
+    existing = next((e for e in day_exercises if e['exerciseID'] == exercise_id), None)
+
+    if existing:
+        FitnessModel.delete_program_exercise(existing['programID'], user_id)
+        assigned = False
+    else:
+        order_index = max((e['order_index'] for e in day_exercises), default=0) + 1
+        FitnessModel.add_program_exercise(
+            fitness_id=fitness_id, day_of_week=day_of_week, exercise_id=exercise_id,
+            location='gym', sets=None, reps=None, weight=None, notes=None,
+            order_index=order_index, duration=None, speed=None, incline=None,
+        )
+        assigned = True
+
+    if is_ajax:
+        return jsonify({'status': 'ok', 'assigned': assigned})
+    flash('Schedule updated.', 'success')
+    return redirect(url_for('fitness.exercises', username=username))
 
 
 @fitness_bp.route('/exercise/update/post/<exercise_id>', methods=['POST'])
@@ -460,8 +534,11 @@ def program_exercise_move(username: str, program_id: str):
 @permission_required_read(PERM_FITNESS)
 @permission_required_write(PERM_FITNESS)
 def exercise_create(username: str):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     name = request.form.get('name', '').strip()
     if not name:
+        if is_ajax:
+            return jsonify({'status': 'error', 'message': 'Exercise name is required.'}), 400
         flash('Exercise name is required.', 'error')
         return redirect(url_for('fitness.settings', username=username))
     FitnessModel.create_exercise(
@@ -473,6 +550,8 @@ def exercise_create(username: str):
         video_url=request.form.get('video_url', '').strip() or None,
     )
     flash(f'"{name}" added to catalog.', 'success')
+    if is_ajax:
+        return jsonify({'status': 'ok'})
     return redirect(url_for('fitness.exercises', username=username))
 
 
@@ -630,6 +709,8 @@ def weight_schedule_post(username: str):
             (user_id, 'fitness_weight_days', value, user_id)
         )
     flash('Weight schedule saved.', 'success')
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'status': 'ok'})
     return redirect(url_for('fitness.settings', username=username))
 
 

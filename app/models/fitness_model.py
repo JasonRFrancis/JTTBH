@@ -124,6 +124,8 @@ class FitnessModel:
             JOIN fitness_exercise fe ON fe.exerciseID = fp.exerciseID
             WHERE fp.fitnessID = %s
               AND fp.exerciseID IS NOT NULL
+              AND fp.id = (SELECT MAX(fp2.id) FROM fitness_program fp2
+                           WHERE fp2.programID = fp.programID)
             ORDER BY fp.day_of_week, fp.order_index
         """, (fitness_id,))
         schedule = {d: [] for d in range(7)}
@@ -145,6 +147,8 @@ class FitnessModel:
             WHERE fp.fitnessID = %s
               AND fp.day_of_week = %s
               AND fp.exerciseID IS NOT NULL
+              AND fp.id = (SELECT MAX(fp2.id) FROM fitness_program fp2
+                           WHERE fp2.programID = fp.programID)
             ORDER BY fp.order_index
         """, (fitness_id, day_of_week))
 

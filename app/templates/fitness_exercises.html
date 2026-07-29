@@ -71,8 +71,8 @@
     <p class="empty-state">No exercises yet. Use the form above to add one.</p>
     {% else %}
 
-    {# Day names shortened #}
-    {% set day_abbr = {0:'Sun', 1:'Mon', 2:'Tue', 3:'Wed', 4:'Thu', 5:'Fri', 6:'Sat'} %}
+    {# Day names shortened to single letters (Th distinguishes Thu from Tue) #}
+    {% set day_abbr = {0:'S', 1:'M', 2:'T', 3:'W', 4:'Th', 5:'F', 6:'S'} %}
 
     {% set ns = namespace(prev_group=None) %}
     {% for ex in exercises %}
@@ -100,44 +100,22 @@
 
       {# Day assignment (only when active program exists) #}
       {% if program %}
+      {% set assigned_days = ex.days | map(attribute='day_of_week') | list %}
       <div class="ex-days">
         <span class="ex-days-label">Days:</span>
-        {% set assigned_days = ex.days | map(attribute='day_of_week') | list %}
-        {% for day_entry in ex.days | sort(attribute='day_of_week') %}
+        {% for d in dow_order %}
         <form method="post"
-              action="{{ url_for('fitness.program_exercise_delete', username=username, program_id=day_entry.programID) }}"
-              class="inline-form">
-          <input type="hidden" name="fitness_id" value="{{ program.fitnessID }}">
-          <button type="submit" class="day-chip day-chip--on"
-                  title="Remove from {{ day_names[day_entry.day_of_week] }}">
-            × {{ day_abbr[day_entry.day_of_week] }}
+              action="{{ url_for('fitness.program_exercise_day_toggle', username=username) }}"
+              class="inline-form day-toggle-form">
+          <input type="hidden" name="exercise_id" value="{{ ex.exerciseID }}">
+          <input type="hidden" name="day_of_week" value="{{ d }}">
+          <button type="submit" class="day-chip{% if d in assigned_days %} day-chip--on{% endif %}"
+                  aria-pressed="{{ 'true' if d in assigned_days else 'false' }}"
+                  title="{{ day_names[d] }}">
+            {{ day_abbr[d] }}
           </button>
         </form>
         {% endfor %}
-        {% set has_unassigned = namespace(found=false) %}
-        {% for d in dow_order %}{% if d not in assigned_days %}{% set has_unassigned.found = true %}{% endif %}{% endfor %}
-        {% if has_unassigned.found %}
-        <form method="post"
-              action="{{ url_for('fitness.program_exercise_create', username=username) }}"
-              class="inline-form ex-add-day-form">
-          <input type="hidden" name="fitness_id" value="{{ program.fitnessID }}">
-          <input type="hidden" name="exercise_id" value="{{ ex.exerciseID }}">
-          <input type="hidden" name="location" value="gym">
-          <select name="day_of_week" class="day-add-select">
-            {% for d in dow_order %}
-            {% if d not in assigned_days %}
-            <option value="{{ d }}">{{ day_abbr[d] }}</option>
-            {% endif %}
-            {% endfor %}
-          </select>
-          <button type="submit" class="btn-sm">+ Add day</button>
-        </form>
-        {% endif %}
-        {% if not ex.days and not has_unassigned.found %}
-        <span class="empty-state">All days assigned</span>
-        {% elif not ex.days %}
-        <span class="ex-days-none">Not scheduled</span>
-        {% endif %}
       </div>
       {% endif %}
 

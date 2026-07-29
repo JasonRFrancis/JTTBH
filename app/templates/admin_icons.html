@@ -60,6 +60,10 @@
       {% if icon.description %}
       <p class="icon-card-desc">{{ icon.description }}</p>
       {% endif %}
+      <p class="icon-card-url">
+        <a href="{{ url_for('admin.icon_svg', username=username, image_id=icon.imageID, _external=True) }}"
+           target="_blank" rel="noopener">{{ url_for('admin.icon_svg', username=username, image_id=icon.imageID, _external=True) }}</a>
+      </p>
 
       <details>
         <summary>Edit</summary>

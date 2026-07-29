@@ -850,7 +850,12 @@
   border-radius: 3px;
   cursor: pointer;
   line-height: 1.4;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
 }
+
+.day-chip:hover { opacity: 0.85; }
 
 .day-chip--on {
   background: var(--color-primary);
@@ -859,18 +864,6 @@
 }
 
 .day-chip--on:hover { opacity: 0.85; }
-
-.day-add-select {
-  font-size: 0.75rem;
-  padding: 0.15rem 0.3rem;
-  border: 1px solid var(--color-border);
-  border-radius: 3px;
-  background: var(--color-bg);
-  height: auto;
-  width: auto;
-}
-
-.ex-add-day-form { display: inline-flex; align-items: center; gap: 0.25rem; }
 
 .field-hint-inline {
   font-size: 0.75rem;

@@ -312,7 +312,7 @@ function post(url, data) {
 
 /* ── Settings day tabs ───────────────────────────────────────────────── */
 
-(function initDayTabs() {
+function initDayTabs() {
   var tabs = document.querySelectorAll('.day-tab');
   if (!tabs.length) return;
 
@@ -330,11 +330,12 @@ function post(url, data) {
       });
     });
   });
-})();
+}
+initDayTabs();
 
 /* ── Settings exercise type toggle ──────────────────────────────────── */
 
-(function initExerciseTypeToggle() {
+function initExerciseTypeToggle() {
   document.querySelectorAll('.exercise-select').forEach(function (sel) {
     var form = sel.closest('form');
     if (!form) return;
@@ -357,4 +358,96 @@ function post(url, data) {
     sel.addEventListener('change', update);
     update();
   });
+}
+initExerciseTypeToggle();
+
+/* ── Settings page: AJAX form submission (no full page reload) ───────── */
+
+(function initSettingsAjax() {
+  if (!document.querySelector('main.fitness-settings')) return;
+
+  function swapMain(html) {
+    var doc      = new DOMParser().parseFromString(html, 'text/html');
+    var newInner = doc.querySelector('main.fitness-settings');
+    var oldInner = document.querySelector('main.fitness-settings');
+    if (!newInner || !oldInner) return;
+    oldInner.replaceWith(newInner);
+
+    var oldMsgs = document.querySelector('body > messages');
+    if (oldMsgs) oldMsgs.remove();
+    var newMsgs = doc.querySelector('body > messages');
+    if (newMsgs) {
+      var outerMain = document.querySelector('body > main');
+      outerMain.parentNode.insertBefore(newMsgs, outerMain);
+    }
+
+    initDayTabs();
+    initExerciseTypeToggle();
+  }
+
+  function refresh(url) {
+    var activeTab = document.querySelector('.day-tab--active');
+    var day = activeTab ? activeTab.dataset.day : null;
+
+    return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        swapMain(html);
+        if (day) {
+          var tab = document.querySelector('.day-tab[data-day="' + day + '"]');
+          if (tab) tab.click();
+        }
+      });
+  }
+
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    if (!form.closest('main.fitness-settings')) return;
+
+    e.preventDefault();
+
+    var confirmMsg = form.dataset.confirm;
+    if (confirmMsg && !confirm(confirmMsg)) return;
+
+    fetch(form.action, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: new FormData(form),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (res.status !== 'ok') return;
+        if (res.fitness_id) {
+          refresh(window.FITNESS_URLS.settingsProgram.replace('PROGID', res.fitness_id));
+        } else {
+          refresh(window.location.pathname);
+        }
+      });
+  });
 })();
+
+/* ── Exercise day-toggle chips (Exercises page) ───────────────────────── */
+
+document.addEventListener('submit', function (e) {
+  var form = e.target;
+  if (!(form instanceof HTMLFormElement)) return;
+  if (!form.classList.contains('day-toggle-form')) return;
+
+  e.preventDefault();
+
+  var btn = form.querySelector('button');
+  btn.disabled = true;
+
+  post(form.action, {
+    exercise_id: form.querySelector('[name="exercise_id"]').value,
+    day_of_week: form.querySelector('[name="day_of_week"]').value,
+  })
+    .then(function (res) {
+      if (res.status !== 'ok') return;
+      btn.classList.toggle('day-chip--on', res.assigned);
+      btn.setAttribute('aria-pressed', res.assigned ? 'true' : 'false');
+    })
+    .catch(function () {})
+    .finally(function () { btn.disabled = false; });
+});

@@ -26,16 +26,46 @@
     border: 0;
   }
   input[type=checkbox]{
+    -webkit-appearance: none;
+    -moz-appearance: none;
     appearance: none;
-    margin-left: -1.5rem;
-    padding-right: 0.2rem;
+    margin-left: -1.75rem;
+    padding-right: 0.25rem;
     height: 1.5rem;
     width: 1.5rem;
-    background-color: rgba(201,42,42,0.5);
+    background-color: rgba(201,42,42,0.3);
+    border: 1px solid rgba(201,42,42,0.6);
+    border-radius: 3px;
+    cursor: pointer;
+    display: inline-block;
+    opacity: 1;
+    vertical-align: top;
 
     &:checked {
-      background-color: #2196F3; /* Checked background color */
-      border-color: #2196F3;
+      background-color: rgba(201,42,42,0.6);
+      border-color: rgba(201,42,42,0.9);
+      color: #fff;
+      font-weight: bold;
+
+      &:after {
+        background-color: transparent;
+        content: "";
+        display: block;
+        height: .8rem;
+        left: 50%;
+        line-height: 0;
+        -webkit-mask: url(/2025-01-15-2337827b3f73ccfcf650fc0683d063a4ba9468ae/static/img/feather-checkmark.svg) no-repeat 50% 50%;
+        mask: url(/2025-01-15-2337827b3f73ccfcf650fc0683d063a4ba9468ae/static/img/feather-checkmark.svg) no-repeat 50% 50%;
+        -webkit-mask-size: 1.1428571429em 1.1428571429em;
+        mask-size: 1.1428571429em 1.1428571429em;
+        opacity: 0;
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        transition: opacity .25s ease-in-out;
+        width: .8888888889rem;
+        z-index:1
+      }
     }
   }
 
@@ -198,7 +228,6 @@
     cursor: text;
     transition: background var(--transition-fast);
     min-width: 0;
-    border: 1px solid #f00;
   }
 
   .todo-item__title[contenteditable="true"] {

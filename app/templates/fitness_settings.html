@@ -38,7 +38,7 @@
           <form method="post"
                 action="{{ url_for('fitness.program_delete', username=username, fitness_id=prog.fitnessID) }}"
                 style="display:inline"
-                onsubmit="return confirm('Delete this program?')">
+                data-confirm="Delete this program?">
             <button type="submit" class="btn-sm btn-danger">Delete</button>
           </form>
         </div>
@@ -356,5 +356,10 @@
 {% endblock %}
 
 {% block js %}
+<script>
+  window.FITNESS_URLS = {
+    settingsProgram: "{{ url_for('fitness.settings_program', username=username, fitness_id='PROGID') }}"
+  };
+</script>
 <script src="{{ url_for('static', filename='js/fitness.js') }}" defer></script>
 {% endblock %}
