@@ -36,8 +36,19 @@
         </div>
         <div class="field">
           <label for="new-muscle">Muscle group</label>
-          <input type="text" id="new-muscle" name="muscle_group" maxlength="50"
-                 placeholder="e.g. chest">
+          <select id="new-muscle" name="muscle_group">
+            <option value="">— None —</option>
+            <option value="chest">Chest</option>
+            <option value="back">Back</option>
+            <option value="shoulders">Shoulders</option>
+            <option value="arms">Arms</option>
+            <option value="forearms">Forearms</option>
+            <option value="legs">Legs</option>
+            <option value="glutes">Glutes</option>
+            <option value="core">Core</option>
+            <option value="cardio">Cardio</option>
+            <option value="full_body">Full Body</option>
+          </select>
         </div>
         <div class="field">
           <label for="new-equip">Equipment</label>
@@ -141,8 +152,19 @@
           </div>
           <div class="field">
             <label>Muscle group</label>
-            <input type="text" name="muscle_group" maxlength="50"
-                   value="{{ ex.muscle_group or '' }}" placeholder="e.g. chest">
+            <select name="muscle_group">
+              <option value=""{% if not ex.muscle_group %} selected{% endif %}>— None —</option>
+              <option value="chest"{% if ex.muscle_group == 'chest' %} selected{% endif %}>Chest</option>
+              <option value="back"{% if ex.muscle_group == 'back' %} selected{% endif %}>Back</option>
+              <option value="shoulders"{% if ex.muscle_group == 'shoulders' %} selected{% endif %}>Shoulders</option>
+              <option value="arms"{% if ex.muscle_group == 'arms' %} selected{% endif %}>Arms</option>
+              <option value="forearms"{% if ex.muscle_group == 'forearms' %} selected{% endif %}>Forearms</option>
+              <option value="legs"{% if ex.muscle_group == 'legs' %} selected{% endif %}>Legs</option>
+              <option value="glutes"{% if ex.muscle_group == 'glutes' %} selected{% endif %}>Glutes</option>
+              <option value="core"{% if ex.muscle_group == 'core' %} selected{% endif %}>Core</option>
+              <option value="cardio"{% if ex.muscle_group == 'cardio' %} selected{% endif %}>Cardio</option>
+              <option value="full_body"{% if ex.muscle_group == 'full_body' %} selected{% endif %}>Full Body</option>
+            </select>
           </div>
           <div class="field">
             <label>Equipment</label>

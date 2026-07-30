@@ -456,7 +456,7 @@ CREATE TABLE `fitness_exercise` (
   `name` varchar(255) DEFAULT NULL,  -- NULL = soft deleted
   `description` text,
   `equipment_type` enum('weight_machine','hand_weight','bodyweight','cable','other') NOT NULL DEFAULT 'weight_machine',
-  `muscle_group` varchar(100) DEFAULT NULL,
+  `muscle_group` enum('chest','back','shoulders','arms','forearms','legs','glutes','core','cardio','full_body') DEFAULT NULL,
   `video_url` varchar(512) DEFAULT NULL,
   `type` enum('machine','hand_weight','bodyweight','cardio','video') NOT NULL DEFAULT 'machine',
   `created` datetime NOT NULL,
