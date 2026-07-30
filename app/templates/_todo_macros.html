@@ -104,7 +104,8 @@
 {% macro todo_list(todos, default_length, username, action, hidden, new_item_label, list_type=none, date_str=none, data_name=none) %}
 {#
   Renders a complete <todo-list>: existing items plus blank "add item" rows
-  padded out to default_length total rows (never fewer than the item count).
+  padded out to default_length total rows, always at least 1 so there's
+  room to add more once item count reaches default_length.
 
   action / hidden are the create-form's target URL and hidden field values —
   callers assemble these since they differ per list kind (personal vs shared).
@@ -118,7 +119,7 @@
   {{ todo_item(item, username) }}
   {% endfor %}
 
-  {% for i in range([default_length - todos | length, 0] | max) %}
+  {% for i in range([default_length - todos | length, 1] | max) %}
   {{ todo_new_item_row(action, hidden, new_item_label) }}
   {% endfor %}
 </todo-list>
