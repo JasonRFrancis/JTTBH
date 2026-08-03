@@ -13,6 +13,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from playwright.sync_api import sync_playwright
+
 from app import create_app
 from app.services.database import db_manager
 
@@ -26,6 +28,28 @@ from scrape_gospel_library import BASE, fetch, clean, href_base, get_or_create_c
 INDEX = '/study/manual/preach-my-gospel-2023'
 PAGE_PAT = re.compile(r'^' + re.escape(INDEX) + r'/(?:[^/#]+/)?([^/#]+)$')
 ORDER_PAT = re.compile(r'^(\d+)')
+
+
+def get_audio_url(page, href):
+    """Visit a page in a real browser and return its mp3 src, or None if it has no audio.
+
+    The audio player is mounted client-side after page load, so this needs a
+    browser rather than requests+BeautifulSoup (matches the approach used by
+    the site's other audio backfill scripts).
+    """
+    page.goto(f'{BASE}{href}?lang=eng', wait_until='domcontentloaded')
+    btn = page.locator('button[aria-label="Audio Player"]')
+    try:
+        btn.wait_for(state='attached', timeout=5000)
+    except Exception:
+        return None
+    btn.click()
+    src = page.locator('source[src$=".mp3"]')
+    try:
+        src.wait_for(state='attached', timeout=8000)
+    except Exception:
+        return None
+    return src.get_attribute('src')
 
 
 def scrape():
@@ -54,21 +78,29 @@ def scrape():
     print(f"  Collection {'created' if created else 'exists'}: {cid[:8]}")
 
     added = 0
-    for order_by, href in pages:
-        try:
-            page_soup = fetch(href)
-        except Exception as e:
-            print(f"  WARN: {href}: {e}")
-            continue
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch()
+        browser_page = browser.new_page()
 
-        h1 = page_soup.find('h1')
-        title = clean(h1.get_text()) if h1 else href.split('/')[-1].replace('-', ' ').title()
+        for order_by, href in pages:
+            try:
+                page_soup = fetch(href)
+            except Exception as e:
+                print(f"  WARN: {href}: {e}")
+                continue
 
-        if add_source(cid, title=title, url=BASE + href, order_by=order_by):
-            print(f"  + [{order_by:2d}] {title}")
-            added += 1
-        else:
-            print(f"  . [{order_by:2d}] {title} (exists)")
+            h1 = page_soup.find('h1')
+            title = clean(h1.get_text()) if h1 else href.split('/')[-1].replace('-', ' ').title()
+            audio_url = get_audio_url(browser_page, href)
+
+            if add_source(cid, title=title, url=BASE + href, order_by=order_by, audio_url=audio_url):
+                audio_flag = '' if audio_url else ' (no audio)'
+                print(f"  + [{order_by:2d}] {title}{audio_flag}")
+                added += 1
+            else:
+                print(f"  . [{order_by:2d}] {title} (exists)")
+
+        browser.close()
 
     print(f"  Total: {len(pages)} pages, {added} added")
 

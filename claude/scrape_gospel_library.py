@@ -136,17 +136,19 @@ def source_exists(collection_id, url_base):
 
 
 def add_source(collection_id, *, title, url, order_by,
-               author=None, category=None, subtitle=None):
+               author=None, category=None, subtitle=None,
+               audio_url=None, audio_length=None):
     url_base = url.split('?')[0]
     if source_exists(collection_id, url_base):
         return False
     db_manager.execute_insert("""
         INSERT INTO study_source
           (sourceID, collectionID, userID, category, title, subtitle,
-           author, url, order_by, created, created_by)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s)
+           author, url, audio_url, audio_length, order_by, created, created_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s)
     """, (str(uuid.uuid4()), collection_id, ADMIN_USER_ID,
-          category, title, subtitle, author, url_base, order_by, ADMIN_USER_ID))
+          category, title, subtitle, author, url_base, audio_url, audio_length,
+          order_by, ADMIN_USER_ID))
     return True
 
 
