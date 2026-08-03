@@ -31,11 +31,12 @@ ORDER_PAT = re.compile(r'^(\d+)')
 
 
 def get_audio_url(page, href):
-    """Visit a page in a real browser and return its mp3 src, or None if it has no audio.
+    """Visit a page in a real browser and return its audio src, or None if it has no audio.
 
     The audio player is mounted client-side after page load, so this needs a
-    browser rather than requests+BeautifulSoup (matches the approach used by
-    the site's other audio backfill scripts).
+    browser rather than requests+BeautifulSoup. Files are served as either
+    .mp3 or .m4a (the First Presidency Message page uses .m4a), so match any
+    <source> under the <audio> tag rather than filtering by extension.
     """
     page.goto(f'{BASE}{href}?lang=eng', wait_until='domcontentloaded')
     btn = page.locator('button[aria-label="Audio Player"]')
@@ -44,7 +45,7 @@ def get_audio_url(page, href):
     except Exception:
         return None
     btn.click()
-    src = page.locator('source[src$=".mp3"]')
+    src = page.locator('audio source')
     try:
         src.wait_for(state='attached', timeout=8000)
     except Exception:
