@@ -128,28 +128,39 @@ def get_or_create_collection(name, description=''):
     return cid, True
 
 
-def source_exists(collection_id, url_base):
-    row = db_manager.execute_one(
-        "SELECT id FROM study_source WHERE collectionID=%s AND url=%s AND title IS NOT NULL LIMIT 1",
+def get_existing_source(collection_id, url_base):
+    return db_manager.execute_one(
+        "SELECT sourceID, audio_url FROM study_source WHERE collectionID=%s AND url=%s AND title IS NOT NULL LIMIT 1",
         (collection_id, url_base))
-    return bool(row)
 
 
 def add_source(collection_id, *, title, url, order_by,
                author=None, category=None, subtitle=None,
                audio_url=None, audio_length=None):
+    """Insert a new source, or — if one already exists for this URL and a new
+    audio_url was found — insert an insert-only update row with the same
+    sourceID. Returns 'created', 'updated', or None (no change)."""
     url_base = url.split('?')[0]
-    if source_exists(collection_id, url_base):
-        return False
+    existing = get_existing_source(collection_id, url_base)
+
+    if existing:
+        if not audio_url or audio_url == existing['audio_url']:
+            return None
+        source_id = existing['sourceID']
+        status = 'updated'
+    else:
+        source_id = str(uuid.uuid4())
+        status = 'created'
+
     db_manager.execute_insert("""
         INSERT INTO study_source
           (sourceID, collectionID, userID, category, title, subtitle,
            author, url, audio_url, audio_length, order_by, created, created_by)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s)
-    """, (str(uuid.uuid4()), collection_id, ADMIN_USER_ID,
+    """, (source_id, collection_id, ADMIN_USER_ID,
           category, title, subtitle, author, url_base, audio_url, audio_length,
           order_by, ADMIN_USER_ID))
-    return True
+    return status
 
 
 # ---------------------------------------------------------------------------

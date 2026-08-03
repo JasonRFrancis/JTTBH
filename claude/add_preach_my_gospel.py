@@ -77,7 +77,7 @@ def scrape():
     )
     print(f"  Collection {'created' if created else 'exists'}: {cid[:8]}")
 
-    added = 0
+    n_created = n_updated = 0
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
         browser_page = browser.new_page()
@@ -93,16 +93,20 @@ def scrape():
             title = clean(h1.get_text()) if h1 else href.split('/')[-1].replace('-', ' ').title()
             audio_url = get_audio_url(browser_page, href)
 
-            if add_source(cid, title=title, url=BASE + href, order_by=order_by, audio_url=audio_url):
-                audio_flag = '' if audio_url else ' (no audio)'
+            status = add_source(cid, title=title, url=BASE + href, order_by=order_by, audio_url=audio_url)
+            audio_flag = '' if audio_url else ' (no audio)'
+            if status == 'created':
                 print(f"  + [{order_by:2d}] {title}{audio_flag}")
-                added += 1
+                n_created += 1
+            elif status == 'updated':
+                print(f"  ~ [{order_by:2d}] {title} (audio updated)")
+                n_updated += 1
             else:
-                print(f"  . [{order_by:2d}] {title} (exists)")
+                print(f"  . [{order_by:2d}] {title} (unchanged)")
 
         browser.close()
 
-    print(f"  Total: {len(pages)} pages, {added} added")
+    print(f"  Total: {len(pages)} pages, {n_created} created, {n_updated} audio-updated")
 
 
 def main():
