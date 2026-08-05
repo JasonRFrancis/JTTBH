@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}My Reports{% endblock %}
+
+{% block content %}
+<header>
+  <h1>My Reports</h1>
+  <p><a href="{{ url_for('report.create_form', username=username) }}" class="btn btn-primary">Report a bug / request a feature</a></p>
+</header>
+
+{% if reports %}
+<table class="data-table">
+  <caption class="sr-only">Your submitted bug reports and feature requests</caption>
+  <thead>
+    <tr>
+      <th scope="col">Type</th>
+      <th scope="col">Title</th>
+      <th scope="col">Status</th>
+      <th scope="col">Submitted</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in reports %}
+    <tr>
+      <td>{{ 'Bug' if r.type == 'bug_report' else 'Feature request' }}</td>
+      <td>{{ r.title }}</td>
+      <td>{{ r.status.replace('_', ' ') }}</td>
+      <td><time datetime="{{ r.created }}">{{ r.created }}</time></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted-text">You haven't submitted any reports yet.</p>
+{% endif %}
+{% endblock %}

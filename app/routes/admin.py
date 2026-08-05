@@ -28,6 +28,17 @@ GET  /<username>/admin/topics
     Manage the master topic list (shared tag vocabulary used by study and
     quote to prefill tagging).
 
+GET  /<username>/admin/tracker
+    Triage list of system errors, bug reports, and feature requests
+    (``error_report`` table), filterable by type/status/priority.
+
+GET  /<username>/admin/tracker/<report_id>
+    Full detail of one report (stack trace, request context, reporter) with
+    a status/priority/admin_notes update form.
+
+POST /<username>/admin/tracker/update/post/<report_id>
+    Update a report's status, priority, and/or admin notes.
+
 Default permissions on approval
 --------------------------------
 read  = 32766  (2+4+8+16+32+64+128+256+512+1024+2048+4096+8192+16384 – everything except admin)
@@ -52,6 +63,7 @@ from flask import (
     abort,
 )
 
+from app.models.error_report_model import ErrorReportModel
 from app.models.topic_model import TopicModel
 from app.services.database import db_manager
 from app.services.email_service import email_service
@@ -673,3 +685,66 @@ def topic_delete(username: str, topic_id: int):
     TopicModel.delete(topic_id)
     flash('Topic deleted.', 'success')
     return redirect(url_for('admin.topics', username=username))
+
+
+# ---------------------------------------------------------------------------
+# Routes – Tracker (system errors, bug reports, feature requests)
+# ---------------------------------------------------------------------------
+
+@admin_bp.route('/tracker')
+@login_required
+@permission_required_read(PERM_ADMIN)
+def tracker(username: str):
+    """Render the triage list, filterable by type/status/priority."""
+    type_f     = request.args.get('type',     '').strip()
+    status_f   = request.args.get('status',   '').strip()
+    priority_f = request.args.get('priority', '').strip()
+
+    reports = ErrorReportModel.get_all(
+        type=type_f or None,
+        status=status_f or None,
+        priority=priority_f or None,
+    )
+
+    return render_template(
+        'admin_tracker.html',
+        username=username,
+        area='admin',
+        reports=reports,
+        counts=ErrorReportModel.counts(),
+        filters={'type': type_f, 'status': status_f, 'priority': priority_f},
+    )
+
+
+@admin_bp.route('/tracker/<report_id>')
+@login_required
+@permission_required_read(PERM_ADMIN)
+def tracker_detail(username: str, report_id: str):
+    """Render the full detail of one report, with a status/priority/notes update form."""
+    report = ErrorReportModel.get_by_id(report_id)
+    if report is None:
+        abort(404)
+    return render_template(
+        'admin_tracker_detail.html',
+        username=username,
+        area='admin',
+        report=report,
+    )
+
+
+@admin_bp.route('/tracker/update/post/<report_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_ADMIN)
+@permission_required_write(PERM_ADMIN)
+def tracker_update(username: str, report_id: str):
+    """Update a report's status, priority, and/or admin notes."""
+    if ErrorReportModel.get_by_id(report_id) is None:
+        abort(404)
+    ErrorReportModel.update(
+        report_id,
+        status=request.form.get('status') or None,
+        priority=request.form.get('priority') or None,
+        admin_notes=request.form.get('admin_notes', '').strip() or None,
+    )
+    flash('Report updated.', 'success')
+    return redirect(url_for('admin.tracker_detail', username=username, report_id=report_id))

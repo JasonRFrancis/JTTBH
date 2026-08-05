@@ -52,22 +52,6 @@
 
 ### B2. File & Naming Conventions
 
-```
-app/
-  __init__.py          # app factory, Jinja2 globals, blueprint registration
-  models/              # habit_model.py, todo_model.py …
-  routes/              # one blueprint per feature: habit.py, todo.py …
-  services/
-    database.py        # db_manager singleton
-    decorators.py      # login_required, permission_required_read/write, PERM_* constants
-    timezone_utils.py  # user_today() → date in user's IANA timezone
-  static/css/          # base.css + one per feature
-  static/js/           # base.js + one per feature
-  templates/           # flat — naming: [feature]_[page].html
-migrations/            # YYYYMMDD_description.sql — must be idempotent
-claude/                # scratch files, RESULTS.md, LESSONS.md, TODO.md
-```
-
 - Feature names are **singular**: `todo`, `habit`, `bookmark`, `chore`
 - After the feature prefix, identifiers use camelCase: `todo_pushedForward`
 - Templates, models, routes: **one folder deep only**
@@ -80,30 +64,6 @@ POST /[username]/[area]/[action]/post/[id…] → mutates state, redirects (PRG)
 ```
 
 Dates in URLs: ISO `YYYY-MM-DD`. POST action names: `create`, `update`, `delete`, `toggle`, `reorder`, `move`.
-
-### B4. Route Inventory
-
-| Blueprint | URL prefix | Key routes |
-|-----------|-----------|------------|
-| `auth_bp` | `/auth` | `GET /login`, `GET /oauth2callback`, `GET /logout` |
-| `dashboard_bp` | `/<u>/dashboard` | `GET /index`, `GET /index/json` |
-| `admin_bp` | `/<u>/admin` | `GET /dashboard`, `/users`, `/log`, `/icons`, `/errors` + POST mutations |
-| `user_bp` | `/<u>` | `GET /settings`, `POST /settings/post` |
-| `todo_bp` | `/<u>/todo` | `GET /index[/<date_str>]`, `GET /search`, `POST /create|toggle|update|delete|move|reorder/post` |
-| `habit_bp` | `/<u>/habit` | `GET /index[/<date>]`, `/heatmap`, `/settings[/<id>]`, `GET /positions/json` · `POST /toggle|create|update|delete|reorder/post` |
-| `project_bp` | `/<u>/project` | `GET /index`, `GET /view/<id>` · `POST /create|update|delete/post`, `/resource/create|delete/post`, `/send_to_todo/post/<id>` |
-| `bookmark_bp` | `/<u>/bookmark` | `GET /index`, `/archive`, `/read-later`, `/category/<id>`, `/items/json` · full POST suite (create, update, archive, favorite, delete, bulk-delete, category CRUD + reorder) |
-| `fitness_bp` | `/<u>/fitness` | `GET /index`, `/log`, `/settings` · `POST /program/*`, `/exercise/create/post`, `/log/set/post` (JSON), `/weight/post` (JSON) |
-| `media_bp` | `/<u>/media` | `GET /index`, `/detail/<id>`, `/settings`, `/search/json` · `POST /create|update|delete|sync/post`, `/episode/seen/post/<id>`, `/steam/sync/post` |
-| `journal_bp` | `/<u>/journal` | `GET /index[/<date>]`, `/questions`, `/mood/settings` · `POST /answer|mood|question/create/post` |
-| `study_bp` | `/<u>/study` | `GET /index[/<date>]`, `/collections`, `/collection/<id>`, `/feed.xml` (public RSS) · `POST /collection|source /create|update|delete/post`, `/subscribe|unsubscribe|subscription/update/post`, `/source/complete/post/<id>` |
-| `quote_bp` | `/<u>/quote` | `GET /index`, `/add` · `POST /create|update|delete/post` |
-| `recipe_bp` | `/<u>/recipe` | `GET /index`, `/detail/<id>`, `/add`, `/edit/<id>` · `POST /extract/post` (JSON), `/create\|update\|delete/post`, `/image/add/post/<id>`, `/image/delete/post/<image_id>`, `/pdf/post` |
-| `triage_bp` | `/<u>/triage` | `GET /index` (stubbed) |
-| `vacation_bp` | `/<u>/vacation` | `GET /index` · `POST /create|delete/post` |
-| `appointment_bp` | `/<u>/appointment` | `GET /index` (stubbed) |
-| `chore_bp` | `/<u>/chore` | `GET /index` (stubbed) |
-| `book_bp` | `/<u>/book` | `GET /index` · `POST /create|update|finish/post` (legacy) |
 
 ---
 
@@ -131,24 +91,6 @@ Dates in URLs: ISO `YYYY-MM-DD`. POST action names: `create`, `update`, `delete`
 | 15 | 32768 | `PERM_RECIPE` | Recipe tracker |
 
 **Default on approval:** `read = write = 32766` (bits 1–14; admin bit 0 and Recipe bit 15 excluded)
-
-**Decorator usage:**
-```python
-from app.services.decorators import (
-    login_required, permission_required_read, permission_required_write, PERM_TODO
-)
-
-@blueprint.route('/index')
-@login_required
-@permission_required_read(PERM_TODO)
-def index(username: str): ...
-
-@blueprint.route('/create/post', methods=['POST'])
-@login_required
-@permission_required_read(PERM_TODO)
-@permission_required_write(PERM_TODO)
-def create(username: str): ...
-```
 
 **In templates:** `has_perm(bit)` / `has_write_perm(bit)`
 
@@ -200,52 +142,7 @@ All params must be tuples. Never interpolate values into SQL strings.
 
 ## Part D — Application Layer
 
-### D1. Code Patterns
-
-#### Model (`app/models/thing_model.py`)
-```python
-from app.services.database import db_manager
-import uuid
-
-class ThingModel:
-    @staticmethod
-    def get_things(user_id: str) -> list[dict]:
-        return db_manager.execute_query("""
-            SELECT t.thingID, t.name
-            FROM thing t
-            WHERE t.userID = %s
-              AND t.id = (SELECT MAX(t2.id) FROM thing t2 WHERE t2.thingID = t.thingID)
-              AND t.name IS NOT NULL
-            ORDER BY t.position
-        """, (user_id,))
-```
-
-#### Route blueprint (`app/routes/thing.py`)
-```python
-from flask import Blueprint, render_template, request, session, redirect, url_for, flash
-from app.services.decorators import login_required, permission_required_read, permission_required_write, PERM_THING
-
-thing_bp = Blueprint('thing', __name__)
-
-@thing_bp.route('/index')
-@login_required
-@permission_required_read(PERM_THING)
-def index(username: str):
-    return render_template('thing_index.html', username=username, area='thing')
-```
-
-#### Template (`app/templates/thing_index.html`)
-```html
-{% extends "base.html" %}
-{% block title %}Things{% endblock %}
-{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/thing.css') }}">{% endblock %}
-{% block content %}
-<header><h1>Things</h1></header>
-{% endblock %}
-{% block js %}<script src="{{ url_for('static', filename='js/thing.js') }}" defer></script>{% endblock %}
-```
-
-### D2. Jinja2 Globals & Filters
+### D1. Jinja2 Globals & Filters
 
 | Name | Usage |
 |------|-------|
@@ -258,13 +155,13 @@ def index(username: str):
 
 **⚠ Never use `&` in `{% %}` blocks** — raises `TemplateSyntaxError`. Use `bitand(a, b)`.
 
-### D3. Session Keys & Auth
+### D2. Session Keys & Auth
 
 Session keys set on login: `user_id`, `username`, `perm_read`, `perm_write`, `timezone`  
 `session.permanent = True`; lifetime = 7 days (`PERMANENT_SESSION_LIFETIME = 604800`)  
 `timezone` from `user_preference` key `'timezone'`; defaults to `'UTC'`
 
-### D4. Error Handling
+### D3. Error Handling
 
 - User-facing: `flash(message, category)` — categories: `error`, `warning`, `message`, `success`
 - JSON endpoints: `{"status": "error", "message": "...", "code": "...", "details": {}}`

@@ -31,6 +31,7 @@
     {% endif %}{% if has_perm(16384) %}{% if area == 'quote' %}<b>Quotes</b>{% else %}<a href="{{ url_for('quote.index', username=session.username) }}">Quotes</a>{% endif %}
     {% endif %}{% if has_perm(32768) %}{% if area == 'recipe' %}<b>Recipes</b>{% else %}<a href="{{ url_for('recipe.index', username=session.username) }}">Recipes</a>{% endif %}
     {% endif %}{% if has_perm(65536) %}{% if area == 'scripture' %}<b>Scripture</b>{% else %}<a href="{{ url_for('scripture.index', username=session.username) }}">Scripture</a>{% endif %}
+    {% endif %}{% if session.get('user_id') %}{% if area == 'report' %}<b>Report a bug</b>{% else %}<a href="{{ url_for('report.index', username=session.username) }}">Report a bug</a>{% endif %}
     {% endif %}
   </nav>
   {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<messages aria-live="polite" aria-label="Notifications">

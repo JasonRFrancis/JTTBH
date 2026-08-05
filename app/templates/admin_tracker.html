@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Tracker — Admin{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="admin-header">
+  <h1>Tracker</h1>
+  <nav aria-label="Admin navigation">
+    <a href="{{ url_for('admin.dashboard', username=username) }}">Dashboard</a>
+    <a href="{{ url_for('admin.users',     username=username) }}">Users</a>
+    <a href="{{ url_for('admin.icons',     username=username) }}">Icons</a>
+    <a href="{{ url_for('admin.topics',    username=username) }}">Topics</a>
+    <a href="{{ url_for('admin.log',       username=username) }}">Log</a>
+    <a href="{{ url_for('admin.errors',    username=username) }}">Errors</a>
+    <a href="{{ url_for('admin.tracker',   username=username) }}" aria-current="page">Tracker</a>
+  </nav>
+</header>
+
+<section aria-labelledby="counts-heading">
+  <h2 id="counts-heading">Summary</h2>
+  {% if counts %}
+  <table class="data-table">
+    <caption class="sr-only">Report counts by type and status</caption>
+    <thead>
+      <tr><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Count</th></tr>
+    </thead>
+    <tbody>
+      {% for c in counts %}
+      <tr><td>{{ c.type.replace('_', ' ') }}</td><td>{{ c.status.replace('_', ' ') }}</td><td>{{ c.n }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted-text">No reports yet.</p>
+  {% endif %}
+</section>
+
+<section aria-labelledby="tracker-heading">
+  <h2 id="tracker-heading">All Reports</h2>
+
+  <form method="get" action="{{ url_for('admin.tracker', username=username) }}" class="log-filters">
+    <select name="type" aria-label="Filter by type">
+      <option value="">All types</option>
+      <option value="system_error"    {{ 'selected' if filters.type == 'system_error' }}>System error</option>
+      <option value="bug_report"      {{ 'selected' if filters.type == 'bug_report' }}>Bug report</option>
+      <option value="feature_request" {{ 'selected' if filters.type == 'feature_request' }}>Feature request</option>
+    </select>
+    <select name="status" aria-label="Filter by status">
+      <option value="">All statuses</option>
+      <option value="new"         {{ 'selected' if filters.status == 'new' }}>New</option>
+      <option value="in_progress" {{ 'selected' if filters.status == 'in_progress' }}>In progress</option>
+      <option value="resolved"    {{ 'selected' if filters.status == 'resolved' }}>Resolved</option>
+      <option value="wont_fix"    {{ 'selected' if filters.status == 'wont_fix' }}>Won't fix</option>
+      <option value="duplicate"   {{ 'selected' if filters.status == 'duplicate' }}>Duplicate</option>
+    </select>
+    <select name="priority" aria-label="Filter by priority">
+      <option value="">All priorities</option>
+      <option value="critical" {{ 'selected' if filters.priority == 'critical' }}>Critical</option>
+      <option value="high"     {{ 'selected' if filters.priority == 'high' }}>High</option>
+      <option value="medium"   {{ 'selected' if filters.priority == 'medium' }}>Medium</option>
+      <option value="low"      {{ 'selected' if filters.priority == 'low' }}>Low</option>
+    </select>
+    <button type="submit">Filter</button>
+    {% if filters.type or filters.status or filters.priority %}
+    <a href="{{ url_for('admin.tracker', username=username) }}">Clear</a>
+    {% endif %}
+  </form>
+
+  {% if reports %}
+  <table class="data-table">
+    <caption class="sr-only">Error reports, bug reports, and feature requests</caption>
+    <thead>
+      <tr>
+        <th scope="col">Priority</th>
+        <th scope="col">Type</th>
+        <th scope="col">Title</th>
+        <th scope="col">Status</th>
+        <th scope="col">Reporter</th>
+        <th scope="col">Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in reports %}
+      <tr>
+        <td>{{ r.priority }}</td>
+        <td>{{ r.type.replace('_', ' ') }}</td>
+        <td><a href="{{ url_for('admin.tracker_detail', username=username, report_id=r.reportID) }}">{{ r.title }}</a></td>
+        <td>{{ r.status.replace('_', ' ') }}</td>
+        <td>{{ r.username or '—' }}</td>
+        <td><time datetime="{{ r.created }}">{{ r.created }}</time></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted-text">No reports match the current filters.</p>
+  {% endif %}
+</section>
+{% endblock %}

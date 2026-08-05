@@ -232,6 +232,7 @@ def _register_blueprints(app: Flask) -> None:
         ('app.routes.quote',       'quote_bp',       '/<username>/quote'),
         ('app.routes.recipe',      'recipe_bp',      '/<username>/recipe'),
         ('app.routes.scripture',   'scripture_bp',   '/<username>/scripture'),
+        ('app.routes.report',      'report_bp',      '/<username>/report'),
         ('app.routes.api',         'api_bp',         '/api/v1'),
     ]
 
@@ -271,8 +272,43 @@ def _register_error_handlers(app: Flask) -> None:
 
     @app.errorhandler(500)
     def internal_error(error):
-        app.logger.error('500 error: %s\n%s', error, traceback.format_exc())
+        tb = traceback.format_exc()
+        app.logger.error('500 error: %s\n%s', error, tb)
+        _record_system_error(app, error, tb)
         return render_template('errors/500.html', error=error), 500
+
+
+def _record_system_error(app, error, tb: str) -> None:
+    """
+    Persist a 500 error to the ``error_report`` table and email the admin.
+
+    Never lets a failure here break the error response (same guarantee
+    ``log_request`` gives for the access log).
+    """
+    try:
+        from app.models.error_report_model import ErrorReportModel  # noqa: PLC0415
+        from app.services.email_service import email_service  # noqa: PLC0415
+
+        ErrorReportModel.create(
+            'system_error',
+            title=str(error)[:255] or type(error).__name__,
+            userID=session.get('user_id'),
+            username=session.get('username'),
+            url=request.path,
+            http_method=request.method,
+            http_status=500,
+            stack_trace=tb,
+            request_data=str(request.args.to_dict() or request.form.to_dict() or {}),
+            user_agent=request.user_agent.string[:512] if request.user_agent.string else None,
+            ip=request.remote_addr,
+            created_by=session.get('user_id'),
+        )
+        email_service.send_admin_alert(
+            f'JTTBH 500 error: {request.path}',
+            f'{error}\n\nUser: {session.get("username", "anonymous")}\nURL: {request.path}\n\n{tb}',
+        )
+    except Exception:  # noqa: BLE001 – never let error logging break the error response
+        app.logger.error('Failed to record system error: %s', traceback.format_exc())
 
 
 def _register_request_hooks(app: Flask) -> None:

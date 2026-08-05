@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ report.title }} — Tracker — Admin{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="admin-header">
+  <h1>{{ report.title }}</h1>
+  <nav aria-label="Admin navigation">
+    <a href="{{ url_for('admin.dashboard', username=username) }}">Dashboard</a>
+    <a href="{{ url_for('admin.users',     username=username) }}">Users</a>
+    <a href="{{ url_for('admin.icons',     username=username) }}">Icons</a>
+    <a href="{{ url_for('admin.topics',    username=username) }}">Topics</a>
+    <a href="{{ url_for('admin.log',       username=username) }}">Log</a>
+    <a href="{{ url_for('admin.errors',    username=username) }}">Errors</a>
+    <a href="{{ url_for('admin.tracker',   username=username) }}" aria-current="page">Tracker</a>
+  </nav>
+  <p><a href="{{ url_for('admin.tracker', username=username) }}">&larr; All reports</a></p>
+</header>
+
+<section aria-labelledby="details-heading">
+  <h2 id="details-heading">Details</h2>
+  <dl>
+    <dt>Type</dt><dd>{{ report.type.replace('_', ' ') }}</dd>
+    <dt>Reporter</dt><dd>{{ report.username or '—' }}</dd>
+    <dt>Created</dt><dd><time datetime="{{ report.created }}">{{ report.created }}</time></dd>
+    {% if report.resolved_at %}<dt>Resolved</dt><dd><time datetime="{{ report.resolved_at }}">{{ report.resolved_at }}</time></dd>{% endif %}
+    {% if report.description %}<dt>Description</dt><dd>{{ report.description }}</dd>{% endif %}
+  </dl>
+
+  {% if report.type == 'system_error' %}
+  <h3>Request Context</h3>
+  <dl>
+    <dt>URL</dt><dd><code>{{ report.http_method }} {{ report.url }}</code></dd>
+    <dt>HTTP status</dt><dd>{{ report.http_status }}</dd>
+    <dt>Request data</dt><dd><code>{{ report.request_data or '—' }}</code></dd>
+    <dt>IP</dt><dd>{{ report.ip or '—' }}</dd>
+    <dt>User agent</dt><dd>{{ report.user_agent or '—' }}</dd>
+  </dl>
+  <h3>Stack Trace</h3>
+  <pre class="server-log server-log--error">{{ report.stack_trace }}</pre>
+  {% endif %}
+</section>
+
+<section aria-labelledby="triage-heading">
+  <h2 id="triage-heading">Triage</h2>
+  <form method="post" action="{{ url_for('admin.tracker_update', username=username, report_id=report.reportID) }}">
+    <div class="form-row">
+      <label for="status">Status</label>
+      <select id="status" name="status">
+        {% for s in ['new', 'in_progress', 'resolved', 'wont_fix', 'duplicate'] %}
+        <option value="{{ s }}" {{ 'selected' if report.status == s }}>{{ s.replace('_', ' ') }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="priority">Priority</label>
+      <select id="priority" name="priority">
+        {% for p in ['critical', 'high', 'medium', 'low'] %}
+        <option value="{{ p }}" {{ 'selected' if report.priority == p }}>{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="admin_notes">Admin notes</label>
+      <textarea id="admin_notes" name="admin_notes" rows="6">{{ report.admin_notes or '' }}</textarea>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Report a Bug{% endblock %}
+
+{% block content %}
+<header>
+  <h1>Report a Bug or Request a Feature</h1>
+  <p><a href="{{ url_for('report.index', username=username) }}">&larr; My reports</a></p>
+</header>
+
+<form method="post" action="{{ url_for('report.create', username=username) }}">
+  <div class="form-row">
+    <label>
+      <input type="radio" name="type" value="bug_report" checked> Something's broken (bug)
+    </label>
+    <label>
+      <input type="radio" name="type" value="feature_request"> I'd like a new feature
+    </label>
+  </div>
+  <div class="form-row">
+    <label for="report-title">Title <span aria-hidden="true">*</span></label>
+    <input type="text" id="report-title" name="title" required maxlength="255"
+           placeholder="Short summary">
+  </div>
+  <div class="form-row">
+    <label for="report-description">Details</label>
+    <textarea id="report-description" name="description" rows="6"
+              placeholder="What happened, what you expected, or what you'd like added"></textarea>
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </div>
+</form>
+{% endblock %}

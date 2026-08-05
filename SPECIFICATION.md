@@ -244,7 +244,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
       2. Output displayed in a dark scrollable `<pre>` block with a red left border
       3. On non-Linux hosts (macOS dev), shows an explanatory message instead of attempting journalctl
       4. Always renders the page (unlike the log page server-log section, which is hidden when unavailable)
-    7. Admin nav link order: **Dashboard | Users | Icons | Log | Errors**. The footer "Admin" link points to the dashboard.
+    7. Tracker: `GET /<username>/admin/tracker`
+      1. Triage list of the `error_report` table — system errors captured automatically on 500s, plus user-submitted bug reports and feature requests (see §10.3)
+      2. Filterable by `type`, `status`, `priority` (query params); a summary table of counts by type/status sits above the list; rows sorted by priority then recency
+      3. `GET /<username>/admin/tracker/<report_id>` — detail view with full description, and (for `system_error` rows) the stack trace and request context needed to debug it
+      4. `POST /<username>/admin/tracker/update/post/<report_id>` — updates `status`/`priority`/`admin_notes`; setting `status=resolved` stamps `resolved_at`
+      5. Any logged-in user can submit a bug report / feature request via `GET /<username>/report` (their own list) and `GET /<username>/report/create` (submission form) — no permission bit required, since it's a feedback channel rather than a gated feature area
+    8. Admin nav link order: **Dashboard | Users | Icons | Log | Errors | Tracker**. The footer "Admin" link points to the dashboard.
   6. Fitness Program
     1. Designated under the `fitness` area using the `fitness_*` database tables; requires `PERM_FITNESS`
     2. Exercise Types
@@ -823,10 +829,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
       ```
     2. HTTP status codes: 400 (validation), 401 (unauthorized), 403 (forbidden), 404 (not found), 500 (server error)
   3. Server Errors
-    1. Log all errors to database `log` table
+    1. Log all 500 errors to the `error_report` table (`type='system_error'`), including stack trace and request context — see `admin/tracker` in §4.5
     2. Show generic error page to user (don't expose internals)
-    3. Email admin for critical errors (500-level)
-    4. Include request context in logs (user, URL, parameters)
+    3. Email admin for critical errors (500-level) via `email_service.send_admin_alert()`
+    4. Include request context in the report (user, URL, method, params, IP, user agent)
 11. Performance Requirements
   1. Page Load Times
     1. Dashboard: < 500ms
