@@ -7,18 +7,18 @@
 {% block title %}Dashboard - jttbh{% endblock %}
 
 {% block css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}?v={{ datetime.now().timestamp()|int }}">
 {% if has_perm(32) %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/habit.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/habit.css') }}?v={{ datetime.now().timestamp()|int }}">
 {% endif %}
 {% if has_perm(16) %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/todo.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/todo.css') }}?v={{ datetime.now().timestamp()|int }}">
 {% endif %}
 {% if has_perm(512) %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/fitness.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/fitness.css') }}?v={{ datetime.now().timestamp()|int }}">
 {% endif %}
 {% if has_perm(8192) %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}?v={{ datetime.now().timestamp()|int }}">
 {% endif %}
 {% endblock %}
 

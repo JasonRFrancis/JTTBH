@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Study Collections{% endblock %}
-{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}">{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/study.css') }}?v={{ datetime.now().timestamp()|int }}">{% endblock %}
 
 {% block content %}
 <header class="page-header">

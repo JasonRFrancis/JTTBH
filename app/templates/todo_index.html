@@ -6,7 +6,7 @@
 {% set area = 'todo' %}
 
 {% block css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/todo.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/todo.css') }}?v={{ datetime.now().timestamp()|int }}">
 {% endblock %}
 
 {% block content %}

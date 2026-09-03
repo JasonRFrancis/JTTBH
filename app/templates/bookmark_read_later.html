@@ -3,7 +3,7 @@
 {% block title %}Read Later - Bookmarks - jttbh{% endblock %}
 
 {% block css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/bookmark.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/bookmark.css') }}?v={{ datetime.now().timestamp()|int }}">
 {% endblock %}
 
 {% set area = 'bookmark' %}

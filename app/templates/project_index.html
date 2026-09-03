@@ -3,7 +3,7 @@
 {% block title %}Projects - jttbh{% endblock %}
 
 {% block css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/project.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/project.css') }}?v={{ datetime.now().timestamp()|int }}">
 {% endblock %}
 
 {% set area = 'project' %}

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{% if recipe %}Edit {{ recipe.title }}{% else %}Add Recipe{% endif %}{% endblock %}
-{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe.css') }}">{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe.css') }}?v={{ datetime.now().timestamp()|int }}">{% endblock %}
 {% block content %}
 <article class="recipe-form-page">
   <header>

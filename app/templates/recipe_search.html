@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Recipe Search{% endblock %}
-{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe.css') }}">{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe.css') }}?v={{ datetime.now().timestamp()|int }}">{% endblock %}
 {% block content %}
 <header class="recipe-header">
   <h1><a href="{{ url_for('recipe.index', username=username) }}" class="recipe-back-link">← Recipes</a></h1>
