@@ -28,6 +28,7 @@
   --font-logo:       'Futura Condensed PT Medium', Helvetica, Arial, sans-serif;
   --font-family:      'Futura PT Medium', Helvetica, Arial, sans-serif;
   --font-size-base:   1rem;
+  --font-size-input:  1.2rem;
   --line-height:      1.6;
   --color-text:       #000;
   --color-bg:         #fff;
@@ -71,6 +72,7 @@
   --accent-quote:       var(--oc-indigo-8);
   --accent-recipe:      var(--oc-gray-8);
   --accent-scripture:   var(--oc-gray-8);
+  --accent-report:      var(--oc-yellow-6);
 }
 
 
@@ -99,6 +101,7 @@ body {
   min-height: 100dvh;
   position: relative;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto auto auto auto;
   grid-template-areas:
     "header"
@@ -108,6 +111,7 @@ body {
     "footer"
     ;
 }
+input,select,textarea,button { font-family: var(--font-family); font-size: var(--font-size-input); }
 
 @keyframes fadeOut_h1 { to { opacity: 0; font-size: 2rem; padding-bottom: 0.5rem; } }
 @keyframes fadeIn_h1 { to { opacity: 1; } }
@@ -115,57 +119,60 @@ body {
 @keyframes scrollDown_nav_a { to { margin-right: 0.2rem } }
 @keyframes scrollDown_header { to { font-family: var(--font-logo); font-size: 1.5rem; text-transform: uppercase; }}
 
-body > header {
-  position: fixed;
-  background: #fff;
-  display: block;
-  height: 7rem;
-  width: 100%;
-  z-index: 100;
-  h1 { 
-    line-height: 0.7;
-    margin: 0.7rem 1rem 1rem 1rem;
-    a { 
-      position: relative;
-      color: var(--oc-gray-8); 
-      font-family: var(--font-logo); 
-      letter-spacing: -0.15rem; 
-      text-decoration: none; 
-      text-transform: uppercase; 
-      b {
-        display: inline-block;
-        animation: fadeOut_h1 linear both;
-        animation-timeline: scroll(root);
-        animation-range: 0 2rem;
-        font-size: 5rem; 
-      }
-      &::after {
-        content: "JTTBH";
-        font-size: 2rem;        
-        position: absolute; 
-        left: 0rem; 
-        top: 0.5rem; 
-        opacity: 0;
-        animation: fadeIn_h1 linear both;
-        animation-timeline: scroll(root);
-        animation-range: 0 2rem;
+@media only screen and (min-width: 600px) {
+  body > header {
+    position: fixed;
+    background: #fff;
+    display: block;
+    height: 7rem;
+    width: 100%;
+    z-index: 100;
+    h1 { 
+      line-height: 0.7;
+      margin: 0.7rem 1rem 1rem 1rem;
+      padding-left: 30px;
+      a { 
+        position: relative;
+        color: var(--oc-gray-8); 
+        font-family: var(--font-logo); 
+        letter-spacing: -0.15rem; 
+        text-decoration: none; 
+        text-transform: uppercase; 
+        b {
+          display: inline-block;
+          animation: fadeOut_h1 linear both;
+          animation-timeline: scroll(root);
+          animation-range: 0 2rem;
+          font-size: 5rem; 
+        }
+        &::after {
+          content: "JTTBH";
+          font-size: 2rem;        
+          position: absolute; 
+          left: 0rem; 
+          top: 0.5rem; 
+          opacity: 0;
+          animation: fadeIn_h1 linear both;
+          animation-timeline: scroll(root);
+          animation-range: 0 2rem;
+        }
       }
     }
   }
-  login {
-    position: fixed;
-    right: 1rem;
-    top: 1.1rem;
-    font-family: var(--font-logo);
-    line-height: 1;
-    a {
-      text-decoration: none;
-      display: inline-block;
-      padding: 0.2rem 1rem 0 1rem;
-      background: rgba(0,0,0,0.5);
-      color: #fff;
-      border-radius: 5rem;
-    }
+}
+login-element {
+  position: fixed;
+  right: 1rem;
+  top: 1.1rem;
+  font-family: var(--font-logo);
+  line-height: 1;
+  a {
+    text-decoration: none;
+    display: inline-block;
+    padding: 0.2rem 1rem 0 1rem;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    border-radius: 5rem;
   }
 }
 body > nav {
@@ -185,7 +192,6 @@ body > nav {
     animation: scrollDown_nav_a linear both;
     animation-timeline: scroll(root);
     animation-range: 0 2rem;
-    text-decoration: none; 
     &:hover {
       text-decoration: underline;
     }
@@ -196,7 +202,14 @@ body > nav {
     animation: scrollDown_nav_a linear both;
     animation-timeline: scroll(root);
     animation-range: 0 2rem;
-    font-weight: 1000;
+    font-weight: 900;
+  }
+  ul { 
+    list-style: none; 
+
+    li { 
+      display: inline-block;
+    }
   }
 }
 
@@ -328,15 +341,165 @@ input[type="checkbox"] {
 }
 
 button {
-  padding: 0.1rem 0.75rem 0.2rem 0.75rem;
+  padding: 0.3rem 1rem 0.2rem 1rem;
   border: 1px solid #fff;
   border-radius: 20px;
   background-color: rgba(0,0,0,0.6);
   color: #fff;
   cursor: pointer;
+  line-height: 1;
 
   &.btn-danger:hover {
     background-color: var(--oc-red-8) !important;
+  }
+}
+
+#menuToggle {
+      input {
+        display: block;
+        width: 40px;
+        height: 32px;
+        position: absolute;
+        top: -7px;
+        left: -5px;
+        cursor: pointer;
+        opacity: 0; /* hide this */
+        z-index: 152; /* and place it over the hamburger */
+        -webkit-touch-callout: none;
+    }
+}
+
+@media only screen and (max-width: 600px) {
+  body > header {
+    position: fixed;
+    background: #fff;
+    display: block;
+    height: 7rem;
+    width: 100%;
+    z-index: 100;
+    h1 { 
+      line-height: 0.7;
+      margin: 0.7rem 1rem 1rem 1rem;
+      padding-left: 30px;
+      a { 
+        position: relative;
+        color: var(--oc-gray-8); 
+        font-family: var(--font-logo); 
+        letter-spacing: -0.15rem; 
+        text-decoration: none; 
+        text-transform: uppercase; 
+        b {
+          opacity: 0; 
+          font-size: 2rem; 
+          padding-bottom: 0.5rem;
+        }
+        &::after {
+          content: "JTTBH";
+          font-size: 2rem;        
+          position: absolute; 
+          left: 1rem; 
+          top: 0.75rem; 
+        }
+      }
+    }
+  }
+
+  #menuToggle {
+    display: block;
+    /* You can also use relative/absolute here if you want to stay on the top */
+    position: fixed;
+    top: 20px;
+    left: 5px;
+    z-index: 150;
+    -webkit-user-select: none;
+    user-select: none;
+
+    /* Just a quick hamburger */
+    span
+    {
+      display: block;
+      width: 33px;
+      height: 4px;
+      margin-bottom: 5px;
+      position: relative;
+      background: #cdcdcd;
+      border-radius: 3px;
+      z-index: 151;
+      transform-origin: 4px 0px;
+
+      transition: transform 0.5s cubic-bezier(0.77,0.2,0.05,1.0), background 0.5s cubic-bezier(0.77,0.2,0.05,1.0), opacity 0.55s ease;
+      
+      &:first-child { transform-origin: 0% 0%; }
+      &:nth-last-child(2) { transform-origin: 0% 100%; }
+
+    }
+    /* Transform all the slices of hamburger into a crossmark. */
+    input:checked ~ span {
+      opacity: 1;
+      transform: rotate(45deg) translate(-2px, -1px);
+      background: #232323;
+      /* But let's hide the middle one. */
+      &:nth-last-child(3) { opacity: 0; transform: rotate(0deg) scale(0.2, 0.2); }
+      /* Oh, yeah and the last one should go the other direction */
+      &:nth-last-child(2) { transform: rotate(-45deg) translate(0, -1px); }
+    }
+
+    a {
+      text-decoration: none;
+      color: #232323;
+      
+      transition: color 0.3s ease;
+
+      &:hover {
+        color: tomato;
+      }
+    }
+  }
+  /*
+   * Make this absolute positioned
+   * at the top left of the screen
+   */
+  #menu
+  {
+    z-index: 140;
+    position: absolute;
+    max-width: 400px;
+    width: 100vw;
+    max-height: 800px;
+    margin: -100px 0 0 -50px;
+    padding: 50px;
+    padding-top: 125px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    background: #ededed;
+    list-style-type: none;
+    -webkit-font-smoothing: antialiased;
+    /* to stop flickering of text in safari */
+    
+    transform-origin: 0% 0%;
+    transform: translate(-100%, 0);
+    
+    transition: transform 0.5s cubic-bezier(0.77,0.2,0.05,1.0);
+  }
+
+  #menu li
+  {
+    padding: 5px 0;
+    font-size: 18px;
+    display: block;
+  }
+
+  #menu li label
+  {
+    cursor: pointer;
+  }
+
+  /*
+   * And let's slide it in from the left
+   */
+  #menuToggle input:checked ~ ul
+  {
+    transform: none;
   }
 }
 
@@ -345,7 +508,7 @@ button {
    ------------------------------------------------------------ */
 
 body.dashboard {
-  login a:hover { color: #fff; background-color: var(--accent-dashboard); }
+  login-element a:hover { color: #fff; background-color: var(--accent-dashboard); }
   header.page-header { border-color: var(--accent-dashboard); }
   a:hover { color: var(--accent-dashboard); } 
   button:hover { background-color: var(--accent-dashboard); } 
@@ -353,7 +516,7 @@ body.dashboard {
   nav.date a.btn-nav:hover { background-color: var(--accent-dashboard); }
 }
 body.todo {
-  login a:hover { color: #fff; background-color: var(--accent-todo); }
+  login-element a:hover { color: #fff; background-color: var(--accent-todo); }
   header.page-header { border-color: var(--accent-todo); }
   a:hover { color: var(--accent-todo); } 
   button:hover { background-color: var(--accent-todo); } 
@@ -361,7 +524,7 @@ body.todo {
   nav.date a.btn-nav:hover { background-color: var(--accent-todo); }
 }
 body.habit {
-  login a:hover { color: #fff; background-color: var(--accent-habit); }
+  login-element a:hover { color: #fff; background-color: var(--accent-habit); }
   header.page-header { border-color: var(--accent-habit); }
   a:hover { color: var(--accent-habit); } 
   button:hover { background-color: var(--accent-habit); } 
@@ -369,7 +532,7 @@ body.habit {
   nav.date a.btn-nav:hover { background-color: var(--accent-habit); }
 }
 body.project {
-  login a:hover { color: #fff; background-color: var(--accent-project); }
+  login-element a:hover { color: #fff; background-color: var(--accent-project); }
   header.page-header { border-color: var(--accent-project); }
   a:hover { color: var(--accent-project); } 
   button:hover { background-color: var(--accent-project); } 
@@ -377,7 +540,7 @@ body.project {
   nav.date a.btn-nav:hover { background-color: var(--accent-project); }
 }
 body.book {
-  login a:hover { color: #fff; background-color: var(--accent-book); }
+  login-element a:hover { color: #fff; background-color: var(--accent-book); }
   header.page-header { border-color: var(--accent-book); }
   a:hover { color: var(--accent-book); } 
   button:hover { background-color: var(--accent-book); } 
@@ -385,7 +548,7 @@ body.book {
   nav.date a.btn-nav:hover { background-color: var(--accent-book); }
 }
 body.journal {
-  login a:hover { color: #fff; background-color: var(--accent-journal); }
+  login-element a:hover { color: #fff; background-color: var(--accent-journal); }
   header.page-header { border-color: var(--accent-journal); }
   a:hover { color: var(--accent-journal); } 
   button:hover { background-color: var(--accent-journal); } 
@@ -393,7 +556,7 @@ body.journal {
   nav.date a.btn-nav:hover { background-color: var(--accent-journal); }
 }
 body.bookmark {
-  login a:hover { color: #fff; background-color: var(--accent-bookmark); }
+  login-element a:hover { color: #fff; background-color: var(--accent-bookmark); }
   header.page-header { border-color: var(--accent-bookmark); }
   a:hover { color: var(--accent-bookmark); } 
   button:hover { background-color: var(--accent-bookmark); } 
@@ -401,7 +564,7 @@ body.bookmark {
   nav.date a.btn-nav:hover { background-color: var(--accent-bookmark); }
 }
 body.fitness {
-  login a:hover { color: #fff; background-color: var(--accent-fitness); }
+  login-element a:hover { color: #fff; background-color: var(--accent-fitness); }
   header.page-header { border-color: var(--accent-fitness); }
   a:hover { color: var(--accent-fitness); } 
   button:hover { background-color: var(--accent-fitness); } 
@@ -409,7 +572,7 @@ body.fitness {
   nav.date a.btn-nav:hover { background-color: var(--accent-fitness); }
 }
 body.podcast {
-  login a:hover { color: #fff; background-color: var(--accent-podcast); }
+  login-element a:hover { color: #fff; background-color: var(--accent-podcast); }
   header.page-header { border-color: var(--accent-podcast); }
   a:hover { color: var(--accent-podcast); } 
   button:hover { background-color: var(--accent-podcast); } 
@@ -417,7 +580,7 @@ body.podcast {
   nav.date a.btn-nav:hover { background-color: var(--accent-podcast); }
 }
 body.chore {
-  login a:hover { color: #fff; background-color: var(--accent-chore); }
+  login-element a:hover { color: #fff; background-color: var(--accent-chore); }
   header.page-header { border-color: var(--accent-chore); }
   a:hover { color: var(--accent-chore); } 
   button:hover { background-color: var(--accent-chore); } 
@@ -425,7 +588,7 @@ body.chore {
   nav.date a.btn-nav:hover { background-color: var(--accent-chore); }
 }
 body.study {
-  login a:hover { color: #fff; background-color: var(--accent-study); }
+  login-element a:hover { color: #fff; background-color: var(--accent-study); }
   header.page-header { border-color: var(--accent-study); }
   a:hover { color: var(--accent-study); } 
   button:hover { background-color: var(--accent-study); } 
@@ -433,7 +596,7 @@ body.study {
   nav.date a.btn-nav:hover { background-color: var(--accent-study); }
 }
 body.vacation {
-  login a:hover { color: #fff; background-color: var(--accent-vacation); }
+  login-element a:hover { color: #fff; background-color: var(--accent-vacation); }
   header.page-header { border-color: var(--accent-vacation); }
   a:hover { color: var(--accent-vacation); } 
   button:hover { background-color: var(--accent-vacation); } 
@@ -441,7 +604,7 @@ body.vacation {
   nav.date a.btn-nav:hover { background-color: var(--accent-vacation); }
 }
 body.appointment {
-  login a:hover { color: #fff; background-color: var(--accent-appointment); }
+  login-element a:hover { color: #fff; background-color: var(--accent-appointment); }
   header.page-header { border-color: var(--accent-appointment); }
   a:hover { color: var(--accent-appointment); } 
   button:hover { background-color: var(--accent-appointment); } 
@@ -449,7 +612,7 @@ body.appointment {
   nav.date a.btn-nav:hover { background-color: var(--accent-appointment); }
 }
 body.admin {
-  login a:hover { color: #fff; background-color: var(--accent-admin); }
+  login-element a:hover { color: #fff; background-color: var(--accent-admin); }
   header.page-header { border-color: var(--accent-admin); }
   a:hover { color: var(--accent-admin); } 
   button:hover { background-color: var(--accent-admin); } 
@@ -457,7 +620,7 @@ body.admin {
   nav.date a.btn-nav:hover { background-color: var(--accent-admin); }
 }
 body.triage {
-  login a:hover { color: #fff; background-color: var(--accent-triage); }
+  login-element a:hover { color: #fff; background-color: var(--accent-triage); }
   header.page-header { border-color: var(--accent-triage); }
   a:hover { color: var(--accent-triage); } 
   button:hover { background-color: var(--accent-triage); } 
@@ -465,7 +628,7 @@ body.triage {
   nav.date a.btn-nav:hover { background-color: var(--accent-triage); }
 }
 body.media {
-  login a:hover { color: #fff; background-color: var(--accent-media); }
+  login-element a:hover { color: #fff; background-color: var(--accent-media); }
   header.page-header { border-color: var(--accent-media); }
   a:hover { color: var(--accent-media); } 
   button:hover { background-color: var(--accent-media); } 
@@ -473,7 +636,7 @@ body.media {
   nav.date a.btn-nav:hover { background-color: var(--accent-media); }
 }
 body.quote {
-  login a:hover { color: #fff; background-color: var(--accent-quote); }
+  login-element a:hover { color: #fff; background-color: var(--accent-quote); }
   header.page-header { border-color: var(--accent-quote); }
   a:hover { color: var(--accent-quote); } 
   button:hover { background-color: var(--accent-quote); } 
@@ -481,7 +644,7 @@ body.quote {
   nav.date a.btn-nav:hover { background-color: var(--accent-quote); }
 }
 body.recipe {
-  login a:hover { color: #fff; background-color: var(--accent-recipe); }
+  login-element a:hover { color: #fff; background-color: var(--accent-recipe); }
   header.page-header { border-color: var(--accent-recipe); }
   a:hover { color: var(--accent-recipe); } 
   button:hover { background-color: var(--accent-recipe); } 
@@ -489,10 +652,18 @@ body.recipe {
   nav.date a.btn-nav:hover { background-color: var(--accent-recipe); }
 }
 body.scripture {
-  login a:hover { color: #fff; background-color: var(--accent-scripture); }  
+  login-element a:hover { color: #fff; background-color: var(--accent-scripture); }  
   header.page-header { border-color: var(--accent-scripture); }
   a:hover { color: var(--accent-scripture); } 
   button:hover { background-color: var(--accent-scripture); } 
   &> nav b { color: var(--accent-scripture); } 
   nav.date a.btn-nav:hover { background-color: var(--accent-scripture); }
+}
+body.report {
+  login-element a:hover { color: #fff; background-color: var(--accent-report); }  
+  header.page-header { border-color: var(--accent-report); }
+  a:hover { color: var(--accent-report); } 
+  button:hover { background-color: var(--accent-report); } 
+  &> nav b { color: var(--accent-report); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-report); }
 }

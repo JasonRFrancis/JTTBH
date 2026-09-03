@@ -11,28 +11,32 @@
 <body class="{{ area | default('') }}">
   <header>
     <h1><a class="site-name" href="/"><b>Just Trying to be Helpful</b></a></h1>
-    {% if session.get('user_id') %}<login>
+    {% if session.get('user_id') %}<login-element>
       <a href="{{ url_for('user.settings', username=session.username) }}" class="login-username">{{ session.username.upper() }}</a>
-    </login>{% endif %}
+    </login-element>{% endif %}
   </header>
-  <nav aria-label="Main navigation">
-    {% if has_perm(1) %}{% if area == 'admin' %}<b>Admin</b>{% else %}<a href="{{ url_for('admin.dashboard', username=session.username) }}">Admin</a>{% endif %}
-    {% endif %}{% if has_perm(4) %}{% if area == 'appointment' %}<b>Appointments</b>{% else %}<a href="{{ url_for('appointment.index', username=session.username) }}">Appointments</a>{% endif %}
-    {% endif %}{% if has_perm(16) %}{% if area == 'todo' %}<b>To-do</b>{% else %}<a href="{{ url_for('todo.index', username=session.username) }}">To-do</a>{% endif %}
-    {% endif %}{% if has_perm(32) %}{% if area == 'habit' %}<b>Habits</b>{% else %}<a href="{{ url_for('habit.index', username=session.username) }}">Habits</a>{% endif %}
-    {% endif %}{% if has_perm(64) %}{% if area == 'project' %}<b>Projects</b>{% else %}<a href="{{ url_for('project.index', username=session.username) }}">Projects</a>{% endif %}
-    {% endif %}{% if has_perm(128) %}{% if area == 'triage' %}<b>Triage</b>{% else %}<a href="{{ url_for('triage.index', username=session.username) }}">Triage</a>{% endif %}
-    {% endif %}{% if has_perm(256) %}{% if area == 'bookmark' %}<b>Bookmarks</b>{% else %}<a href="{{ url_for('bookmark.index', username=session.username) }}">Bookmarks</a>{% endif %}
-    {% endif %}{% if has_perm(512) %}{% if area == 'fitness' %}<b>Fitness</b>{% else %}<a href="{{ url_for('fitness.index', username=session.username) }}">Fitness</a>{% endif %}
-    {% endif %}{% if has_perm(1024) %}{% if area == 'chore' %}<b>Chores</b>{% else %}<a href="{{ url_for('chore.index', username=session.username) }}">Chores</a>{% endif %}
-    {% endif %}{% if has_perm(2048) %}{% if area == 'media' %}<b>Media</b>{% else %}<a href="{{ url_for('media.index', username=session.username) }}">Media</a>{% endif %}
-    {% endif %}{% if has_perm(4096) %}{% if area == 'journal' %}<b>Journal</b>{% else %}<a href="{{ url_for('journal.index', username=session.username) }}">Journal</a>{% endif %}
-    {% endif %}{% if has_perm(8192) %}{% if area == 'study' %}<b>Study</b>{% else %}<a href="{{ url_for('study.index', username=session.username) }}">Study</a>{% endif %}
-    {% endif %}{% if has_perm(16384) %}{% if area == 'quote' %}<b>Quotes</b>{% else %}<a href="{{ url_for('quote.index', username=session.username) }}">Quotes</a>{% endif %}
-    {% endif %}{% if has_perm(32768) %}{% if area == 'recipe' %}<b>Recipes</b>{% else %}<a href="{{ url_for('recipe.index', username=session.username) }}">Recipes</a>{% endif %}
-    {% endif %}{% if has_perm(65536) %}{% if area == 'scripture' %}<b>Scripture</b>{% else %}<a href="{{ url_for('scripture.index', username=session.username) }}">Scripture</a>{% endif %}
-    {% endif %}{% if session.get('user_id') %}{% if area == 'report' %}<b>Report a bug</b>{% else %}<a href="{{ url_for('report.index', username=session.username) }}">Report a bug</a>{% endif %}
+  <nav aria-label="Main navigation" id="menuToggle">
+    <input type="checkbox" id="menuCheckbox" />
+    <span></span><span></span><span></span>
+    <ul id="menu">
+    {% if has_perm(1) %}<li><label for="menuCheckbox">{% if area == 'admin' %}<b>Admin</b>{% else %}<a href="{{ url_for('admin.dashboard', username=session.username) }}">Admin</a>{% endif %}</label></li>
+    {% endif %}{% if has_perm(4) %}<li><label for="menuCheckbox">{% if area == 'appointment' %}<b>Appointments</b>{% else %}<a href="{{ url_for('appointment.index', username=session.username) }}">Appointments</a>{% endif %}</label></li>
+    {% endif %}{% if has_perm(16) %}<li><label for="menuCheckbox">{% if area == 'todo' %}<b>To-do</b>{% else %}<a href="{{ url_for('todo.index', username=session.username) }}">To-do</a>{% endif %}</label></li>
+    {% endif %}{% if has_perm(32) %}<li><label for="menuCheckbox">{% if area == 'habit' %}<b>Habits</b>{% else %}<a href="{{ url_for('habit.index', username=session.username) }}">Habits</a>{% endif %}</label></li>
+    {% endif %}{% if has_perm(64) %}<li><label for="menuCheckbox">{% if area == 'project' %}<b>Projects</b>{% else %}<a href="{{ url_for('project.index', username=session.username) }}">Projects</a>{% endif %}</label></li>
+    {% endif %}{% if has_perm(128) %}<li><label for="menuCheckbox">{% if area == 'triage' %}<b>Triage</b>{% else %}<a href="{{ url_for('triage.index', username=session.username) }}">Triage</a>{% endif %}</label></li>
+    {% endif %}{% if has_perm(256) %}<li><label for="menuCheckbox">{% if area == 'bookmark' %}<b>Bookmarks</b>{% else %}<a href="{{ url_for('bookmark.index', username=session.username) }}">Bookmarks</a>{% endif %}</label></li>
+    {% endif %}{% if has_perm(512) %}<li><label for="menuCheckbox">{% if area == 'fitness' %}<b>Fitness</b>{% else %}<a href="{{ url_for('fitness.index', username=session.username) }}">Fitness</a>{% endif %}</label></li>
+    {% endif %}{% if has_perm(1024) %}<li><label for="menuCheckbox">{% if area == 'chore' %}<b>Chores</b>{% else %}<a href="{{ url_for('chore.index', username=session.username) }}">Chores</a>{% endif %}</label></li>
+    {% endif %}{% if has_perm(2048) %}<li><label for="menuCheckbox">{% if area == 'media' %}<b>Media</b>{% else %}<a href="{{ url_for('media.index', username=session.username) }}">Media</a>{% endif %}</label></li>
+    {% endif %}{% if has_perm(4096) %}<li><label for="menuCheckbox">{% if area == 'journal' %}<b>Journal</b>{% else %}<a href="{{ url_for('journal.index', username=session.username) }}">Journal</a>{% endif %}</label></li>
+    {% endif %}{% if has_perm(8192) %}<li><label for="menuCheckbox">{% if area == 'study' %}<b>Study</b>{% else %}<a href="{{ url_for('study.index', username=session.username) }}">Study</a>{% endif %}</label></li>
+    {% endif %}{% if has_perm(16384) %}<li><label for="menuCheckbox">{% if area == 'quote' %}<b>Quotes</b>{% else %}<a href="{{ url_for('quote.index', username=session.username) }}">Quotes</a>{% endif %}</label></li>
+    {% endif %}{% if has_perm(32768) %}<li><label for="menuCheckbox">{% if area == 'recipe' %}<b>Recipes</b>{% else %}<a href="{{ url_for('recipe.index', username=session.username) }}">Recipes</a>{% endif %}</label></li>
+    {% endif %}{% if has_perm(65536) %}<li><label for="menuCheckbox">{% if area == 'scripture' %}<b>Scripture</b>{% else %}<a href="{{ url_for('scripture.index', username=session.username) }}">Scripture</a>{% endif %}</label></li>
+    {% endif %}{% if session.get('user_id') %}<li><label for="menuCheckbox">{% if area == 'report' %}<b>Report a bug</b>{% else %}<a href="{{ url_for('report.index', username=session.username) }}">Report a bug</a>{% endif %}</label></li>
     {% endif %}
+    </ul>
   </nav>
   {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<messages aria-live="polite" aria-label="Notifications">
       {% for category, message in messages %}<p class="message message--{{ category }}" role="alert">{{ message }}</p>

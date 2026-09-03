@@ -273,12 +273,41 @@ class TestTodoModelPushForward:
             {**SYNTHETIC_TODOS[0], 'todoID': 'todo-x2', 'due': yesterday, 'completed': None},
         ]
         mock_db.execute_query.return_value = incomplete_todos
+        mock_db.execute_one.return_value = None  # nothing already pushed today
         mock_db.execute_insert.return_value = 1
 
         count = TodoModel.push_forward(TEST_USER['userID'], today)
 
         assert isinstance(count, int)
         assert count >= 0
+
+    def test_push_forward_moves_items_straight_to_someday_soon(self, mock_db):
+        """
+        A previous-day carry-over must land directly in the Someday Soon
+        planning list -- it should never stop in today's daily list first.
+        This encodes the annoyances.md decision to drop the old
+        "one free day, then Someday" grace period.
+        """
+        from app.models.todo_model import TodoModel
+
+        incomplete_todos = [
+            {**SYNTHETIC_TODOS[0], 'due': yesterday, 'completed': None},
+        ]
+        mock_db.execute_query.return_value = incomplete_todos
+        mock_db.execute_one.return_value = None  # not already pushed today
+        mock_db.execute_insert.return_value = 1
+
+        TodoModel.push_forward(TEST_USER['userID'], today)
+
+        # First execute_insert call is the new `todo` row for the carry-over
+        insert_sql, insert_params = mock_db.execute_insert.call_args_list[0][0]
+        assert 'INSERT INTO todo' in insert_sql
+        # Params order: todoID, userID, title, content, due, list_type,
+        #                list_name, position, added, created_by
+        due, list_type, list_name = insert_params[4], insert_params[5], insert_params[6]
+        assert due is None, "carried-over todo must not be re-dated to today"
+        assert list_type == 'planning'
+        assert list_name == 'someday_soon'
 
 
 @pytest.mark.unit

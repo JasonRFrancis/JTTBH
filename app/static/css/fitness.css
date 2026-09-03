@@ -131,16 +131,6 @@
 .bw-form input::-webkit-outer-spin-button,
 .bw-form input::-webkit-inner-spin-button { -webkit-appearance: none; }
 
-.bw-form button {
-  padding: 0.4rem 0.9rem;
-  font-size: 0.875rem;
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  touch-action: manipulation;
-}
 
 .bw-form button:active { background: var(--color-primary-dk); }
 
@@ -277,7 +267,7 @@
 
 .inp-notes {
   width: 3.5rem;
-  font-size: 0.9rem;
+  font-size: 1rem;
   text-align: center;
   padding: 0.35rem 0.3rem;
   border: 1px solid var(--color-border);
@@ -346,110 +336,6 @@
   cursor: pointer;
   margin-left: auto;
 }
-
-/* ── Buttons ─────────────────────────────────────────────────────────── */
-
-.btn-add-set {
-  display: block;
-  width: 100%;
-  padding: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-primary);
-  background: transparent;
-  border: 1px dashed var(--color-primary);
-  border-radius: 5px;
-  cursor: pointer;
-  margin-top: 0.35rem;
-  touch-action: manipulation;
-  text-align: center;
-}
-
-.btn-add-set:active { background: #eff6ff; }
-
-.btn-confirm-set {
-  padding: 0.35rem 0.7rem;
-  font-size: 0.9rem;
-  background: var(--color-success);
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  flex-shrink: 0;
-  touch-action: manipulation;
-  min-width: 2.2rem;
-}
-
-.btn-confirm-set:active { opacity: 0.8; }
-
-.btn-cancel-set,
-.btn-delete-set {
-  padding: 0.35rem 0.6rem;
-  font-size: 0.85rem;
-  background: transparent;
-  color: var(--color-error);
-  border: 1px solid var(--color-error);
-  border-radius: 4px;
-  cursor: pointer;
-  flex-shrink: 0;
-  touch-action: manipulation;
-  min-width: 2rem;
-}
-
-.btn-mark-done {
-  display: block;
-  width: 100%;
-  padding: 0.55rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--color-success);
-  background: transparent;
-  border: 1px solid var(--color-success);
-  border-radius: 5px;
-  cursor: pointer;
-  margin-top: 0.35rem;
-  touch-action: manipulation;
-  text-align: center;
-}
-
-.btn-mark-done:active { background: #f0fdf4; }
-.btn-mark-done:disabled { opacity: 0.5; cursor: default; }
-
-.btn-finish {
-  display: block;
-  width: 100%;
-  margin-top: 1.5rem;
-  padding: 0.8rem;
-  font-size: 1rem;
-  font-weight: 600;
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.btn-finish:active { background: var(--color-primary-dk); }
-
-.workout-done {
-  text-align: center;
-  font-size: 0.9rem;
-  color: var(--color-success);
-  margin-top: 1.25rem;
-  font-weight: 600;
-}
-
-.btn-sm {
-  padding: 0.2rem 0.6rem;
-  font-size: 0.8rem;
-  border: 1px solid var(--color-border);
-  border-radius: 3px;
-  background: var(--color-surface);
-  cursor: pointer;
-}
-
-.btn-danger { border-color: var(--color-error); color: var(--color-error); }
 
 /* ── No program / rest day ───────────────────────────────────────────── */
 
@@ -608,7 +494,7 @@
 .field select {
   width: 100%;
   padding: 0.45rem 0.6rem;
-  font-size: 0.9rem;
+  font-size: 1rem;
   border: 1px solid var(--color-border);
   border-radius: 4px;
   background: var(--color-bg);
@@ -739,7 +625,7 @@
   padding: 0.4rem 0.6rem;
   border: 1px solid var(--color-border, #ddd);
   border-radius: 4px;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-family: inherit;
   resize: vertical;
   min-height: 4rem;

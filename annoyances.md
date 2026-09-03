@@ -13,7 +13,7 @@
  [x] I should be able to drag todos to other lists. I should also be able to assign them from the `…` menu
  [x] The input form should use the same typeface and the same size as the displayed todo. Editing the todo should be a minimalist experience
  [x] I don't want to see the checkbox. The todo should be crossed out if the checkbox is checked — click to toggle; double-click title to edit
- [x] Todos should move to the next day the first time they cross a day boundary. After that, they should move to the `Someday` category
+ [x] Undone todos from previous days should move straight to the `Someday Soon` list on page load — no one-day grace period in the daily list first
 
 ## Habits
 

@@ -235,7 +235,7 @@ def index_date(username: str, date_str: str):
 
     if context['push_count'] > 0:
         flash(
-            f"{context['push_count']} incomplete item(s) moved forward from yesterday.",
+            f"{context['push_count']} incomplete item(s) from yesterday moved to Someday Soon.",
             'message',
         )
 

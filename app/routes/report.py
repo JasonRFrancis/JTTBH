@@ -48,6 +48,7 @@ def create(username: str):
     type_ = request.form.get('type', '').strip()
     title = request.form.get('title', '').strip()
     description = request.form.get('description', '').strip() or None
+    page = request.form.get('page', '').strip() or None
 
     if type_ not in _VALID_TYPES or not title:
         flash('Please choose a type and enter a title.', 'error')
@@ -59,7 +60,7 @@ def create(username: str):
         description=description,
         userID=session['user_id'],
         username=username,
-        url=request.referrer,
+        url=page or request.referrer,
         created_by=session['user_id'],
     )
     flash('Thanks — your report has been submitted.', 'success')

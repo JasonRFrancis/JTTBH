@@ -2,10 +2,17 @@
 
 {% block title %}My Reports{% endblock %}
 
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/report.css') }}">
+{% endblock %}
+
 {% block content %}
-<header>
-  <h1>My Reports</h1>
-  <p><a href="{{ url_for('report.create_form', username=username) }}" class="btn btn-primary">Report a bug / request a feature</a></p>
+<header class="page-header">
+  <h2>My Requests</h2>
+  <nav aria-label="Bug Report navigation">
+    <a href="{{ url_for('report.create_form', username=username) }}" class="btn btn-primary">Report a bug / request a feature</a>
+  </nav>
+  <div class="filler"></div>
 </header>
 
 {% if reports %}

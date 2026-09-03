@@ -2,25 +2,31 @@
 
 {% block title %}Report a Bug{% endblock %}
 
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/report.css') }}">
+{% endblock %}
+
 {% block content %}
-<header>
-  <h1>Report a Bug or Request a Feature</h1>
-  <p><a href="{{ url_for('report.index', username=username) }}">&larr; My reports</a></p>
+<header class="page-header">
+  <h2>Report or Request</h2>
+  <nav aria-label="Bug Report navigation">
+    <a href="{{ url_for('report.index', username=username) }}" class="btn btn-primary">&larr; My reports</a>
+  </nav>
+  <div class="filler"></div>
 </header>
 
 <form method="post" action="{{ url_for('report.create', username=username) }}">
   <div class="form-row">
-    <label>
-      <input type="radio" name="type" value="bug_report" checked> Something's broken (bug)
-    </label>
-    <label>
-      <input type="radio" name="type" value="feature_request"> I'd like a new feature
-    </label>
+    <label for="type_bug_report"><input type="radio" name="type" id="type_bug_report" value="bug_report" checked> Something's broken (bug)</label>
+    <label for="type_feature_request"><input type="radio" name="type" id="type_feature_request" value="feature_request"> I'd like a new feature</label>
   </div>
   <div class="form-row">
     <label for="report-title">Title <span aria-hidden="true">*</span></label>
-    <input type="text" id="report-title" name="title" required maxlength="255"
-           placeholder="Short summary">
+    <input type="text" id="report-title" name="title" required maxlength="255" placeholder="Short summary">
+  </div>
+  <div class="form-row">
+    <label for="report-page">Page</label>
+    <input type="text" id="report-page" name="page" maxlength="255" placeholder="Which page were you on? (e.g. /jason/todo)">
   </div>
   <div class="form-row">
     <label for="report-description">Details</label>

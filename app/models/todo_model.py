@@ -545,13 +545,13 @@ class TodoModel:
     @staticmethod
     def push_forward(user_id: str, today: date) -> int:
         """
-        Move all incomplete daily todo items from yesterday to today.
+        Move all incomplete daily todo items from yesterday to Someday Soon.
 
         For each incomplete item from yesterday that has not already been
         pushed today:
 
-        1. Insert a new ``todo`` row with ``due=today`` and the same
-           todoID (preserving the ``added`` original-due-date).
+        1. Insert a new ``todo`` row with the same todoID, moved into the
+           ``someday_soon`` planning list (``due=NULL``).
         2. Insert a ``todo_pushedForward`` row to record the move.
 
         The check in step 1 (``todo_pushedForward`` lookup) makes the
@@ -591,14 +591,6 @@ class TodoModel:
 
         count = 0
         for todo in todos:
-            # Count how many times this todo has been pushed before today
-            prior_sql = """
-                SELECT COUNT(*) AS cnt FROM todo_pushedForward
-                WHERE todoID = %s AND DATE(created) < %s
-            """
-            prior_result = db_manager.execute_one(prior_sql, (todo['todoID'], today))
-            prior_count = prior_result['cnt'] if prior_result else 0
-
             # Skip if already pushed today
             check_sql = """
                 SELECT id FROM todo_pushedForward
@@ -608,17 +600,10 @@ class TodoModel:
             if already:
                 continue
 
-            # Determine target list based on prior push count
-            if prior_count == 0:
-                # First push: keep in daily list, move to today
-                target_due = today
-                target_type = 'daily'
-                target_name = None
-            else:
-                # Subsequent push: move to Someday planning list
-                target_due = None
-                target_type = 'planning'
-                target_name = 'someday_soon'
+            # Every previous-day carry-over goes straight to Someday Soon
+            target_due = None
+            target_type = 'planning'
+            target_name = 'someday_soon'
 
             # Insert new todo record
             insert_sql = """
