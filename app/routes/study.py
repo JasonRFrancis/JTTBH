@@ -31,7 +31,7 @@ POST /<username>/study/subscription/<subscription_id>/schedule/clear/post/<sourc
 
 import calendar as cal_module
 import json
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 
 from flask import (
     Blueprint,
@@ -857,11 +857,15 @@ def feed_xml(username: str):
         if aurl.startswith('/'):
             item['audio_url'] = base_url + aurl
 
-    # Assign distinct pubDates (one day apart) so podcast apps order episodes
-    # reliably. Time-staggering within a single day is ignored by some clients.
+    # All items here are scheduled for `today`, so keep that real date on every
+    # episode. Order is instead enforced with a distinct time of day, one
+    # minute apart starting at 1:00 AM, latest time first so episode order in
+    # the feed matches episode order in podcast apps (which sort by pubDate).
+    base_time = datetime.combine(today, time(1, 0))
+    count = len(sources)
     for idx, item in enumerate(sources):
-        pub_date = today - timedelta(days=idx)
-        item['_pub_date'] = pub_date.strftime('%a, %d %b %Y')
+        pub_dt = base_time + timedelta(minutes=count - 1 - idx)
+        item['_pub_date'] = pub_dt.strftime('%a, %d %b %Y %H:%M:%S +0000')
 
     rss = render_template('study_feed.xml', username=username, today=today, sources=sources)
     response = make_response(rss)

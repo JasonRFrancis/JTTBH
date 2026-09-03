@@ -23,7 +23,7 @@
       <enclosure url="{{ source.audio_url | e }}" length="1" type="audio/mpeg" />
       <itunes:image href="{{ url_for('static', filename='img/study_artwork.svg', _external=True) | e }}"/>
       <guid isPermaLink="false">{{ source.sourceID }}</guid>
-      <pubDate>{{ source._pub_date }} 09:00:00 +0000</pubDate>
+      <pubDate>{{ source._pub_date }}</pubDate>
       {% if source.audio_length %}
       <itunes:duration>{{ source.audio_length | e }}</itunes:duration>
       {% endif %}
