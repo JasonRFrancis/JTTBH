@@ -462,11 +462,12 @@ button {
   #menu
   {
     z-index: 140;
-    position: absolute;
+    position: fixed;
+    top: 0;
+    left: 0;
     max-width: 400px;
     width: 100vw;
-    max-height: 800px;
-    margin: -100px 0 0 -50px;
+    max-height: 100dvh;
     padding: 50px;
     padding-top: 125px;
     box-sizing: border-box;
