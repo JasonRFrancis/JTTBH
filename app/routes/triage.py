@@ -5,20 +5,23 @@ Flask blueprint for Gmail and Calendar triage.
 
 URL patterns
 ------------
-GET  /<username>/triage/index  -> email + calendar triage view
+GET  /<username>/triage/index                     -> inbox + calendar triage view
+POST /<username>/triage/todo/post/<gmail_id>       -> email -> daily todo
+POST /<username>/triage/project/post/<gmail_id>    -> email -> new project
 
-This feature requires Google OAuth tokens with Gmail and Calendar scopes.
-If tokens are absent or expired, the user is prompted to re-authenticate.
+Requires Google OAuth tokens with the gmail.readonly + calendar.readonly scopes
+(minted at login; if the stored token has no usable refresh token the view shows
+a "Reconnect Google" link -> auth.google_login, which forces the consent screen).
 
-Triage table records processed Gmail message IDs so that already-triaged
-messages are not shown again.
+The ``triage`` table records handled Gmail message IDs so converted messages drop
+off the list on the next load. Unhandled mail is simply left alone.
 
 Dependencies
 ------------
-    app.services.google_services  – Gmail and Calendar API wrappers
+    app.services.google_services.google_services  -- Gmail / Calendar API wrapper
 """
 
-from datetime import datetime
+import uuid
 
 from flask import (
     Blueprint,
@@ -31,12 +34,15 @@ from flask import (
 )
 
 from app.services.database import db_manager
+from app.services.timezone_utils import user_today
 from app.services.decorators import (
     PERM_TRIAGE,
     login_required,
     permission_required_read,
     permission_required_write,
 )
+from app.models.todo_model import TodoModel
+from app.models.project_model import ProjectModel
 
 triage_bp = Blueprint('triage', __name__)
 
@@ -45,16 +51,8 @@ triage_bp = Blueprint('triage', __name__)
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _get_user_tokens(user_id: str) -> dict | None:
-    """Return Google OAuth tokens for a user."""
-    return db_manager.execute_one(
-        'SELECT access_token, refresh_token, token_expires FROM user WHERE userID = %s',
-        (user_id,),
-    )
-
-
 def _get_triaged_ids(user_id: str) -> set:
-    """Return the set of gmailIDs already triaged by this user."""
+    """gmailIDs this user has already converted (todo/project)."""
     rows = db_manager.execute_query(
         'SELECT gmailID FROM triage WHERE userID = %s AND gmailID IS NOT NULL',
         (user_id,),
@@ -62,21 +60,32 @@ def _get_triaged_ids(user_id: str) -> set:
     return {row['gmailID'] for row in rows}
 
 
+def _mark_triaged(user_id: str, gmail_id: str) -> None:
+    """Record that *gmail_id* has been handled (idempotent)."""
+    if gmail_id in _get_triaged_ids(user_id):
+        return
+    db_manager.execute_insert(
+        """
+        INSERT INTO triage (triageID, userID, gmailID, completed, created, created_by)
+        VALUES (%s, %s, %s, NOW(), NOW(), %s)
+        """,
+        (str(uuid.uuid4()), user_id, gmail_id, user_id),
+    )
+
+
+def _redirect_index(username: str):
+    return redirect(url_for('triage.index', username=username))
+
+
 # ---------------------------------------------------------------------------
-# GET routes
+# GET
 # ---------------------------------------------------------------------------
 
 @triage_bp.route('/index')
 @login_required
 @permission_required_read(PERM_TRIAGE)
 def index(username: str):
-    """
-    Email and calendar triage view.
-
-    Fetches unread emails and upcoming calendar events via Google APIs,
-    filtering out already-triaged messages.  Falls back gracefully when
-    Google tokens are unavailable.
-    """
+    """Inbox + calendar triage view."""
     user_id = session['user_id']
 
     emails = []
@@ -84,19 +93,18 @@ def index(username: str):
     google_error = None
 
     try:
-        from app.services.google_services import get_gmail_messages, get_calendar_events  # noqa: PLC0415
-        tokens = _get_user_tokens(user_id)
+        from app.services.google_services import google_services  # noqa: PLC0415
 
-        if tokens and tokens.get('access_token'):
-            triaged_ids = _get_triaged_ids(user_id)
-            all_emails = get_gmail_messages(tokens['access_token'], tokens.get('refresh_token'))
-            emails = [e for e in all_emails if e.get('id') not in triaged_ids]
-            calendar_events = get_calendar_events(tokens['access_token'], tokens.get('refresh_token'))
+        creds = google_services.get_credentials(user_id)
+        if not (creds and creds.valid):
+            google_error = 'Google account not connected. Reconnect to enable triage.'
         else:
-            google_error = 'Google account not connected. Re-authenticate to enable triage.'
-
-    except ImportError:
-        google_error = 'Google services module not available.'
+            triaged = _get_triaged_ids(user_id)
+            emails = [
+                e for e in google_services.get_gmail_messages(user_id)
+                if e.get('id') not in triaged
+            ]
+            calendar_events = google_services.get_calendar_events(user_id)
     except Exception as exc:  # noqa: BLE001
         google_error = f'Error fetching data from Google: {exc}'
 
@@ -107,3 +115,45 @@ def index(username: str):
         google_error=google_error,
         username=username,
     )
+
+
+# ---------------------------------------------------------------------------
+# POST (PRG)
+# ---------------------------------------------------------------------------
+
+@triage_bp.route('/todo/post/<gmail_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_TRIAGE)
+@permission_required_write(PERM_TRIAGE)
+def to_todo(username: str, gmail_id: str):
+    """Create today's daily todo from an email, then drop it from triage."""
+    user_id = session['user_id']
+    subject = (request.form.get('subject', '') or '').strip()[:255] or '(no subject)'
+
+    TodoModel.create(
+        user_id=user_id,
+        title=subject,
+        due=user_today(),
+        list_type='daily',
+    )
+    _mark_triaged(user_id, gmail_id)
+
+    flash(f'Added to today’s todo list: "{subject}"', 'success')
+    return _redirect_index(username)
+
+
+@triage_bp.route('/project/post/<gmail_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_TRIAGE)
+@permission_required_write(PERM_TRIAGE)
+def to_project(username: str, gmail_id: str):
+    """Create a new project from an email, then drop it from triage."""
+    user_id = session['user_id']
+    subject = (request.form.get('subject', '') or '').strip()[:255] or '(no subject)'
+    snippet = (request.form.get('snippet', '') or '').strip() or None
+
+    project_id = ProjectModel.create(user_id, name=subject, description=snippet)
+    _mark_triaged(user_id, gmail_id)
+
+    flash(f'Created project: "{subject}"', 'success')
+    return redirect(url_for('project.view', username=username, project_id=project_id))

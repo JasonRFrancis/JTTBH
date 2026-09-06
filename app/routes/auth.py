@@ -214,7 +214,9 @@ def google_login():
     authorization_url, state = flow.authorization_url(
         access_type='offline',
         include_granted_scopes='true',
-        prompt='select_account',
+        # 'consent' guarantees Google returns a refresh_token (needed for the
+        # Gmail/Calendar triage feature); 'select_account' keeps the picker.
+        prompt='consent select_account',
     )
     session['oauth_state'] = state
     return redirect(authorization_url)
@@ -294,18 +296,29 @@ def oauth2callback():
         return redirect(url_for('auth.login'))
 
     # approved
-    # Persist tokens so other services (gmail, calendar) can use them
+    # Persist tokens so other services (gmail, calendar) can use them.
+    # Google only returns a refresh_token on a consent screen, so on a plain
+    # re-login it is None — never overwrite a stored one with NULL.
     try:
-        db_manager.execute_update(
-            """
-            UPDATE `user`
-            SET access_token = %s,
-                refresh_token = %s,
-                token_expires = DATE_ADD(NOW(), INTERVAL 3600 SECOND)
-            WHERE userID = %s
-            """,
-            (credentials.token, credentials.refresh_token, user['userID']),
-        )
+        if credentials.refresh_token:
+            db_manager.execute_update(
+                """
+                UPDATE `user`
+                SET access_token = %s, refresh_token = %s, token_expires = %s
+                WHERE userID = %s
+                """,
+                (credentials.token, credentials.refresh_token,
+                 credentials.expiry, user['userID']),
+            )
+        else:
+            db_manager.execute_update(
+                """
+                UPDATE `user`
+                SET access_token = %s, token_expires = %s
+                WHERE userID = %s
+                """,
+                (credentials.token, credentials.expiry, user['userID']),
+            )
     except Exception as exc:
         current_app.logger.warning('Failed to persist OAuth tokens: %s', exc)
 

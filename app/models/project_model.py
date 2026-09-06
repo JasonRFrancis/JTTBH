@@ -122,6 +122,36 @@ class ProjectModel:
         return True
 
     @staticmethod
+    def _next_position(user_id: str) -> int:
+        """Position for a new top-level project = max existing + 1."""
+        row = db_manager.execute_one(
+            """
+            SELECT MAX(p.position) AS m FROM project p
+            WHERE p.userID = %s
+              AND p.id = (SELECT MAX(p2.id) FROM project p2 WHERE p2.projectID = p.projectID)
+              AND p.name IS NOT NULL
+            """,
+            (user_id,),
+        )
+        return (row['m'] + 1) if row and row['m'] is not None else 0
+
+    @staticmethod
+    def create(user_id: str, name: str, description: str | None = None,
+               next_step: str | None = None) -> str:
+        """Create a new top-level project; returns its projectID.
+
+        Shared by the Triage email->project action. (project.py's own create
+        route still inlines its INSERT — left as-is; it could adopt this.)
+        """
+        project_id = str(uuid.uuid4())
+        ProjectModel._insert_project_row(
+            project_id, user_id, parent_id=None, name=name[:255],
+            description=description, next_step=next_step, status='active',
+            position=ProjectModel._next_position(user_id), by=user_id,
+        )
+        return project_id
+
+    @staticmethod
     def _insert_project_row(project_id, user_id, *, parent_id, name, description,
                             next_step, status, position, by):
         db_manager.execute_insert(
@@ -347,16 +377,7 @@ class ProjectModel:
         title = (meta.get('title') or 'Untitled subproject')[:255]
         description = meta.get('description') or msg['body']
 
-        pos_row = db_manager.execute_one(
-            """
-            SELECT MAX(p.position) AS m FROM project p
-            WHERE p.userID = %s
-              AND p.id = (SELECT MAX(p2.id) FROM project p2 WHERE p2.projectID = p.projectID)
-              AND p.name IS NOT NULL
-            """,
-            (user_id,),
-        )
-        position = (pos_row['m'] + 1) if pos_row and pos_row['m'] is not None else 0
+        position = ProjectModel._next_position(user_id)
 
         child_id = str(uuid.uuid4())
         ProjectModel._insert_project_row(

@@ -406,12 +406,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     12. Routes: `GET /index`, `/detail/<recipe_id>`, `/add`, `/edit/<recipe_id>` · `POST /extract/post` (JSON), `/create|update|delete/post`, `/image/add/post/<recipe_id>`, `/image/delete/post/<image_id>`, `/pdf/post`
     13. Database tables: `recipe` (insert-only, sentinel `title IS NULL`), `recipe_image` (direct INSERT/DELETE)
     14. Migration: `migrations/20260605_recipe.sql`
-5. Future / Stubbed Features
+5. Partially built / stubbed features
   1. Triage
-    1. Designated under `triage`; uses Google APIs to pull in the user's current gmail inbox and calendar items and allows the user to convert those to todo items
-    2. API connections and permissions with Google will be set up separately; the Python code to connect to Google's APIs is needed
-    3. The page lists the last three days of emails in the inbox, and allows conversion to todos. A button should populate a field with the subject line and content of the email for editing before adding as a todo to today's list
-    4. The user should see a list of the next week's calendar events and push a button to convert them into todos
+    1. Designated under `triage` (`PERM_TRIAGE` 128, needs read+write); uses Google APIs (`app/services/google_services.py`, the `google_services` singleton) to pull the user's Gmail inbox (last 3 days) and next-week calendar events
+    2. Auth: OAuth tokens are minted at login with `gmail.readonly` + `calendar.readonly` scopes. `auth.google_login` uses `prompt='consent select_account'` so Google always returns a `refresh_token`; `oauth2callback` only writes `refresh_token` when Google supplies one (never nulls a stored one). If `google_services.get_credentials` can't produce valid creds the view shows "Reconnect Google" → `auth.google_login`
+    3. Each inbox email has **→ Todo** (`POST /<username>/triage/todo/post/<gmail_id>` — creates today's daily todo from the subject) and **→ Project** (`POST .../triage/project/post/<gmail_id>` — `ProjectModel.create`, name = subject, description = snippet). Both then insert a `triage` row (gmailID) so the message drops off the list; `_get_triaged_ids` filters them out on load
+    4. Unhandled email is left alone (no dismiss action). Calendar events display read-only — event → todo is not built yet
+    5. Google Cloud Console setup (API enablement, consent-screen scopes/test users, redirect URI) is managed outside the app
   2. Vacation Mode
     1. The user is presented with a simple calendar on which they can mark individual days when they will be on vacation
     2. This triggers vacation mode for those days

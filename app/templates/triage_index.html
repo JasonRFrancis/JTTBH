@@ -2,6 +2,10 @@
 
 {% block title %}Triage - jttbh{% endblock %}
 
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/triage.css') }}?v={{ datetime.now().timestamp()|int }}">
+{% endblock %}
+
 {% set area = 'triage' %}
 
 {% block content %}
@@ -13,7 +17,7 @@
   {% if google_error %}
   <section class="triage-error">
     <p class="error-message">{{ google_error }}</p>
-    <p><a href="{{ url_for('auth.login') }}">Re-authenticate with Google</a> to enable Gmail and Calendar access.</p>
+    <p><a href="{{ url_for('auth.google_login') }}">Reconnect Google</a> to enable Gmail and Calendar access.</p>
   </section>
   {% else %}
 
@@ -27,6 +31,19 @@
         <span class="email-subject">{{ email.get('subject', '(no subject)') }}</span>
         <time class="email-date">{{ email.get('date', '') }}</time>
         <p class="email-snippet">{{ email.get('snippet', '') }}</p>
+        {% if has_write_perm(128) %}
+        <div class="email-actions">
+          <form method="post" action="{{ url_for('triage.to_todo', username=username, gmail_id=email.id) }}">
+            <input type="hidden" name="subject" value="{{ email.get('subject', '') }}">
+            <button type="submit">&rarr; Todo</button>
+          </form>
+          <form method="post" action="{{ url_for('triage.to_project', username=username, gmail_id=email.id) }}">
+            <input type="hidden" name="subject" value="{{ email.get('subject', '') }}">
+            <input type="hidden" name="snippet" value="{{ email.get('snippet', '') }}">
+            <button type="submit">&rarr; Project</button>
+          </form>
+        </div>
+        {% endif %}
       </li>
       {% endfor %}
     </ul>

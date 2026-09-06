@@ -165,9 +165,11 @@ class GoogleServicesManager:
             scopes=SCOPES,
         )
         if expiry:
-            # Credentials expects a timezone-aware datetime
-            if expiry.tzinfo is None:
-                expiry = expiry.replace(tzinfo=timezone.utc)
+            # google-auth compares creds.expiry against a naive UTC now(), so
+            # expiry MUST be naive UTC — a tz-aware value makes .expired raise
+            # "can't compare offset-naive and offset-aware datetimes".
+            if expiry.tzinfo is not None:
+                expiry = expiry.astimezone(timezone.utc).replace(tzinfo=None)
             creds.expiry = expiry
 
         return creds
