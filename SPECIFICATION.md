@@ -296,6 +296,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     4. Each project has a "mood board" of associated resources (`project_resource` rows: name, URL, note)
     5. A project's next step can be sent to today's todo list via `POST /send_to_todo/post/<project_id>`
     6. Routes: `GET /index`, `GET /view/<project_id>`, `POST /create|update|delete/post`, `POST /resource/create|delete/post`, `POST /send_to_todo/post/<project_id>`
+    7. Agent collaboration surface (for a remote AI agent working via the API):
+       1. `project.status` — `active` | `blocked` | `awaiting_review` | `done` (NULL = active). `blocked` projects sort to the top of the index.
+       2. `project.parentID` — set on subprojects; the index nests children under their parent.
+       3. `project_task` — the agent's checkable plan (insert-only, sentinel `title` NULL). Agent writes it via the API; the web page shows it read-only.
+       4. `project_message` — the two-way thread (append-only; only `resolution` is UPDATEd). `author` ∈ (`user`, `agent`); `kind` ∈ `question` | `progress` | `proposal` (agent) / `guidance` (user). An agent `question` flips the project to `blocked`; a user `guidance` message flips it back to `active`.
+       5. Propose → approve subprojects: an agent posts a `proposal` message (`meta` JSON = `{title, description}`); the project page shows Approve / Dismiss. Approve inserts a child `project` (parentID set) and sets the message `resolution='approved'`.
+       6. Web routes added: `POST /message/post/<project_id>` (Jason sends guidance), `POST /proposal/post/<message_id>` (`action=approve|dismiss`).
+       7. REST API (see `app/routes/api.py`, Bearer key, `PERM_PROJECT`): `GET /api/v1/<username>/projects`, `GET .../projects/<id>`, `GET|POST .../projects/<id>/messages` (`?since=<id>` cursor), `POST|DELETE .../projects/<id>/tasks[/<task_id>]`, `POST .../projects/<id>/status`.
+       8. `scripts/agent_client.py` — stdlib-only Python client wrapping the above for the remote agent.
+       9. Direct-UPDATE exceptions (not insert-only): `project_message.resolution`.
   8. Media Tracker
     1. Designated under the `media` area using the `media` and `media_episode` database tables; requires `PERM_BOOK` (2048)
     2. Tracks media consumption across six kinds: shows, movies, podcasts, books, video games, board games

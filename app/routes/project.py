@@ -47,6 +47,7 @@ from app.services.decorators import (
     permission_required_write,
 )
 from app.models.todo_model import TodoModel
+from app.models.project_model import ProjectModel
 
 project_bp = Blueprint('project', __name__)
 
@@ -55,26 +56,9 @@ project_bp = Blueprint('project', __name__)
 # SQL helpers
 # ---------------------------------------------------------------------------
 
-_CURRENT_PROJECTS_SQL = """
-    SELECT p.projectID, p.name, p.description, p.next_step, p.position
-    FROM project p
-    WHERE p.userID = %s
-      AND p.id = (SELECT MAX(p2.id) FROM project p2 WHERE p2.projectID = p.projectID)
-      AND p.name IS NOT NULL
-    ORDER BY p.position
-"""
-
-_CURRENT_RESOURCES_SQL = """
-    SELECT r.resourceID, r.name, r.resource, r.note, r.position
-    FROM project_resource r
-    WHERE r.projectID = %s
-      AND r.id = (SELECT MAX(r2.id) FROM project_resource r2 WHERE r2.resourceID = r.resourceID)
-      AND r.name IS NOT NULL
-    ORDER BY r.position
-"""
-
 _PROJECT_BY_ID_SQL = """
-    SELECT p.projectID, p.name, p.description, p.next_step, p.position
+    SELECT p.projectID, p.parentID, p.name, p.description, p.next_step,
+           COALESCE(p.status, 'active') AS status, p.position
     FROM project p
     WHERE p.userID = %s
       AND p.projectID = %s
@@ -150,8 +134,16 @@ def index(username: str):
         username  – URL username segment
     """
     user_id = session['user_id']
-    projects = db_manager.execute_query(_CURRENT_PROJECTS_SQL, (user_id,))
-    return render_template('project_index.html', projects=projects, username=username)
+    projects = ProjectModel.list_projects(user_id)
+
+    # Group subprojects under their parent for nested rendering.
+    by_id = {p['projectID']: dict(p, children=[]) for p in projects}
+    roots = []
+    for p in by_id.values():
+        parent = by_id.get(p['parentID'])
+        (parent['children'] if parent else roots).append(p)
+
+    return render_template('project_index.html', projects=roots, username=username)
 
 
 @project_bp.route('/view/<project_id>')
@@ -167,18 +159,18 @@ def view(username: str, project_id: str):
         The projectID UUID to display.
     """
     user_id = session['user_id']
-    project = _get_project(user_id, project_id)
+    detail = ProjectModel.get_detail(user_id, project_id)
 
-    if project is None:
+    if detail is None:
         flash('Project not found.', 'error')
         return _redirect_to_index(username)
 
-    resources = db_manager.execute_query(_CURRENT_RESOURCES_SQL, (project_id,))
-
     return render_template(
         'project_view.html',
-        project=project,
-        resources=resources,
+        project=detail,
+        resources=detail['resources'],
+        tasks=detail['tasks'],
+        messages=detail['messages'],
         username=username,
     )
 
@@ -215,8 +207,8 @@ def create(username: str):
 
     db_manager.execute_insert(
         """
-        INSERT INTO project (projectID, userID, name, description, next_step, position, created, created_by)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO project (projectID, userID, parentID, name, description, next_step, status, position, created, created_by)
+        VALUES (%s, %s, NULL, %s, %s, %s, 'active', %s, %s, %s)
         """,
         (project_id, user_id, name, description, next_step, position, datetime.now(), user_id),
     )
@@ -255,11 +247,11 @@ def update(username: str, project_id: str):
 
     db_manager.execute_insert(
         """
-        INSERT INTO project (projectID, userID, name, description, next_step, position, created, created_by)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO project (projectID, userID, parentID, name, description, next_step, status, position, created, created_by)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """,
-        (project_id, user_id, name, description or None, next_step or None,
-         position, datetime.now(), user_id),
+        (project_id, user_id, project['parentID'], name, description or None,
+         next_step or None, project['status'], position, datetime.now(), user_id),
     )
 
     flash('Project updated.', 'success')
@@ -290,10 +282,10 @@ def delete(username: str, project_id: str):
     # pattern requires it; if the schema is updated to allow NULL this will work.
     db_manager.execute_insert(
         """
-        INSERT INTO project (projectID, userID, name, description, next_step, position, created, created_by)
-        VALUES (%s, %s, NULL, NULL, NULL, %s, %s, %s)
+        INSERT INTO project (projectID, userID, parentID, name, description, next_step, status, position, created, created_by)
+        VALUES (%s, %s, %s, NULL, NULL, NULL, NULL, %s, %s, %s)
         """,
-        (project_id, user_id, project['position'], datetime.now(), user_id),
+        (project_id, user_id, project['parentID'], project['position'], datetime.now(), user_id),
     )
 
     flash('Project deleted.', 'success')
@@ -432,3 +424,60 @@ def resource_delete(username: str, resource_id: str):
 
     flash('Resource removed.', 'success')
     return _redirect_to_view(username, project_id)
+
+
+# ---------------------------------------------------------------------------
+# Agent thread: Jason posts guidance, approves/dismisses proposed subprojects
+# ---------------------------------------------------------------------------
+
+@project_bp.route('/message/post/<project_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_PROJECT)
+@permission_required_write(PERM_PROJECT)
+def message_create(username: str, project_id: str):
+    """Post a guidance message into a project's thread (Jason -> agent).
+
+    Unblocks the project if it was waiting on this answer.
+    """
+    user_id = session['user_id']
+    project = _get_project(user_id, project_id)
+    if project is None:
+        flash('Project not found.', 'error')
+        return _redirect_to_index(username)
+
+    body = request.form.get('body', '').strip()
+    if not body:
+        flash('Message cannot be empty.', 'error')
+        return _redirect_to_view(username, project_id)
+
+    ProjectModel.add_message(
+        project_id, author='user', kind='guidance', body=body,
+        by=user_id, user_id=user_id,
+    )
+    flash('Guidance sent.', 'success')
+    return _redirect_to_view(username, project_id)
+
+
+@project_bp.route('/proposal/post/<message_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_PROJECT)
+@permission_required_write(PERM_PROJECT)
+def proposal_resolve(username: str, message_id: str):
+    """Approve (create the child project) or dismiss a proposed subproject."""
+    user_id = session['user_id']
+    action = request.form.get('action', '')
+    if action not in ('approve', 'dismiss'):
+        flash('Unknown action.', 'error')
+        return _redirect_to_index(username)
+
+    result = ProjectModel.resolve_proposal(user_id, message_id, action)
+    if result is None:
+        flash('Proposal not found or already resolved.', 'error')
+        return _redirect_to_index(username)
+
+    if action == 'approve':
+        flash('Subproject created.', 'success')
+        return _redirect_to_view(username, result['child_id'])
+
+    flash('Proposal dismissed.', 'message')
+    return _redirect_to_view(username, result['parent_id'])

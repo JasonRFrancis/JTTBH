@@ -1069,9 +1069,11 @@ CREATE TABLE `project` (
   `id` int NOT NULL AUTO_INCREMENT,
   `projectID` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
   `userID` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `parentID` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'set = subproject of parentID',
   `name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'NULL = soft deleted',
   `description` text COLLATE utf8mb4_unicode_ci,
   `next_step` text COLLATE utf8mb4_unicode_ci,
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'active|blocked|awaiting_review|done (NULL = active)',
   `position` int DEFAULT '0',
   `created` datetime DEFAULT CURRENT_TIMESTAMP,
   `created_by` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -1079,6 +1081,7 @@ CREATE TABLE `project` (
   KEY `idx_id_desc` (`id` DESC),
   KEY `idx_projectID` (`projectID`),
   KEY `idx_userID` (`userID`),
+  KEY `idx_parentID` (`parentID`),
   KEY `idx_position` (`position`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1106,6 +1109,54 @@ CREATE TABLE `project_resource` (
   KEY `idx_projectID` (`projectID`),
   KEY `idx_position` (`position`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `project_task`
+--
+
+DROP TABLE IF EXISTS `project_task`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `project_task` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `taskID` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `projectID` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'NULL = soft deleted',
+  `done` tinyint(1) DEFAULT '0',
+  `position` int DEFAULT '0',
+  `note` text COLLATE utf8mb4_unicode_ci,
+  `created` datetime DEFAULT CURRENT_TIMESTAMP,
+  `created_by` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_id_desc` (`id` DESC),
+  KEY `idx_taskID` (`taskID`),
+  KEY `idx_projectID` (`projectID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `project_message`
+--
+
+DROP TABLE IF EXISTS `project_message`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `project_message` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `messageID` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `projectID` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `author` enum('user','agent') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `kind` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'question|progress|proposal|guidance',
+  `body` text COLLATE utf8mb4_unicode_ci,
+  `meta` text COLLATE utf8mb4_unicode_ci COMMENT 'JSON; proposal title/description',
+  `resolution` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'proposal only: approved|dismissed',
+  `created` datetime DEFAULT CURRENT_TIMESTAMP,
+  `created_by` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_id` (`id`),
+  KEY `idx_projectID` (`projectID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 

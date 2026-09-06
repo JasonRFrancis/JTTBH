@@ -247,3 +247,145 @@
   color: var(--color-text-secondary, #888);
   font-style: italic;
 }
+
+/* ---------------------------------------------------------------------------
+   Agent collaboration: status, plan checklist, thread, proposals
+*/
+
+.status-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 0.4rem;
+  background: var(--color-border, #ddd);
+  color: var(--color-text, #222);
+}
+
+.status-blocked          { background: #c62828; color: #fff; }
+.status-awaiting_review  { background: #f9a825; color: #222; }
+.status-done             { background: #2e7d32; color: #fff; }
+
+.subproject-list {
+  list-style: none;
+  padding: 0 0 0 1rem;
+  margin: 0.75rem 0 0;
+  border-left: 2px solid var(--color-border, #ddd);
+}
+
+.subproject-list .project-item {
+  margin-bottom: 0.5rem;
+}
+
+/* Plan checklist (read-only) */
+
+.plan-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.plan-item {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--color-border, #eee);
+}
+
+.plan-item label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-weight: normal;
+}
+
+.plan-item.done span {
+  text-decoration: line-through;
+  color: var(--color-text-secondary, #888);
+}
+
+.plan-note {
+  margin: 0.15rem 0 0 1.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #555);
+}
+
+/* Conversation thread */
+
+.project-thread {
+  margin-top: 2rem;
+}
+
+.thread {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+
+.msg {
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 4px;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.msg-user      { background: var(--color-surface, #f5f7ff); }
+.msg-question  { border-left: 3px solid #c62828; }
+.msg-progress  { border-left: 3px solid #2e7d32; }
+.msg-proposal  { border-left: 3px solid #f9a825; }
+
+.msg-meta {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #666);
+  margin: 0 0 0.3rem;
+}
+
+.msg-meta time { margin-left: 0.4rem; }
+
+.msg-body {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.msg-body p:first-child { margin-top: 0; }
+.msg-body p:last-child  { margin-bottom: 0; }
+
+.thread-reply {
+  border-top: 1px solid var(--color-border, #ddd);
+  padding-top: 1rem;
+}
+
+/* Proposed subprojects */
+
+.project-proposals .proposal {
+  border: 1px solid var(--color-border, #ddd);
+  border-left: 3px solid #f9a825;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.project-proposals .proposal h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.project-proposals .proposal form {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn {
+  background: none;
+  border: 1px solid var(--color-link, #1a73e8);
+  color: var(--color-link, #1a73e8);
+  padding: 0.25rem 0.75rem;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.btn:hover { background: var(--color-link, #1a73e8); color: #fff; }

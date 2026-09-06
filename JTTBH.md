@@ -111,7 +111,9 @@ WHERE t.thingID = %s
 
 Sentinel columns: `todo.title`, `habit.name`, `project.name`, `study_collection.name`, `study_source.title`, `recipe.title`
 
-**Exceptions** (direct UPDATE/DELETE): `user`, `svg`, `fitness_exercise`, `bookmark`, `bookmark_category`, `bookmark_category_item`, `study_subscription`, `study_completion`, `recipe_image`
+**Exceptions** (direct UPDATE/DELETE): `user`, `svg`, `fitness_exercise`, `bookmark`, `bookmark_category`, `bookmark_category_item`, `study_subscription`, `study_completion`, `recipe_image`, `project_message` (append-only; only `resolution` is UPDATEd)
+
+**Project agent tables:** `project_task` (insert-only, sentinel `title` NULL) is the agent's plan checklist; `project_message` is the agent↔user thread; `project.status` / `project.parentID` added for agent workflow. See `SPECIFICATION.md` §5.7.7 and `app/models/project_model.py`.
 
 #### `db_manager` API
 

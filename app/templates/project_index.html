@@ -14,25 +14,42 @@
     <h1>Projects</h1>
   </header>
 
+  {% macro project_card(project) %}
+  <article class="project-item">
+    <header>
+      <h2>
+        <a href="{{ url_for('project.view', username=username, project_id=project.projectID) }}">{{ project.name }}</a>
+        <span class="status-badge status-{{ project.status }}">{{ project.status|replace('_', ' ') }}</span>
+        {% if project.open_questions %}
+        <span class="status-badge status-blocked">{{ project.open_questions }} question{{ 's' if project.open_questions != 1 }} for you</span>
+        {% endif %}
+      </h2>
+      {% if project.next_step %}
+      <p class="next-step"><strong>Next:</strong> {{ project.next_step }}</p>
+      {% endif %}
+    </header>
+    {% if project.description %}
+    <p class="project-description">{{ project.description }}</p>
+    {% endif %}
+    {% if project.children %}
+    <ul class="subproject-list">
+      {% for child in project.children %}
+      <li>{{ project_card(child) }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <footer class="project-actions">
+      <form method="post" action="{{ url_for('project.delete', username=username, project_id=project.projectID) }}">
+        <button type="submit" class="btn-delete" onclick="return confirm('Delete this project?')">Delete</button>
+      </form>
+    </footer>
+  </article>
+  {% endmacro %}
+
   <section class="project-list">
     {% if projects %}
       {% for project in projects %}
-      <article class="project-item">
-        <header>
-          <h2><a href="{{ url_for('project.view', username=username, project_id=project.projectID) }}">{{ project.name }}</a></h2>
-          {% if project.next_step %}
-          <p class="next-step"><strong>Next:</strong> {{ project.next_step }}</p>
-          {% endif %}
-        </header>
-        {% if project.description %}
-        <p class="project-description">{{ project.description }}</p>
-        {% endif %}
-        <footer class="project-actions">
-          <form method="post" action="{{ url_for('project.delete', username=username, project_id=project.projectID) }}">
-            <button type="submit" class="btn-delete" onclick="return confirm('Delete this project?')">Delete</button>
-          </form>
-        </footer>
-      </article>
+      {{ project_card(project) }}
       {% endfor %}
     {% else %}
       <p class="empty-state">No projects yet. Add your first project below.</p>

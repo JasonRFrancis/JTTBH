@@ -17,6 +17,14 @@ POST /api/v1/<username>/bookmarks/<bookmark_id>/archive
 DELETE /api/v1/<username>/bookmarks/<bookmark_id>
 GET  /api/v1/<username>/recipes
 POST /api/v1/<username>/recipes
+GET  /api/v1/<username>/projects
+GET  /api/v1/<username>/projects/<project_id>
+POST /api/v1/<username>/projects/<project_id>/status
+GET  /api/v1/<username>/projects/<project_id>/messages?since=<id>
+POST /api/v1/<username>/projects/<project_id>/messages
+POST /api/v1/<username>/projects/<project_id>/tasks
+POST /api/v1/<username>/projects/<project_id>/tasks/<task_id>
+DELETE /api/v1/<username>/projects/<project_id>/tasks/<task_id>
 
 Response envelope
 -----------------
@@ -32,8 +40,9 @@ from flask import Blueprint, jsonify, request, g
 
 from app.services.api_auth import api_key_required
 from app.services.database import db_manager
-from app.services.decorators import PERM_TODO, PERM_BOOKMARK, PERM_RECIPE
+from app.services.decorators import PERM_TODO, PERM_BOOKMARK, PERM_RECIPE, PERM_PROJECT
 from app.models.todo_model import TodoModel
+from app.models.project_model import ProjectModel, AGENT_KINDS, VALID_STATUS
 
 api_bp = Blueprint('api', __name__)
 
@@ -394,3 +403,171 @@ def create_recipe(username):
         ),
     )
     return _ok({'recipe_id': recipe_id}), 201
+
+
+# ---------------------------------------------------------------------------
+# Projects (agent collaboration surface)
+# ---------------------------------------------------------------------------
+
+@api_bp.route('/<username>/projects', methods=['GET'])
+@api_key_required
+def get_projects(username):
+    user_id = _get_user_id(username)
+    if not user_id:
+        return _err('User not found', 404)
+    return _ok({'projects': ProjectModel.list_projects(user_id)})
+
+
+@api_bp.route('/<username>/projects/<project_id>', methods=['GET'])
+@api_key_required
+def get_project(username, project_id):
+    user_id = _get_user_id(username)
+    if not user_id:
+        return _err('User not found', 404)
+    detail = ProjectModel.get_detail(user_id, project_id)
+    if detail is None:
+        return _err('Project not found', 404)
+    return _ok(detail)
+
+
+@api_bp.route('/<username>/projects/<project_id>/status', methods=['POST'])
+@api_key_required
+def set_project_status(username, project_id):
+    err = _require_write(PERM_PROJECT)
+    if err:
+        return err
+    user_id = _get_user_id(username)
+    if not user_id:
+        return _err('User not found', 404)
+
+    body = request.get_json(silent=True) or {}
+    status = body.get('status')
+    next_step = body.get('next_step')
+    if status is not None and status not in VALID_STATUS:
+        return _err(f'status must be one of {", ".join(VALID_STATUS)}')
+    if status is None and next_step is None:
+        return _err('provide status and/or next_step')
+
+    ok = ProjectModel.set_status(
+        user_id, project_id, status=status, next_step=next_step, by=user_id,
+    )
+    if not ok:
+        return _err('Project not found', 404)
+    return _ok({'project_id': project_id})
+
+
+@api_bp.route('/<username>/projects/<project_id>/messages', methods=['GET'])
+@api_key_required
+def get_project_messages(username, project_id):
+    user_id = _get_user_id(username)
+    if not user_id:
+        return _err('User not found', 404)
+    if ProjectModel.get_project(user_id, project_id) is None:
+        return _err('Project not found', 404)
+
+    try:
+        since = int(request.args.get('since', 0))
+    except ValueError:
+        return _err('since must be an integer')
+
+    messages = ProjectModel.list_messages(project_id, since_id=since)
+    cursor = messages[-1]['id'] if messages else since
+    return _ok({'messages': messages, 'cursor': cursor})
+
+
+@api_bp.route('/<username>/projects/<project_id>/messages', methods=['POST'])
+@api_key_required
+def create_project_message(username, project_id):
+    err = _require_write(PERM_PROJECT)
+    if err:
+        return err
+    user_id = _get_user_id(username)
+    if not user_id:
+        return _err('User not found', 404)
+    if ProjectModel.get_project(user_id, project_id) is None:
+        return _err('Project not found', 404)
+
+    body = request.get_json(silent=True) or {}
+    kind = body.get('kind')
+    text = (body.get('body') or '').strip()
+    if kind not in AGENT_KINDS:
+        return _err(f'kind must be one of {", ".join(AGENT_KINDS)}')
+
+    meta = None
+    if kind == 'proposal':
+        meta = body.get('meta') or {}
+        if not meta.get('title'):
+            return _err('proposal requires meta.title')
+    elif not text:
+        return _err('body is required')
+
+    message_id = ProjectModel.add_message(
+        project_id, author='agent', kind=kind, body=text,
+        meta=meta, by=user_id, user_id=user_id,
+    )
+    return _ok({'message_id': message_id}), 201
+
+
+@api_bp.route('/<username>/projects/<project_id>/tasks', methods=['POST'])
+@api_key_required
+def create_project_task(username, project_id):
+    err = _require_write(PERM_PROJECT)
+    if err:
+        return err
+    user_id = _get_user_id(username)
+    if not user_id:
+        return _err('User not found', 404)
+    if ProjectModel.get_project(user_id, project_id) is None:
+        return _err('Project not found', 404)
+
+    body = request.get_json(silent=True) or {}
+    title = (body.get('title') or '').strip()
+    if not title:
+        return _err('title is required')
+
+    position = body.get('position')
+    task_id = ProjectModel.add_task(
+        project_id, title, note=(body.get('note') or None),
+        position=position if isinstance(position, int) else None, by=user_id,
+    )
+    return _ok({'task_id': task_id}), 201
+
+
+@api_bp.route('/<username>/projects/<project_id>/tasks/<task_id>', methods=['POST'])
+@api_key_required
+def update_project_task(username, project_id, task_id):
+    err = _require_write(PERM_PROJECT)
+    if err:
+        return err
+    user_id = _get_user_id(username)
+    if not user_id:
+        return _err('User not found', 404)
+    if ProjectModel.get_project(user_id, project_id) is None:
+        return _err('Project not found', 404)
+
+    body = request.get_json(silent=True) or {}
+    fields = {k: body[k] for k in ('title', 'done', 'note', 'position') if k in body}
+    if not fields:
+        return _err('provide at least one of: title, done, note, position')
+
+    ok = ProjectModel.update_task(project_id, task_id, by=user_id, **fields)
+    if not ok:
+        return _err('Task not found', 404)
+    return _ok({'task_id': task_id})
+
+
+@api_bp.route('/<username>/projects/<project_id>/tasks/<task_id>', methods=['DELETE'])
+@api_key_required
+def delete_project_task(username, project_id, task_id):
+    err = _require_write(PERM_PROJECT)
+    if err:
+        return err
+    user_id = _get_user_id(username)
+    if not user_id:
+        return _err('User not found', 404)
+    if ProjectModel.get_project(user_id, project_id) is None:
+        return _err('Project not found', 404)
+
+    if not ProjectModel.delete_task(project_id, task_id, by=user_id):
+        return _err('Task not found', 404)
+    return _ok({'task_id': task_id, 'deleted': True})
