@@ -97,6 +97,148 @@
 
 
   /* -------------------------------------------------------------------------
+     1b. Previous-day catch-up grid (dashboard) — 3-state cycle
+         complete -> not completed -> unresolved -> ...
+         Page-load scoped: no polling, no reconcile.
+     ------------------------------------------------------------------------- */
+
+  var TRI_RING = ['unresolved', 'complete', 'incomplete'];
+  var TRI_FROM_COMPLETED = { '1': 'complete', '0': 'incomplete', 'null': 'unresolved' };
+
+  function initPrevDayGrid() {
+    document.querySelectorAll('.habit-tri').forEach(function (btn) {
+      btn.addEventListener('click', handleTriClick);
+    });
+    updatePrevUnresolvedCount();
+  }
+
+  function handleTriClick(event) {
+    event.preventDefault();
+    var btn     = event.currentTarget;
+    var habitId = btn.dataset.habitId;
+    var dateStr = btn.dataset.date;
+    if (!habitId || !dateStr || !username) return;
+
+    // Advance locally for instant feedback.
+    var idx      = TRI_RING.indexOf(btn.dataset.state);
+    var nextState = TRI_RING[(idx + 1) % TRI_RING.length];
+    setTriState(btn, nextState);
+    updatePrevUnresolvedCount();
+
+    var changeId = crypto.randomUUID();
+    var url      = btn.closest('form').action;
+    btn._lastChange = changeId;
+
+    if (typeof fetch === 'function') {
+      fetch(url, {
+        method:      'POST',
+        headers:     {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type':     'application/x-www-form-urlencoded',
+        },
+        body:        'change_id=' + encodeURIComponent(changeId),
+        credentials: 'same-origin',
+      })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        // Ignore stale responses — only the most recent click reconciles a cell.
+        if (!data || btn._lastChange !== changeId) return;
+        var confirmed = TRI_FROM_COMPLETED[String(data.completed)];
+        if (confirmed && confirmed !== btn.dataset.state) {
+          setTriState(btn, confirmed);
+          updatePrevUnresolvedCount();
+        }
+      })
+      .catch(function () {});
+    } else {
+      btn.closest('form').submit();
+    }
+  }
+
+  function setTriState(btn, state) {
+    btn.dataset.state = state;
+    var name = (btn.getAttribute('aria-label') || '').split(':')[0];
+    var word = state === 'complete' ? 'completed'
+             : state === 'incomplete' ? 'not completed' : 'unresolved';
+    btn.setAttribute('aria-label', name + ': ' + word);
+  }
+
+  function updatePrevUnresolvedCount() {
+    var grid = document.querySelector('.habit-grid-prev');
+    if (!grid) return;
+    var section = grid.closest('.habit-prev');
+    var meta    = section && section.querySelector('.widget-meta');
+    if (!meta) return;
+    var n = grid.querySelectorAll('.habit-tri[data-state="unresolved"]').length;
+    meta.textContent = n + ' unresolved';
+  }
+
+
+  /* -------------------------------------------------------------------------
+     1c. Today's habits as a to-do list (dashboard)
+         Check -> crossed out; the item is gone on the next page load
+         (server sends only unfinished habits). Page-load scoped.
+     ------------------------------------------------------------------------- */
+
+  function initTodayHabitList() {
+    document.querySelectorAll('.habit-line-btn').forEach(function (b) { b.hidden = true; });
+    document.querySelectorAll('.habit-line-check').forEach(function (cb) {
+      cb.addEventListener('change', handleHabitLineChange);
+    });
+  }
+
+  function handleHabitLineChange(event) {
+    var cb = event.currentTarget;
+    var li = cb.closest('.habit-line');
+    if (!username) return;
+
+    if (li) li.classList.toggle('is-done', cb.checked);
+    refreshHabitListMeta();
+
+    var changeId = crypto.randomUUID();
+    cb._lastChange = changeId;
+    var url = cb.closest('form').action;
+
+    if (typeof fetch === 'function') {
+      fetch(url, {
+        method:      'POST',
+        headers:     {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type':     'application/x-www-form-urlencoded',
+        },
+        body:        'change_id=' + encodeURIComponent(changeId),
+        credentials: 'same-origin',
+      })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data || cb._lastChange !== changeId) return;
+        var done = data.completed === 1;
+        if (cb.checked !== done) {
+          cb.checked = done;
+          if (li) li.classList.toggle('is-done', done);
+          refreshHabitListMeta();
+        }
+      })
+      .catch(function () {});
+    } else {
+      cb.closest('form').submit();
+    }
+  }
+
+  // Recompute "N/M today" from the list: M is fixed (in the meta), and every
+  // habit not shown here was already done, so done = M - unchecked rows.
+  function refreshHabitListMeta() {
+    var el = document.getElementById('habit-widget-meta');
+    if (!el) return;
+    var m = el.textContent.match(/\/(\d+)/);
+    if (!m) return;
+    var total     = parseInt(m[1], 10);
+    var remaining = document.querySelectorAll('.habit-line-check:not(:checked)').length;
+    el.textContent = (total - remaining) + '/' + total + ' today';
+  }
+
+
+  /* -------------------------------------------------------------------------
      2. Polling: keep habit state in sync with the server
      ------------------------------------------------------------------------- */
 
@@ -443,6 +585,8 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     initToggleCheckboxes();
+    initPrevDayGrid();
+    initTodayHabitList();
     startPolling();
     initIconPreviews();
     initPositionList();

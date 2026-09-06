@@ -31,6 +31,16 @@
       <div class="filler"></div>
     </header>
     <widgets>
+    {% if has_perm(32) and prev_habit_grid %}
+    <section class="widget habit habit-prev" aria-labelledby="habit-prev-heading">
+      <header class="widget-header">
+        <h3 id="habit-prev-heading">Yesterday's habits</h3>
+        <span class="widget-meta">{{ prev_habit_unresolved }} unresolved</span>
+      </header>
+      {{ habit_macros.prev_habit_grid(prev_habit_grid, prev_habit_date, username) }}
+    </section>
+    {% endif %}
+
     {% if has_perm(32) %}
     <section class="widget habit" aria-labelledby="habit-widget-heading">
       <header class="widget-header">
@@ -40,8 +50,10 @@
         <span class="widget-meta" id="habit-widget-meta">{{ habit_completed }}/{{ habit_total }} today</span>
       </header>
 
-      {% if habit_total > 0 %}
-      {{ habit_macros.habit_grid(habit_grid, today, username) }}
+      {% if habit_today %}
+      {{ habit_macros.habit_today_list(habit_today, today, username) }}
+      {% elif habit_total > 0 %}
+      <p class="widget-empty">All habits done for today. 🎉</p>
       {% else %}
       <p class="widget-empty">No habits scheduled for today.</p>
       {% endif %}

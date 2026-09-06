@@ -171,6 +171,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     1. The primary view for the site is a dashboard which contains the current day's view of each of the site's relevant features
     2. The user should be able to see, at a glance, the most pressing tasks and indicate that they have been completed
     3. Each widget in the dashboard should contain a link to the more detailed view (contained in the `[area]` of the site)
+    4. Today's habits render as a **to-do list** (not the 5x5 grid, which stays on the habit page): checkbox + icon + name per row, only the habits *not yet done today*. Checking one crosses it out (`.habit-line.is-done`) and fires the binary `habit.toggle` route; on the next page load it's gone (the dashboard route sends only `completed != 1` habits). `habit.js` `initTodayHabitList()` owns it — page-load scoped, no live poll reconcile.
+    5. Previous-day habit catch-up: above the today habit widget, a "Yesterday's habits" grid appears whenever ≥1 of yesterday's scheduled habits is still *unresolved* (`habit_entry` has no explicit answer). Each cell cycles complete → not completed → unresolved on click (`POST /<username>/habit/cycle/post/<habit_id>/<date_str>`, AJAX or PRG, `HabitModel.cycle_entry`). The grid is hidden on the next page load once every yesterday habit is resolved. It is not affected by the 10s habit poller.
   2. User Preferences
     1. Designated under `user` and tracked in the `user_preference` database table
     2. The user can set default and behavioral values for the various features of the site
@@ -192,6 +194,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     6. The user can designate what days of the week that habit is to be accomplished as well as its position in the grid
     7. The page calculates habit streaks (uninterrupted days that the habit has been marked as completed), as well as the proportion of the current day's habits that have been completed
     8. The site should also present a "heat map" view showing a grid of individual days where the intensity of the color indicates the proportion of habits completed that day (similar to the GitHub activity grid)
+    9. `habit_entry.completed` holds three states: `1` (complete), `0` (explicitly not completed), and NULL / no row (unresolved). Only the dashboard's previous-day grid distinguishes `0` from NULL; streaks, heat map, `grid_stats`, and the habit-page grids all test `completed == 1`, so `0` and NULL behave identically there. The habit-page toggle (`toggle_entry`) still only writes `1` ↔ NULL.
   4. Todo List
     1. Designated under the `todo` area using the `todo` database tables; patterned after teuxdeux.com
     2. Weekly view (top of page): Five lists covering the dates from yesterday until three days in the future. The current date (or the date designated in the URL) is in the second position

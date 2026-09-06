@@ -395,6 +395,64 @@ class HabitModel:
 
         return {'completed': new_completed}
 
+    @staticmethod
+    def cycle_entry(habit_id: str, user_id: str, entry_date: date, change_id: str = None) -> dict:
+        """
+        Advance a habit's entry for a date through a 3-state ring, used by the
+        dashboard's previous-day catch-up grid:
+
+            unresolved (no row / NULL) -> complete (1) -> not completed (0) -> unresolved
+
+        Parameters mirror ``toggle_entry``. ``change_id`` gives idempotency: a
+        UUID already stored returns the existing state without inserting.
+
+        Returns
+        -------
+        dict
+            {'completed': 1 | 0 | None}
+        """
+        if change_id:
+            existing = db_manager.execute_one(
+                "SELECT completed FROM habit_entry WHERE change_id = %s LIMIT 1",
+                (change_id,),
+            )
+            if existing is not None:
+                return {'completed': existing['completed']}
+
+        habit = HabitModel.get_habit_by_id(habit_id, user_id)
+        if habit is None:
+            return {'completed': None}
+
+        current = db_manager.execute_one(
+            """
+            SELECT he.completed
+            FROM habit_entry he
+            WHERE he.habitID = %s
+              AND he.entry = %s
+            ORDER BY he.id DESC
+            LIMIT 1
+            """,
+            (habit_id, entry_date),
+        )
+
+        cur_val = current['completed'] if current else None
+        if cur_val is None:
+            new_completed = 1
+        elif cur_val == 1:
+            new_completed = 0
+        else:
+            new_completed = None
+
+        db_manager.execute_insert(
+            """
+            INSERT INTO habit_entry (habitID, entry, completed, change_id, created, created_by)
+            VALUES (%s, %s, %s, %s, NOW(), %s)
+            """,
+            (habit_id, entry_date, new_completed, change_id, user_id),
+        )
+
+        return {'completed': new_completed}
+
     # ------------------------------------------------------------------
     # Grid / calendar helpers
     # ------------------------------------------------------------------

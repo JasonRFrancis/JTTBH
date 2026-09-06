@@ -19,7 +19,7 @@ Permissions
 Requires ``PERM_DASHBOARD`` read access.
 """
 
-from datetime import date
+from datetime import date, timedelta
 
 from app.services.timezone_utils import user_today
 
@@ -62,6 +62,22 @@ def _get_today_habit_grid(user_id: str) -> tuple[list[dict], int, int]:
     grid = HabitModel.get_grid_with_streaks(user_id, user_today())
     completed, total = HabitModel.grid_stats(grid)
     return grid, completed, total
+
+
+def _get_prev_day_habit_grid(user_id: str) -> tuple[list[dict], int, date]:
+    """Return (grid, unresolved_count, date) for yesterday.
+
+    A cell is "unresolved" when the habit applies that day but has no explicit
+    complete/not-completed answer (completed is None). The dashboard only shows
+    the catch-up grid while unresolved_count > 0.
+    """
+    yesterday = user_today() - timedelta(days=1)
+    grid = HabitModel.get_grid_for_date(user_id, yesterday)
+    unresolved = sum(
+        1 for c in grid
+        if c['habitID'] and c['applies'] and c['completed'] is None
+    )
+    return grid, unresolved, yesterday
 
 
 def _get_today_todos(user_id: str) -> list[dict]:
@@ -127,23 +143,40 @@ def _gather_dashboard_data(user_id: str, perm_read: int) -> dict:
     users who lack certain feature access.
     """
     data: dict = {
-        'today':           user_today(),
-        'habit_grid':      [],
-        'habit_completed': 0,
-        'habit_total':     0,
-        'todos':           [],
-        'fitness':         None,
-        'study':           None,
+        'today':                 user_today(),
+        'habit_today':           [],
+        'habit_completed':       0,
+        'habit_total':           0,
+        'prev_habit_grid':       [],
+        'prev_habit_unresolved': 0,
+        'prev_habit_date':       None,
+        'todos':                 [],
+        'fitness':               None,
+        'study':                 None,
     }
 
     if perm_read & PERM_HABIT:
         try:
             grid, completed, total = _get_today_habit_grid(user_id)
-            data['habit_grid']      = grid
+            # Dashboard shows today's habits as a to-do list: only the ones
+            # still to be done. Completed habits drop off on the next load.
+            data['habit_today'] = [
+                c for c in grid
+                if c['habitID'] and c['applies'] and c['completed'] != 1
+            ]
             data['habit_completed'] = completed
             data['habit_total']     = total
         except Exception as exc:
             current_app.logger.warning('Dashboard: failed to load habits: %s', exc)
+
+        try:
+            prev_grid, unresolved, prev_date = _get_prev_day_habit_grid(user_id)
+            if unresolved > 0:
+                data['prev_habit_grid']       = prev_grid
+                data['prev_habit_unresolved'] = unresolved
+                data['prev_habit_date']       = prev_date
+        except Exception as exc:
+            current_app.logger.warning('Dashboard: failed to load previous-day habits: %s', exc)
 
     if perm_read & PERM_TODO:
         try:
@@ -185,9 +218,12 @@ def index(username: str):
         username=username,
         area='dashboard',
         today=data['today'],
-        habit_grid=data['habit_grid'],
+        habit_today=data['habit_today'],
         habit_completed=data['habit_completed'],
         habit_total=data['habit_total'],
+        prev_habit_grid=data['prev_habit_grid'],
+        prev_habit_unresolved=data['prev_habit_unresolved'],
+        prev_habit_date=data['prev_habit_date'],
         todos=data['todos'],
         fitness=data['fitness'],
         study=data['study'],
@@ -204,4 +240,6 @@ def index_json(username: str):
 
     data = _gather_dashboard_data(user_id, perm_read)
     data['today'] = data['today'].isoformat()
+    if data['prev_habit_date'] is not None:
+        data['prev_habit_date'] = data['prev_habit_date'].isoformat()
     return jsonify(data)

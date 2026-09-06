@@ -337,6 +337,31 @@ def toggle(username: str, habit_id: str, date_str: str):
     return redirect(url_for('habit.index', username=username, date_str=date_str))
 
 
+@habit_bp.route('/cycle/post/<habit_id>/<date_str>', methods=['POST'])
+@login_required
+@permission_required_write(PERM_HABIT)
+def cycle(username: str, habit_id: str, date_str: str):
+    """
+    Advance a habit's entry for a date through the 3-state ring
+    (unresolved -> complete -> not completed -> unresolved). Used by the
+    dashboard's previous-day catch-up grid.
+
+    AJAX requests get JSON {'completed': 1 | 0 | null}; others get a PRG
+    redirect to the calendar index.
+    """
+    user_id    = session['user_id']
+    entry_date = _parse_date(date_str)
+    change_id  = request.form.get('change_id', '').strip() or None
+
+    result = HabitModel.cycle_entry(habit_id, user_id, entry_date, change_id)
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'completed': result['completed']})
+
+    flash('Habit updated.', 'success')
+    return redirect(url_for('habit.index', username=username, date_str=date_str))
+
+
 @habit_bp.route('/create/post', methods=['POST'])
 @login_required
 @permission_required_write(PERM_HABIT)

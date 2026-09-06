@@ -1,3 +1,29 @@
+{# Dashboard today view: habits as a to-do list. Checking one crosses it out;
+   it drops off the list on the next page load (server sends only unfinished
+   habits). Reuses the binary habit.toggle route. #}
+{% macro habit_today_list(items, date_str, username) %}
+<ul class="habit-today-list">
+  {% for cell in items %}
+  <li class="habit-line" data-habit-id="{{ cell.habitID }}">
+    <form method="post"
+          action="{{ url_for('habit.toggle', username=username, habit_id=cell.habitID, date_str=date_str) }}">
+      <label>
+        <input type="checkbox" class="habit-line-check"
+               data-habit-id="{{ cell.habitID }}" data-date="{{ date_str }}"
+               aria-label="{{ cell.name }}">
+        {% if cell.icon_svg %}
+        <span class="habit-line-icon" aria-hidden="true">{{ cell.icon_svg | safe }}</span>
+        {% endif %}
+        <span class="habit-line-name">{{ cell.name }}</span>
+      </label>
+      <button type="submit" class="habit-line-btn">Done</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}
+
+
 {% macro habit_grid(grid, date_str, username) %}
 <habit-grid data-date="{{ date_str }}">
   {% for cell in grid %}
@@ -26,6 +52,40 @@
             <span class="habit-initial" aria-hidden="true">{{ cell.name[0] | upper }}</span>
           {% endif %}
         </label>
+      </form>
+    </habit-cell>
+  {% else %}
+    <habit-cell class="empty" data-position="{{ cell.position }}" aria-hidden="true"></habit-cell>
+  {% endif %}
+  {% endfor %}
+</habit-grid>
+{% endmacro %}
+
+
+{# Previous-day catch-up grid: each cell cycles complete -> not completed ->
+   unresolved. Distinct from habit_grid (no .habit-checkbox) so the 10s poller
+   in habit.js leaves it alone. Works without JS via the plain submit. #}
+{% macro prev_habit_grid(grid, date_str, username) %}
+<habit-grid class="habit-grid-prev" data-date="{{ date_str }}">
+  {% for cell in grid %}
+  {% if cell.habitID and cell.applies %}
+    <habit-cell>
+      <form method="post"
+            action="{{ url_for('habit.cycle', username=username, habit_id=cell.habitID, date_str=date_str) }}">
+        <button type="submit"
+                class="habit-tri"
+                data-state="{% if cell.completed == 1 %}complete{% elif cell.completed == 0 %}incomplete{% else %}unresolved{% endif %}"
+                data-habit-id="{{ cell.habitID }}"
+                data-date="{{ date_str }}"
+                {% if cell.color %}style="--habit-color: {{ cell.color }};"{% endif %}
+                title="{{ cell.name }}"
+                aria-label="{{ cell.name }}: {% if cell.completed == 1 %}completed{% elif cell.completed == 0 %}not completed{% else %}unresolved{% endif %}">
+          {% if cell.icon_svg %}
+            {{ cell.icon_svg | safe }}
+          {% else %}
+            <span class="habit-initial" aria-hidden="true">{{ cell.name[0] | upper }}</span>
+          {% endif %}
+        </button>
       </form>
     </habit-cell>
   {% else %}
