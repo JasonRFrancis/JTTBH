@@ -33,11 +33,11 @@
         <p class="email-snippet">{{ email.get('snippet', '') }}</p>
         {% if has_write_perm(128) %}
         <div class="email-actions">
-          <form method="post" action="{{ url_for('triage.to_todo', username=username, gmail_id=email.id) }}">
+          <form method="post" action="{{ url_for('triage.to_todo', username=username, gmail_id=email.get('id', '')) }}">
             <input type="hidden" name="subject" value="{{ email.get('subject', '') }}">
             <button type="submit">&rarr; Todo</button>
           </form>
-          <form method="post" action="{{ url_for('triage.to_project', username=username, gmail_id=email.id) }}">
+          <form method="post" action="{{ url_for('triage.to_project', username=username, gmail_id=email.get('id', '')) }}">
             <input type="hidden" name="subject" value="{{ email.get('subject', '') }}">
             <input type="hidden" name="snippet" value="{{ email.get('snippet', '') }}">
             <button type="submit">&rarr; Project</button>
@@ -59,9 +59,12 @@
       {% for event in calendar_events %}
       <li class="event-item">
         <strong class="event-title">{{ event.get('summary', 'Untitled') }}</strong>
-        <time class="event-time">{{ event.get('start', {}).get('dateTime', event.get('start', {}).get('date', '')) }}</time>
+        <time class="event-time">{{ event.get('start', '') }}</time>
+        {% if event.get('location') %}
+        <span class="event-location">{{ event.get('location') }}</span>
+        {% endif %}
         {% if event.get('description') %}
-        <p class="event-description">{{ event.description }}</p>
+        <p class="event-description">{{ event.get('description') }}</p>
         {% endif %}
       </li>
       {% endfor %}
