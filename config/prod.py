@@ -61,6 +61,12 @@ class ProductionConfig:
     IMPORT_API_KEY = os.environ.get('IMPORT_API_KEY', '')
 
     # ------------------------------------------------------------------ #
+    # Agent / service accounts                                            #
+    # ------------------------------------------------------------------ #
+    HERMES_NAME = os.environ.get('HERMES_NAME', '')
+    HERMES_KEY  = os.environ.get('HERMES_KEY', '')
+
+    # ------------------------------------------------------------------ #
     # File uploads                                                         #
     # ------------------------------------------------------------------ #
     _BASE_DIR      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

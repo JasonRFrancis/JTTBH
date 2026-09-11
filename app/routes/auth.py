@@ -7,6 +7,7 @@ Routes
 ------
 GET  /auth/login              – Render login page with Google Sign-In button.
 GET  /auth/oauth2callback     – Handle Google OAuth callback.
+GET  /auth/agent-login        – Token-gated login for service accounts (Hermes).
 GET  /auth/logout             – Clear session and redirect to login.
 GET  /pending-approval        – Inform new users their account is pending.
 
@@ -24,6 +25,7 @@ OAuth flow
    - approved   -> populate session; redirect to /[username]/dashboard/index.
 """
 
+import hmac
 import os
 import uuid
 import re
@@ -344,6 +346,38 @@ def dev_login():
     if not user:
         flash('Dev login failed: user "jason" not found.', 'error')
         return redirect(url_for('auth.login'))
+
+    _set_session(user)
+    return redirect(url_for('dashboard.index', username=user['username']))
+
+
+@auth_bp.route('/agent-login')
+def agent_login():
+    """
+    Token-gated login for service accounts (e.g. the Hermes agent).
+
+    404s unless HERMES_KEY is configured. Accepts the shared secret via
+    'Authorization: Bearer <key>' or a '?token=' query param, then logs in
+    as the account named by HERMES_NAME. Works in production (unlike
+    /auth/dev-login) since it is gated by a secret instead of DEBUG.
+    """
+    expected = current_app.config.get('HERMES_KEY', '')
+    if not expected:
+        abort(404)
+
+    auth_header = request.headers.get('Authorization', '')
+    supplied = auth_header[7:] if auth_header.startswith('Bearer ') else request.args.get('token', '')
+
+    if not hmac.compare_digest(supplied, expected):
+        current_app.logger.warning('Rejected /auth/agent-login attempt with invalid token.')
+        abort(404)
+
+    user = db_manager.execute_one(
+        "SELECT * FROM `user` WHERE username = %s",
+        (current_app.config.get('HERMES_NAME', ''),),
+    )
+    if not user:
+        abort(404)
 
     _set_session(user)
     return redirect(url_for('dashboard.index', username=user['username']))
