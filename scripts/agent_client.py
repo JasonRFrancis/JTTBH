@@ -88,16 +88,42 @@ class JTTBHClient:
         data = self._request('GET', f'/projects/{project_id}/messages?since={since}')
         return data['messages'], data['cursor']
 
-    def ask(self, project_id: str, question: str) -> str:
-        """Post a clarifying question. This flips the project to `blocked` so it
-        surfaces at the top of Jason's Projects page."""
-        return self._request('POST', f'/projects/{project_id}/messages',
-                             {'kind': 'question', 'body': question})['message_id']
+    @staticmethod
+    def _usage_meta(model: str | None, tokens_used: int | None,
+                    tokens_remaining: int | None) -> dict | None:
+        """Pack which model handled the task and its token budget, for display
+        alongside the message. Omit whichever fields aren't known."""
+        meta = {}
+        if model is not None:
+            meta['model'] = model
+        if tokens_used is not None:
+            meta['tokens_used'] = tokens_used
+        if tokens_remaining is not None:
+            meta['tokens_remaining'] = tokens_remaining
+        return meta or None
 
-    def report(self, project_id: str, update: str) -> str:
-        """Post a progress update (does not change status)."""
-        return self._request('POST', f'/projects/{project_id}/messages',
-                             {'kind': 'progress', 'body': update})['message_id']
+    def ask(self, project_id: str, question: str, *, model: str | None = None,
+           tokens_used: int | None = None, tokens_remaining: int | None = None) -> str:
+        """Post a clarifying question. This flips the project to `blocked` so it
+        surfaces at the top of Jason's Projects page. Pass `model` /
+        `tokens_used` / `tokens_remaining` to report which model is asking and
+        its remaining budget."""
+        payload = {'kind': 'question', 'body': question}
+        meta = self._usage_meta(model, tokens_used, tokens_remaining)
+        if meta:
+            payload['meta'] = meta
+        return self._request('POST', f'/projects/{project_id}/messages', payload)['message_id']
+
+    def report(self, project_id: str, update: str, *, model: str | None = None,
+              tokens_used: int | None = None, tokens_remaining: int | None = None) -> str:
+        """Post a progress update (does not change status). Pass `model` /
+        `tokens_used` / `tokens_remaining` to report which model did the work
+        and its remaining budget."""
+        payload = {'kind': 'progress', 'body': update}
+        meta = self._usage_meta(model, tokens_used, tokens_remaining)
+        if meta:
+            payload['meta'] = meta
+        return self._request('POST', f'/projects/{project_id}/messages', payload)['message_id']
 
     def propose_subproject(self, project_id: str, title: str,
                            description: str = '', rationale: str = '') -> str:

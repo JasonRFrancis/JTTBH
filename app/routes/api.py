@@ -493,9 +493,9 @@ def create_project_message(username, project_id):
     if kind not in AGENT_KINDS:
         return _err(f'kind must be one of {", ".join(AGENT_KINDS)}')
 
-    meta = None
+    meta = body.get('meta') if isinstance(body.get('meta'), dict) else None
     if kind == 'proposal':
-        meta = body.get('meta') or {}
+        meta = meta or {}
         if not meta.get('title'):
             return _err('proposal requires meta.title')
     elif not text:

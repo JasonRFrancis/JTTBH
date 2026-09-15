@@ -352,6 +352,12 @@
 .msg-body p:first-child { margin-top: 0; }
 .msg-body p:last-child  { margin-bottom: 0; }
 
+.msg-usage {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #666);
+  margin: 0.3rem 0 0;
+}
+
 .thread-reply {
   border-top: 1px solid var(--color-border, #ddd);
   padding-top: 1rem;

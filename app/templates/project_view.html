@@ -92,6 +92,13 @@
         <p>{{ m.meta.title if m.meta and m.meta.title else 'Subproject proposal' }}</p>
         {% endif %}
         {% if m.body %}<div class="msg-body">{{ m.body | markdown }}</div>{% endif %}
+        {% if m.meta and (m.meta.model or m.meta.tokens_used is not none or m.meta.tokens_remaining is not none) %}
+        <p class="msg-usage">
+          {% if m.meta.model %}{{ m.meta.model }}{% endif %}
+          {% if m.meta.tokens_used is not none %}· {{ m.meta.tokens_used }} tokens used{% endif %}
+          {% if m.meta.tokens_remaining is not none %}· {{ m.meta.tokens_remaining }} remaining{% endif %}
+        </p>
+        {% endif %}
       </li>
       {% endfor %}
     </ol>

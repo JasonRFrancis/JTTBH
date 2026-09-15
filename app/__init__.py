@@ -14,6 +14,7 @@ import traceback
 from datetime import datetime, date, timedelta
 
 from flask import Flask, redirect, url_for, request, session, g, abort
+from markupsafe import Markup
 
 # Load .env file if present (development convenience)
 try:
@@ -127,14 +128,18 @@ def _register_template_filters(app: Flask) -> None:
         import markdown as md_module
         @app.template_filter('markdown')
         def markdown_filter(text):
-            """Render Markdown text to safe HTML (no raw HTML tags)."""
+            """Render Markdown (line breaks via nl2br) to HTML, and mark it
+            safe so Jinja2 doesn't re-escape the tags. python-markdown passes
+            raw HTML in the source through unchanged rather than escaping it,
+            so this only renders content from session-authenticated users or
+            API key holders — never arbitrary third-party input."""
             if not text:
                 return ''
-            return md_module.markdown(
+            return Markup(md_module.markdown(
                 text,
                 extensions=['nl2br'],
                 output_format='html',
-            )
+            ))
     except ImportError:
         @app.template_filter('markdown')
         def markdown_filter(text):
