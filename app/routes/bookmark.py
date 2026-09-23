@@ -359,7 +359,7 @@ def recent(username: str):
         """SELECT bookmarkID, url, title, created
            FROM bookmark
            WHERE userID = %s AND created >= %s
-           ORDER BY created DESC""",
+           ORDER BY url""",
         (user_id, cutoff)
     )
 
