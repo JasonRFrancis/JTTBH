@@ -382,17 +382,21 @@ def recent(username: str):
     cutoff = datetime.now() - timedelta(hours=24)
 
     bookmarks = db_manager.execute_query(
-        """SELECT bookmarkID, url, title, created
+        """SELECT bookmarkID, url, title, tags, notes, created
            FROM bookmark
            WHERE userID = %s AND created >= %s
            ORDER BY url""",
         (user_id, cutoff)
     )
 
+    video_hosts = ('youtube.com', 'youtu.be', 'vimeo.com', 'twitch.tv')
+    videos = [bm for bm in bookmarks if any(h in bm['url'].lower() for h in video_hosts)]
+    others = [bm for bm in bookmarks if bm not in videos]
+
     return render_template(
         'bookmark_recent.html',
         username=username,
-        bookmarks=bookmarks,
+        groups=[('Videos', videos), ('Other', others)],
     )
 
 

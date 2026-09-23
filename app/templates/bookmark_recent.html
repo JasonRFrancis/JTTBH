@@ -12,14 +12,32 @@
     </nav>
   </header>
 
-  {% if bookmarks %}
-  <ul>
-    {% for bm in bookmarks %}
-    <li><a href="{{ bm.url }}" target="_blank" rel="noopener">{{ bm.title or bm.url }}</a></li>
-    {% endfor %}
-  </ul>
+  {% for name, items in groups if items %}
+  <section aria-labelledby="grp-{{ loop.index }}">
+    <h2 id="grp-{{ loop.index }}">{{ name }} ({{ items|length }})</h2>
+    <ul>
+      {% for bm in items %}
+      <li>
+        <a href="{{ bm.url }}" target="_blank" rel="noopener">{{ bm.title or bm.url }}</a>
+        <details>
+          <summary>Edit</summary>
+          <form method="post" action="{{ url_for('bookmark.update', username=username, bookmark_id=bm.bookmarkID) }}">
+            <label>Title <input type="text" name="title" value="{{ bm.title or '' }}"></label>
+            <label>Tags <input type="text" name="tags" value="{{ bm.tags or '' }}"></label>
+            <label>Notes <textarea name="notes">{{ bm.notes or '' }}</textarea></label>
+            <button type="submit">Save</button>
+          </form>
+          <form method="post" action="{{ url_for('bookmark.delete', username=username, bookmark_id=bm.bookmarkID) }}"
+                onsubmit="return confirm('Delete this bookmark?')">
+            <button type="submit">Delete</button>
+          </form>
+        </details>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
   {% else %}
   <p class="bm-empty">Nothing saved in the last 24 hours.</p>
-  {% endif %}
+  {% endfor %}
 </main>
 {% endblock %}
