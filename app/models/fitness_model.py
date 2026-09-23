@@ -553,6 +553,25 @@ class FitnessModel:
         return weight_id
 
     @staticmethod
+    def get_all_sets_for_export(user_id: str) -> list[dict]:
+        """All logged sets for a user, oldest first, for CSV export."""
+        return db_manager.execute_query("""
+            SELECT fl.log_date, fe.name AS exercise_name, ls.set_number,
+                   ls.actual_weight, ls.actual_reps, ls.duration_minutes,
+                   ls.speed, ls.incline, ls.notes
+            FROM fitness_logSet ls
+            JOIN fitness_log fl ON fl.logID = ls.logID
+            JOIN fitness_exercise fe ON fe.exerciseID = ls.exerciseID
+            WHERE fl.userID = %s
+              AND fl.log_date IS NOT NULL
+              AND ls.exerciseID IS NOT NULL
+              AND ls.id = (SELECT MAX(ls2.id) FROM fitness_logSet ls2
+                           WHERE ls2.logSetID = ls.logSetID)
+              AND fl.id = (SELECT MAX(fl2.id) FROM fitness_log fl2 WHERE fl2.logID = fl.logID)
+            ORDER BY fl.log_date, ls.set_number
+        """, (user_id,))
+
+    @staticmethod
     def get_weight_history(user_id: str, limit: int = 90) -> list[dict]:
         return db_manager.execute_query("""
             SELECT bw.weightID, bw.weight, bw.unit, bw.recorded

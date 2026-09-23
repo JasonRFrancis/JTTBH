@@ -356,43 +356,17 @@ def recent(username: str):
     cutoff = datetime.now() - timedelta(hours=24)
 
     bookmarks = db_manager.execute_query(
-        """SELECT bookmarkID, url, title, tags, favorite, read_later, notes, created
+        """SELECT bookmarkID, url, title, created
            FROM bookmark
-           WHERE userID = %s AND `read` = 0 AND created >= %s
-           ORDER BY created DESC
-           LIMIT 100""",
+           WHERE userID = %s AND created >= %s
+           ORDER BY created DESC""",
         (user_id, cutoff)
     )
-
-    favorites = db_manager.execute_query(
-        """SELECT bookmarkID, url, title, tags, favorite, read_later, notes, created
-           FROM bookmark
-           WHERE userID = %s AND `read` = 0 AND favorite = 1 AND created < %s
-           ORDER BY created DESC
-           LIMIT 20""",
-        (user_id, cutoff)
-    )
-
-    def classify(bm):
-        url = bm['url'].lower()
-        if any(x in url for x in ('youtube.com', 'youtu.be', 'vimeo.com', 'twitch.tv')):
-            return 'Videos'
-        if bm.get('read_later'):
-            return 'Read Later'
-        if any(x in url for x in ('twitter.com', 'x.com', 'reddit.com', 'facebook.com', 'instagram.com')):
-            return 'Social'
-        return 'Articles'
-
-    groups = {}
-    for bm in bookmarks:
-        cat = classify(bm)
-        groups.setdefault(cat, []).append(bm)
 
     return render_template(
         'bookmark_recent.html',
         username=username,
-        groups=groups,
-        favorites=favorites,
+        bookmarks=bookmarks,
     )
 
 
@@ -1056,7 +1030,7 @@ def api_create(username: str):
     if not url:
         return jsonify({'status': 'error', 'message': 'url is required'}), 400
 
-    title      = request.form.get('title', '').strip() or None
+    title      = _UNREAD_COUNT_RE.sub('', request.form.get('title', '').strip()) or None
     description = request.form.get('description', '').strip() or None
     tags       = request.form.get('tags', '').strip() or None
     notes      = request.form.get('notes', '').strip() or None

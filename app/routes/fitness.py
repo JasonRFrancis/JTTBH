@@ -7,6 +7,7 @@ GET  /<u>/fitness/index                  — today's workout + body-weight entry
 GET  /<u>/fitness/log                    — workout history
 GET  /<u>/fitness/settings               — list / create programs
 GET  /<u>/fitness/settings/<fitness_id>  — edit a program's day schedule
+GET  /<u>/fitness/export.csv            — download all logged sets as CSV
 
 POST /<u>/fitness/program/create/post
 POST /<u>/fitness/program/activate/post/<fitness_id>
@@ -22,12 +23,15 @@ POST /<u>/fitness/log/end/post/<log_id>
 POST /<u>/fitness/weight/post  → JSON
 """
 
+import csv
+import io
 from datetime import date, datetime, timedelta
 
 from app.services.timezone_utils import user_today
 
 from flask import (
     Blueprint,
+    Response,
     flash,
     jsonify,
     redirect,
@@ -241,6 +245,26 @@ def settings_program(username: str, fitness_id: str):
         dow_order=_DOW_ORDER,
         day_names=DAY_NAMES,
         weight_days=weight_days,
+    )
+
+
+@fitness_bp.route('/export.csv')
+@login_required
+@permission_required_read(PERM_FITNESS)
+def export_csv(username: str):
+    rows = FitnessModel.get_all_sets_for_export(session['user_id'])
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['date', 'exercise', 'set_number', 'weight', 'reps',
+                     'duration_minutes', 'speed', 'incline', 'notes'])
+    for r in rows:
+        writer.writerow([r['log_date'], r['exercise_name'], r['set_number'],
+                         r['actual_weight'], r['actual_reps'],
+                         r['duration_minutes'], r['speed'], r['incline'], r['notes']])
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=fitness_log.csv'},
     )
 
 

@@ -12,6 +12,8 @@ Setup:
        --read-later   mark every tab as Read Later
        --tags foo,bar attach tags to every bookmark
        --dry-run      print URLs without saving
+       --reset        after saving, close all Safari windows and open the URLs
+                      listed in safari_start_tabs.txt (skipped if any save failed)
 """
 
 import argparse
@@ -21,12 +23,14 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import json
+from pathlib import Path
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 TOKEN    = "38ddb856a73551826c304146022e4ccedcfcca529d7c09d12231b51645e396cc"
 USERNAME = "jason"
 API_URL  = f"https://jttbh.com/{USERNAME}/bookmark/api/create"
+START_TABS_FILE = Path(__file__).with_name("safari_start_tabs.txt")
 
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -79,11 +83,41 @@ def save_bookmark(url: str, title: str, tags: str, read_later: bool) -> dict:
         return json.loads(resp.read())
 
 
+def reset_safari():
+    """Close every Safari window, then open START_TABS_FILE URLs in one new window."""
+    urls = []
+    if START_TABS_FILE.exists():
+        urls = [l.strip() for l in START_TABS_FILE.read_text().splitlines()
+                if l.strip() and not l.strip().startswith("#")]
+    script = [
+        'on run argv',
+        'tell application "Safari"',
+        '    close every window',
+        '    if (count of argv) > 0 then',
+        '        make new document with properties {URL:item 1 of argv}',
+        '        repeat with u in rest of argv',
+        '            tell window 1 to make new tab with properties {URL:u}',
+        '        end repeat',
+        '    end if',
+        'end tell',
+        'end run',
+    ]
+    args = ["osascript"]
+    for line in script:
+        args += ["-e", line]
+    result = subprocess.run(args + urls, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"AppleScript error: {result.stderr.strip()}", file=sys.stderr)
+        sys.exit(1)
+    print(f"Closed all windows; opened {len(urls)} start tab(s).")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Save Safari tabs to jttbh bookmarks")
     parser.add_argument("--read-later", action="store_true", help="Mark all tabs as Read Later")
     parser.add_argument("--tags", default="", help="Comma-separated tags to apply to all bookmarks")
     parser.add_argument("--dry-run", action="store_true", help="Print tabs without saving")
+    parser.add_argument("--reset", action="store_true", help="Close all tabs and open safari_start_tabs.txt after saving")
     args = parser.parse_args()
 
     if TOKEN == "PASTE_YOUR_TOKEN_HERE":
@@ -93,6 +127,8 @@ def main():
     tabs = get_safari_tabs()
     if not tabs:
         print("No Safari tabs found.")
+        if args.reset and not args.dry_run:
+            reset_safari()
         return
 
     print(f"Found {len(tabs)} tab(s).")
@@ -120,6 +156,12 @@ def main():
 
     if not args.dry_run:
         print(f"\nDone. {saved} saved" + (f", {failed} failed." if failed else "."))
+        if args.reset:
+            if failed:
+                # ponytail: all-or-nothing; never close tabs that weren't saved
+                print("Not closing tabs because some saves failed.", file=sys.stderr)
+                sys.exit(1)
+            reset_safari()
 
 
 if __name__ == "__main__":
