@@ -38,6 +38,32 @@ import re
 
 _UNREAD_COUNT_RE = re.compile(r'^\(\d+\)\s*')
 
+
+def _clean_url(url: str) -> str:
+    """Drop the `ref=sidebar` tracking param, leaving the rest of the URL byte-for-byte."""
+    url = url.strip()
+    base, hash_, frag = url.partition('#')
+    path, q, query = base.partition('?')
+    if not q:
+        return url
+    parts = [p for p in query.split('&') if p != 'ref=sidebar']
+    return path + ('?' + '&'.join(parts) if parts else '') + hash_ + frag
+
+
+def _resave_existing(user_id: str, url: str) -> str | None:
+    """If url is already bookmarked, bump its saved date (and unarchive it); return its bookmarkID."""
+    existing = db_manager.execute_one(
+        "SELECT bookmarkID FROM bookmark WHERE userID = %s AND url = %s LIMIT 1",
+        (user_id, url),
+    )
+    if not existing:
+        return None
+    db_manager.execute_update(
+        "UPDATE bookmark SET created = %s, `read` = 0 WHERE bookmarkID = %s AND userID = %s",
+        (datetime.now(), existing['bookmarkID'], user_id),
+    )
+    return existing['bookmarkID']
+
 from flask import (
     Blueprint,
     current_app,
@@ -509,10 +535,16 @@ def search(username: str):
 @permission_required_write(PERM_BOOKMARK)
 def create(username: str):
     user_id = session['user_id']
-    url = request.form.get('url', '').strip()
+    url = _clean_url(request.form.get('url', ''))
 
     if not url:
         flash('URL is required.', 'error')
+        return _redirect_to_index(username)
+
+    if _resave_existing(user_id, url):
+        flash('Already saved — moved to the top of Recent.', 'success')
+        if request.form.get('popup') == '1':
+            return redirect(url_for('bookmark.added', username=username))
         return _redirect_to_index(username)
 
     title       = _UNREAD_COUNT_RE.sub('', request.form.get('title', '').strip()) or None
@@ -855,22 +887,18 @@ def category_item_reorder(username: str, category_id: str):
 def quick_save(username: str):
     """Quick-save a URL as Read Later without showing a form."""
     user_id = session['user_id']
-    url = request.args.get('url', '').strip()
+    url = _clean_url(request.args.get('url', ''))
     title = _UNREAD_COUNT_RE.sub('', request.args.get('title', '').strip()) or url[:100]
 
     if not url:
         flash('No URL provided.', 'error')
         return _redirect_to_index(username)
 
-    # Check for duplicate
-    existing = db_manager.execute_one(
-        "SELECT bookmarkID FROM bookmark WHERE userID = %s AND url = %s AND `read` = 0 LIMIT 1",
-        (user_id, url)
-    )
-    if existing:
+    existing_id = _resave_existing(user_id, url)
+    if existing_id:
         db_manager.execute_update(
             "UPDATE bookmark SET read_later = 1 WHERE bookmarkID = %s AND userID = %s",
-            (existing['bookmarkID'], user_id)
+            (existing_id, user_id)
         )
         return render_template('bookmark_added.html', username=username, message='Already saved — marked as Read Later.')
 
@@ -1026,9 +1054,13 @@ def api_create(username: str):
     if not stored or stored != token:
         return jsonify({'status': 'error', 'message': 'Invalid token'}), 401
 
-    url = request.form.get('url', '').strip()
+    url = _clean_url(request.form.get('url', ''))
     if not url:
         return jsonify({'status': 'error', 'message': 'url is required'}), 400
+
+    existing_id = _resave_existing(user['userID'], url)
+    if existing_id:
+        return jsonify({'status': 'ok', 'bookmarkID': existing_id, 'existing': True})
 
     title      = _UNREAD_COUNT_RE.sub('', request.form.get('title', '').strip()) or None
     description = request.form.get('description', '').strip() or None
@@ -1072,16 +1104,12 @@ def bookmark_import(username: str):
 
     imported = skipped = errors = 0
     for item in items:
-        url   = (item.get('url')   or '').strip()
+        url   = _clean_url(item.get('url') or '')
         title = _UNREAD_COUNT_RE.sub('', (item.get('title') or url).strip())[:500]
         if not url or not url.startswith(('http://', 'https://')):
             errors += 1
             continue
-        existing = db_manager.execute_one(
-            "SELECT id FROM bookmark WHERE userID = %s AND url = %s AND `read` = 0 LIMIT 1",
-            (user_id, url),
-        )
-        if existing:
+        if _resave_existing(user_id, url):
             skipped += 1
             continue
         bookmark_id = str(uuid.uuid4())
