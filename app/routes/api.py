@@ -16,6 +16,7 @@ POST /api/v1/<username>/bookmarks
 POST /api/v1/<username>/bookmarks/<bookmark_id>/archive
 DELETE /api/v1/<username>/bookmarks/<bookmark_id>
 GET  /api/v1/<username>/recipes
+GET  /api/v1/<username>/fitness
 POST /api/v1/<username>/recipes
 GET  /api/v1/<username>/projects
 GET  /api/v1/<username>/projects/<project_id>
@@ -36,11 +37,11 @@ import json
 import uuid
 from datetime import date, datetime
 
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, Response, jsonify, request, g
 
 from app.services.api_auth import api_key_required
 from app.services.database import db_manager
-from app.services.decorators import PERM_TODO, PERM_BOOKMARK, PERM_RECIPE, PERM_PROJECT
+from app.services.decorators import PERM_TODO, PERM_BOOKMARK, PERM_RECIPE, PERM_PROJECT, PERM_FITNESS
 from app.models.todo_model import TodoModel
 from app.models.project_model import ProjectModel, AGENT_KINDS, VALID_STATUS
 
@@ -403,6 +404,77 @@ def create_recipe(username):
         ),
     )
     return _ok({'recipe_id': recipe_id}), 201
+
+
+# ---------------------------------------------------------------------------
+# Fitness (full export)
+# ---------------------------------------------------------------------------
+
+@api_bp.route('/<username>/fitness', methods=['GET'])
+@api_key_required
+def get_fitness(username):
+    """Current state of all of a user's fitness data (soft-deleted rows excluded)."""
+    if not (g.api_perm_read & PERM_FITNESS):
+        return _err('Read permission denied', 403)
+    user_id = _get_user_id(username)
+    if not user_id:
+        return _err('User not found', 404)
+
+    programs = db_manager.execute_query(
+        '''SELECT f.* FROM fitness f
+           WHERE f.userID = %s AND f.name IS NOT NULL
+             AND f.id = (SELECT MAX(f2.id) FROM fitness f2 WHERE f2.fitnessID = f.fitnessID)
+           ORDER BY f.created''',
+        (user_id,),
+    )
+    schedule = db_manager.execute_query(
+        '''SELECT fp.* FROM fitness_program fp
+           WHERE fp.fitnessID IN (SELECT fitnessID FROM fitness WHERE userID = %s)
+             AND fp.exerciseID IS NOT NULL
+             AND fp.id = (SELECT MAX(fp2.id) FROM fitness_program fp2 WHERE fp2.programID = fp.programID)
+           ORDER BY fp.day_of_week, fp.order_index''',
+        (user_id,),
+    )
+    for p in programs:
+        p['schedule'] = [e for e in schedule if e['fitnessID'] == p['fitnessID']]
+
+    logs = db_manager.execute_query(
+        '''SELECT fl.* FROM fitness_log fl
+           WHERE fl.userID = %s AND fl.log_date IS NOT NULL
+             AND fl.id = (SELECT MAX(fl2.id) FROM fitness_log fl2 WHERE fl2.logID = fl.logID)
+           ORDER BY fl.log_date, fl.start_time''',
+        (user_id,),
+    )
+    sets = db_manager.execute_query(
+        '''SELECT ls.* FROM fitness_logSet ls
+           WHERE ls.logID IN (SELECT logID FROM fitness_log WHERE userID = %s)
+             AND ls.exerciseID IS NOT NULL
+             AND ls.id = (SELECT MAX(ls2.id) FROM fitness_logSet ls2 WHERE ls2.logSetID = ls.logSetID)
+           ORDER BY ls.set_number''',
+        (user_id,),
+    )
+    for log in logs:
+        log['sets'] = [s for s in sets if s['logID'] == log['logID']]
+
+    body_weight = db_manager.execute_query(
+        '''SELECT bw.* FROM fitness_bodyWeight bw
+           WHERE bw.userID = %s
+             AND bw.id = (SELECT MAX(bw2.id) FROM fitness_bodyWeight bw2
+                          WHERE bw2.userID = bw.userID AND bw2.recorded = bw.recorded)
+           ORDER BY bw.recorded''',
+        (user_id,),
+    )
+    exercises = db_manager.execute_query(
+        'SELECT * FROM fitness_exercise WHERE name IS NOT NULL ORDER BY name', ()
+    )
+
+    data = {'programs': programs, 'logs': logs, 'body_weight': body_weight, 'exercises': exercises}
+    # ISO dates and plain numbers (jsonify would emit RFC-822 dates and Decimal strings)
+    body = json.dumps({'data': data, 'error': None}, indent=2,
+                      default=lambda v: v.isoformat() if hasattr(v, 'isoformat') else float(v))
+    return Response(body, mimetype='application/json', headers={
+        'Content-Disposition': f'inline; filename="{username}-fitness.json"',
+    })
 
 
 # ---------------------------------------------------------------------------
