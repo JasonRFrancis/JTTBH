@@ -336,6 +336,11 @@
     overflow: hidden;
   }
 
+  /* Cards clip overflow, so the checkbox can't hang in the gutter here */
+  .todo-list-card todo-item input[type=checkbox] {
+    margin-left: 0;
+  }
+
   .todo-list-card__header {
     padding: 0.4rem 0.75rem;
     border-bottom: 1px solid var(--color-border);

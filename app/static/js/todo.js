@@ -528,7 +528,7 @@ function initCheckboxToggle() {
   });
 
   document.addEventListener('change', (e) => {
-    if (!e.target.matches('.todo-item__checkbox')) return;
+    if (!e.target.matches('todo-item input[type="checkbox"]')) return;
     const form = e.target.closest('form');
     if (!form) return;
     const toggleBtn = form.querySelector('.todo-item__toggle-btn');

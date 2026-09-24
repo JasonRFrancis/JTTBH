@@ -141,7 +141,7 @@ class FitnessModel:
                    fp.recommended_duration, fp.recommended_speed, fp.recommended_incline,
                    fp.notes, fp.location,
                    fe.exerciseID, fe.name AS exercise_name, fe.type AS exercise_type,
-                   fe.muscle_group, fe.equipment_type, fe.video_url
+                   fe.muscle_group, fe.equipment_type, fe.video_url, fe.description
             FROM fitness_program fp
             JOIN fitness_exercise fe ON fe.exerciseID = fp.exerciseID
             WHERE fp.fitnessID = %s

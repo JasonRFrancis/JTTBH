@@ -73,5 +73,5 @@
 
 {% block js %}
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
-<script src="{{ url_for('static', filename='js/todo.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/todo.js') }}?v={{ datetime.now().timestamp()|int }}" defer></script>
 {% endblock %}

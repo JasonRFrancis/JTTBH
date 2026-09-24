@@ -196,6 +196,11 @@
   padding: 0.1rem 0.4rem;
 }
 
+.ex-notes {
+  display: inline-block;
+  margin: 0 0 0.4rem;
+}
+
 .video-link {
   font-size: 0.85rem;
   color: var(--color-primary);
@@ -206,6 +211,21 @@
   font-size: 0.8rem;
   color: var(--color-text-muted);
   margin: 0 0 0.6rem;
+}
+
+.form-cue {
+  font-size: 0.8rem;
+  margin: 0 0 0.4rem;
+}
+
+.form-cue summary {
+  cursor: pointer;
+  color: var(--color-primary);
+}
+
+.form-cue p {
+  margin: 0.25rem 0 0;
+  line-height: 1.4;
 }
 
 /* ── Set list ────────────────────────────────────────────────────────── */

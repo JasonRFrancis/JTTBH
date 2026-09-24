@@ -114,5 +114,5 @@
 {% endblock %}
 
 {% block js %}
-<script src="{{ url_for('static', filename='js/todo.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/todo.js') }}?v={{ datetime.now().timestamp()|int }}" defer></script>
 {% endblock %}

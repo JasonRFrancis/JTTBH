@@ -88,14 +88,22 @@
           {% if ex.muscle_group %}<span class="badge">{{ ex.muscle_group }}</span>{% endif %}
         </div>
         <div class="exercise-meta">
-          {% if ex.notes and (is_machine or is_cardio) %}
-          <span class="adj" title="Setup">adj {{ ex.notes }}</span>
-          {% endif %}
           {% if ex.video_url %}
           <a href="{{ ex.video_url }}" target="_blank" rel="noopener" class="video-link" aria-label="Watch {{ ex.exercise_name }} video">▶</a>
           {% endif %}
         </div>
       </header>
+
+      {% if ex.notes %}
+      <p class="adj ex-notes" title="Setup">{{ ex.notes }}</p>
+      {% endif %}
+
+      {% if ex.description %}
+      <details class="form-cue">
+        <summary>Form</summary>
+        <p>{{ ex.description }}</p>
+      </details>
+      {% endif %}
 
       {# Prescription ─────────────────────────────────────────────────── #}
       {% if is_cardio %}
