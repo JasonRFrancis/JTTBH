@@ -26,6 +26,10 @@ POST /api/v1/<username>/projects/<project_id>/messages
 POST /api/v1/<username>/projects/<project_id>/tasks
 POST /api/v1/<username>/projects/<project_id>/tasks/<task_id>
 DELETE /api/v1/<username>/projects/<project_id>/tasks/<task_id>
+GET  /api/v1/<username>/food/<barcode>
+GET  /api/v1/<username>/meals?date=YYYY-MM-DD
+POST /api/v1/<username>/meals
+POST /api/v1/<username>/meals/<meal_id>/items
 
 Response envelope
 -----------------
@@ -36,12 +40,15 @@ Error:   {"error": "message"}
 import json
 import uuid
 from datetime import date, datetime
+from decimal import Decimal
 
 from flask import Blueprint, Response, jsonify, request, g
 
 from app.services.api_auth import api_key_required
 from app.services.database import db_manager
-from app.services.decorators import PERM_TODO, PERM_BOOKMARK, PERM_RECIPE, PERM_PROJECT, PERM_FITNESS
+from app.services.decorators import PERM_TODO, PERM_BOOKMARK, PERM_RECIPE, PERM_PROJECT, PERM_FITNESS, PERM_MEAL
+from app.models.meal_model import FoodModel, MealModel
+from app.models.recipe_model import RecipeModel
 from app.models.todo_model import TodoModel
 from app.models.project_model import ProjectModel, AGENT_KINDS, VALID_STATUS
 
@@ -68,6 +75,13 @@ def _get_user_id(username: str) -> str | None:
     return row['userID'] if row else None
 
 
+def _require_read(perm_bit: int):
+    """Return an error response if the key lacks a read permission bit, else None."""
+    if not (g.api_perm_read & perm_bit):
+        return _err('Read permission denied', 403)
+    return None
+
+
 def _require_write(perm_bit: int):
     """Return an error response if the key lacks a write permission bit, else None."""
     if not (g.api_perm_write & perm_bit):
@@ -91,6 +105,9 @@ def ping():
 @api_bp.route('/<username>/todos', methods=['GET'])
 @api_key_required
 def get_todos(username):
+    err = _require_read(PERM_TODO)
+    if err:
+        return err
     user_id = _get_user_id(username)
     if not user_id:
         return _err('User not found', 404)
@@ -187,6 +204,9 @@ def complete_todo(username, todo_id):
 @api_bp.route('/<username>/bookmarks', methods=['GET'])
 @api_key_required
 def get_bookmarks(username):
+    err = _require_read(PERM_BOOKMARK)
+    if err:
+        return err
     user_id = _get_user_id(username)
     if not user_id:
         return _err('User not found', 404)
@@ -340,6 +360,9 @@ def delete_bookmark(username, bookmark_id):
 @api_bp.route('/<username>/recipes', methods=['GET'])
 @api_key_required
 def get_recipes(username):
+    err = _require_read(PERM_RECIPE)
+    if err:
+        return err
     user_id = _get_user_id(username)
     if not user_id:
         return _err('User not found', 404)
@@ -484,6 +507,9 @@ def get_fitness(username):
 @api_bp.route('/<username>/projects', methods=['GET'])
 @api_key_required
 def get_projects(username):
+    err = _require_read(PERM_PROJECT)
+    if err:
+        return err
     user_id = _get_user_id(username)
     if not user_id:
         return _err('User not found', 404)
@@ -493,6 +519,9 @@ def get_projects(username):
 @api_bp.route('/<username>/projects/<project_id>', methods=['GET'])
 @api_key_required
 def get_project(username, project_id):
+    err = _require_read(PERM_PROJECT)
+    if err:
+        return err
     user_id = _get_user_id(username)
     if not user_id:
         return _err('User not found', 404)
@@ -531,6 +560,9 @@ def set_project_status(username, project_id):
 @api_bp.route('/<username>/projects/<project_id>/messages', methods=['GET'])
 @api_key_required
 def get_project_messages(username, project_id):
+    err = _require_read(PERM_PROJECT)
+    if err:
+        return err
     user_id = _get_user_id(username)
     if not user_id:
         return _err('User not found', 404)
@@ -643,3 +675,102 @@ def delete_project_task(username, project_id, task_id):
     if not ProjectModel.delete_task(project_id, task_id, by=user_id):
         return _err('Task not found', 404)
     return _ok({'task_id': task_id, 'deleted': True})
+
+
+# ---------------------------------------------------------------------------
+# Meals (iOS barcode scanner)
+# ---------------------------------------------------------------------------
+
+def _meal_owner(username: str, write: bool = False):
+    """(user_id, None) if the key has meal access, else (None, error). Ownership is checked by api_key_required."""
+    err = _require_read(PERM_MEAL) or (_require_write(PERM_MEAL) if write else None)
+    if err:
+        return None, err
+    user_id = _get_user_id(username)
+    if not user_id:
+        return None, _err('User not found', 404)
+    return user_id, None
+
+
+def _meal_json(m: dict) -> dict:
+    m = dict(m)
+    m['eaten_at'] = m['eaten_at'].isoformat()
+    for i in m.get('items', []):
+        for k in ('quantity', 'kcal', 'protein', 'carbs', 'fat'):
+            i[k] = float(i[k]) if i[k] is not None else None
+    return m
+
+
+@api_bp.route('/<username>/food/<code>', methods=['GET'])
+@api_key_required
+def get_food(username, code):
+    _, err = _meal_owner(username)
+    if err:
+        return err
+    try:
+        food = FoodModel.lookup_code(code)
+    except Exception as e:  # noqa: BLE001
+        return _err(f'Open Food Facts lookup failed: {e}', 502)
+    if not food:
+        return _err('Food not found', 404)
+    return _ok({k: (float(v) if isinstance(v, Decimal) else v) for k, v in food.items()})
+
+
+@api_bp.route('/<username>/meals', methods=['GET'])
+@api_key_required
+def get_meals(username):
+    user_id, err = _meal_owner(username)
+    if err:
+        return err
+    try:
+        day = date.fromisoformat(request.args.get('date') or date.today().isoformat())
+    except ValueError:
+        return _err('date must be YYYY-MM-DD')
+    return _ok({'meals': [_meal_json(m) for m in MealModel.get_day(user_id, day)]})
+
+
+@api_bp.route('/<username>/meals', methods=['POST'])
+@api_key_required
+def create_meal(username):
+    user_id, err = _meal_owner(username, write=True)
+    if err:
+        return err
+    body = request.get_json(silent=True) or {}
+    name = (body.get('name') or '').strip()[:100]
+    try:
+        eaten_at = datetime.fromisoformat(body.get('eaten_at') or '')
+    except ValueError:
+        return _err('eaten_at must be ISO 8601 local time, e.g. 2026-10-01T18:30')
+    if not name:
+        return _err('name is required')
+    return _ok({'meal_id': MealModel.save_meal(user_id, name, eaten_at.replace(tzinfo=None))}), 201
+
+
+@api_bp.route('/<username>/meals/<meal_id>/items', methods=['POST'])
+@api_key_required
+def create_meal_item(username, meal_id):
+    """Body: {"code": "...", "grams": 30} | {"foodID": "...", "grams": 30} | {"recipeID": "...", "servings": 1}"""
+    user_id, err = _meal_owner(username, write=True)
+    if err:
+        return err
+    if not MealModel.get_meal(meal_id, user_id):
+        return _err('Meal not found', 404)
+    body = request.get_json(silent=True) or {}
+    try:
+        if body.get('recipeID'):
+            recipe = RecipeModel.get_recipe(body['recipeID'], user_id)
+            if not recipe:
+                return _err('Recipe not found', 404)
+            item_id, unlinked = MealModel.add_recipe(user_id, meal_id, recipe, float(body.get('servings') or 1))
+            return _ok({'item_id': item_id, 'unlinked': unlinked}), 201
+        grams = float(body.get('grams') or 0)
+        if grams <= 0:
+            return _err('grams must be > 0')
+        food = FoodModel.lookup_code(str(body['code'])) if body.get('code') else FoodModel.get(body.get('foodID') or '')
+    except (TypeError, ValueError):
+        return _err('grams/servings must be numbers')
+    except Exception as e:  # noqa: BLE001
+        return _err(f'Open Food Facts lookup failed: {e}', 502)
+    if not food:
+        return _err('Food not found', 404)
+    return _ok({'item_id': MealModel.add_food(user_id, meal_id, food, grams)}), 201

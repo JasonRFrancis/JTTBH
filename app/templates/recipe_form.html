@@ -67,6 +67,7 @@
             <input type="text" name="ingredient_item[]" value="{{ ing.subtitle }}" class="ing-subtitle-text" placeholder="Section heading…">
             <input type="hidden" name="ingredient_note[]" value="">
             <input type="hidden" name="ingredient_is_subtitle[]" value="1">
+            <input type="hidden" name="ingredient_food[]" value=""><input type="hidden" name="ingredient_grams[]" value="">
             <button type="button" class="remove-row" aria-label="Remove section">×</button>
           </div>
           {% else %}
@@ -77,6 +78,7 @@
             <input type="text" name="ingredient_item[]" placeholder="Ingredient *" value="{{ ing.item }}" class="ing-item">
             <input type="text" name="ingredient_note[]" placeholder="Note" value="{{ ing.note }}" class="ing-note">
             <input type="hidden" name="ingredient_is_subtitle[]" value="">
+            <input type="hidden" name="ingredient_food[]" value="{{ ing.foodID or '' }}"><input type="hidden" name="ingredient_grams[]" value="{{ ing.grams or '' }}">
             <button type="button" class="remove-row" aria-label="Remove ingredient">×</button>
           </div>
           {% endif %}
@@ -89,6 +91,7 @@
             <input type="text" name="ingredient_item[]" placeholder="Ingredient *" class="ing-item">
             <input type="text" name="ingredient_note[]" placeholder="Note" class="ing-note">
             <input type="hidden" name="ingredient_is_subtitle[]" value="">
+            <input type="hidden" name="ingredient_food[]" value=""><input type="hidden" name="ingredient_grams[]" value="">
             <button type="button" class="remove-row" aria-label="Remove ingredient">×</button>
           </div>
         {% endif %}
@@ -173,6 +176,7 @@
     <input type="text" name="ingredient_item[]" placeholder="Ingredient *" class="ing-item">
     <input type="text" name="ingredient_note[]" placeholder="Note" class="ing-note">
     <input type="hidden" name="ingredient_is_subtitle[]" value="">
+    <input type="hidden" name="ingredient_food[]" value=""><input type="hidden" name="ingredient_grams[]" value="">
     <button type="button" class="remove-row" aria-label="Remove ingredient">×</button>
   </div>
 </template>
@@ -185,6 +189,7 @@
     <input type="text" name="ingredient_item[]" placeholder="Section heading…" class="ing-subtitle-text">
     <input type="hidden" name="ingredient_note[]" value="">
     <input type="hidden" name="ingredient_is_subtitle[]" value="1">
+            <input type="hidden" name="ingredient_food[]" value=""><input type="hidden" name="ingredient_grams[]" value="">
     <button type="button" class="remove-row" aria-label="Remove section">×</button>
   </div>
 </template>

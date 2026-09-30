@@ -406,6 +406,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     12. Routes: `GET /index`, `/detail/<recipe_id>`, `/add`, `/edit/<recipe_id>` · `POST /extract/post` (JSON), `/create|update|delete/post`, `/image/add/post/<recipe_id>`, `/image/delete/post/<image_id>`, `/pdf/post`
     13. Database tables: `recipe` (insert-only, sentinel `title IS NULL`), `recipe_image` (direct INSERT/DELETE)
     14. Migration: `migrations/20260605_recipe.sql`
+    15. Nutrition links: each ingredient object in `recipe.ingredients` JSON may carry `foodID` (→ `food`) and `grams`. `GET /nutrition/<recipe_id>` lists ingredients with linked food + editable grams (`POST /nutrition/update/post/<recipe_id>`, also unlinks); `GET /link/<recipe_id>/<idx>?q=` searches foods, `POST /link/post/<recipe_id>/<idx>` links one. Grams auto-fill for g/kg/oz/lb (also parsed out of the item text for imported recipes) and OFF "servings"; cups/cloves need grams typed once. The edit form carries links through as hidden `ingredient_food[]` / `ingredient_grams[]`; changing a weight amount re-derives grams. Detail page shows per-serving macros (`servings` parsed as a leading number, default 1) and the count of unlinked ingredients
+  13. Meal / Macro Tracker
+    1. Designated under the `meal` area; requires `PERM_MEAL` (131072) — not in the default grant
+    2. `GET /day/<YYYY-MM-DD>` (`/index` redirects to today in the user's timezone): meals in time order with items and per-meal/day totals (kcal, protein, carbs, fat). Add a meal (name + time), add a recipe (servings) or a food (grams) to a meal, edit/delete meals, remove items
+    3. Foods come from Open Food Facts (`app/services/off_client.py`): barcode lookup `GET world.openfoodfacts.org/api/v2/product/<code>`, text search via `search.openfoodfacts.org/search` (the legacy `cgi/search.pl` was returning 503). Every product seen is cached in `food`; local matches (incl. the user's custom foods) are shown first. Typing 8–14 digits in any food search does a barcode lookup
+    4. Contributing back: unknown barcode → "Add it" → custom food form (per 100 g, sodium entered in mg) with "Also add to Open Food Facts" checked. Any OFF result has "Fix on Open Food Facts" (prefilled form). Writes `POST /cgi/product_jqm2.pl` with site-wide `OFF_USER` / `OFF_PASSWORD`; `OFF_WRITE_URL` defaults to staging `world.openfoodfacts.net` in dev and production `.org` in prod
+    5. Logged items are snapshots: `meal_item` stores kcal/P/C/F at log time; later recipe or food edits don't rewrite history. Logging a recipe with unlinked ingredients flashes which ones were skipped
+    6. Routes: `GET /index`, `/day/<day>`, `/food/<meal_id>?q=`, `/food/new?code=&name=&meal_id=`, `/food/contribute/<food_id>`, `/food/mine`, `/food/edit/<food_id>` · `POST /create/post`, `/update/post/<meal_id>`, `/delete/post/<meal_id>`, `/item/create/post/<meal_id>`, `/item/update/post/<item_id>` (new amount; macros scale from the logged snapshot), `/item/delete/post/<item_id>`, `/food/create/post`, `/food/update/post/<food_id>` (owner's custom foods only; logged meals keep old numbers), `/food/contribute/post/<food_id>`
+    7. API (for the iOS barcode app; key owner must match `<username>` — enforced by `api_key_required` for all non-admin keys — and every API GET checks the key's read bit via `_require_read`, writes via `_require_write`; meal endpoints need bit 131072): `GET /api/v1/<u>/food/<barcode>`, `GET /api/v1/<u>/meals?date=`, `POST /api/v1/<u>/meals` `{name, eaten_at}`, `POST /api/v1/<u>/meals/<meal_id>/items` `{code|foodID, grams}` or `{recipeID, servings}`
+    8. Database tables: `food` (direct INSERT/UPDATE cache; `code` UNIQUE; `source` off|custom; custom rows visible only to `userID`), `meal` (insert-only, sentinel `name`), `meal_item` (insert-only, sentinel `label`)
+    9. Migration: `migrations/20261001_meal.sql`
 5. Partially built / stubbed features
   1. Triage
     1. Designated under `triage` (`PERM_TRIAGE` 128, needs read+write); uses Google APIs (`app/services/google_services.py`, the `google_services` singleton) to pull the user's Gmail inbox (last 3 days) and next-week calendar events
@@ -757,6 +768,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
       | 13  | 8192  | Study         | Daily study collections             |
       | 14  | 16384 | Quote         | Quote tracker                       |
       | 15  | 32768 | Recipe        | Recipe tracker                      |
+      | 17  | 131072| Meal          | Meal / macro tracker                |
       ```
     3. Standard Permission Sets
       1. Admin: 4294967295 (All permissions)

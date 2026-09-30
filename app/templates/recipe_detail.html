@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_food_macros.html" import macro_line %}
 {% block title %}{{ recipe.title }}{% endblock %}
 {% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe.css') }}?v={{ datetime.now().timestamp()|int }}">{% endblock %}
 {% block content %}
@@ -12,6 +13,10 @@
       {% if recipe.prep_time %}<span>Prep: {{ recipe.prep_time }}</span>{% endif %}
       {% if recipe.cook_time %}<span>Cook: {{ recipe.cook_time }}</span>{% endif %}
     </div>
+    <p class="recipe-nutrition-summary">
+      {% if n %}Per serving: {{ macro_line(n.per_serving) }}{% if n.unlinked %} <small>({{ n.unlinked|length }} ingredient{{ 's' if n.unlinked|length != 1 }} not linked)</small>{% endif %} · {% endif %}
+      <a href="{{ url_for('recipe.nutrition', username=username, recipe_id=recipe.recipeID) }}">Nutrition</a>
+    </p>
     {% if recipe.source %}
     <p class="recipe-source">
       Source:

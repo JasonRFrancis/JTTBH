@@ -11,7 +11,9 @@ from flask import (
     render_template, request, send_file, session, url_for,
 )
 
+from app.models.meal_model import FoodModel, recipe_nutrition
 from app.models.recipe_model import RecipeModel
+from app.services.off_client import to_grams
 from app.services.decorators import (
     PERM_RECIPE,
     login_required,
@@ -79,7 +81,9 @@ def detail(username: str, recipe_id: str):
     if not recipe:
         abort(404)
     images = RecipeModel.get_images(recipe_id, session['user_id'])
-    return render_template('recipe_detail.html', username=username, area='recipe', recipe=recipe, images=images)
+    foods = FoodModel.get_many(i.get('foodID') for i in recipe['ingredients_list'])
+    n = recipe_nutrition(recipe, foods) if foods else None
+    return render_template('recipe_detail.html', username=username, area='recipe', recipe=recipe, images=images, n=n)
 
 
 @recipe_bp.route('/add')
@@ -222,6 +226,79 @@ def archive_toggle(username: str, recipe_id: str):
 
 
 # ---------------------------------------------------------------------------
+# Nutrition — link ingredients to Open Food Facts foods
+# ---------------------------------------------------------------------------
+
+@recipe_bp.route('/nutrition/<recipe_id>')
+@login_required
+@permission_required_read(PERM_RECIPE)
+def nutrition(username: str, recipe_id: str):
+    recipe = RecipeModel.get_recipe(recipe_id, session['user_id'])
+    if not recipe:
+        abort(404)
+    foods = FoodModel.get_many(i.get('foodID') for i in recipe['ingredients_list'])
+    return render_template('recipe_nutrition.html', username=username, area='recipe', recipe=recipe,
+                           foods=foods, n=recipe_nutrition(recipe, foods))
+
+
+@recipe_bp.route('/link/<recipe_id>/<int:idx>')
+@login_required
+@permission_required_read(PERM_RECIPE)
+def link(username: str, recipe_id: str, idx: int):
+    recipe = RecipeModel.get_recipe(recipe_id, session['user_id'])
+    if not recipe or idx >= len(recipe['ingredients_list']):
+        abort(404)
+    ing = recipe['ingredients_list'][idx]
+    q = request.args.get('q', ing.get('item', '')).strip()
+    results, off_error = FoodModel.search(session['user_id'], q) if q else ([], None)
+    return render_template('recipe_link.html', username=username, area='recipe', recipe=recipe,
+                           idx=idx, ing=ing, q=q, results=results, off_error=off_error)
+
+
+@recipe_bp.route('/link/post/<recipe_id>/<int:idx>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_RECIPE)
+@permission_required_write(PERM_RECIPE)
+def link_post(username: str, recipe_id: str, idx: int):
+    recipe = RecipeModel.get_recipe(recipe_id, session['user_id'])
+    if not recipe or idx >= len(recipe['ingredients_list']):
+        abort(404)
+    food = FoodModel.get(request.form.get('foodID', ''))
+    if not food:
+        flash('Food not found.', 'error')
+        return redirect(url_for('recipe.nutrition', username=username, recipe_id=recipe_id))
+    ing = recipe['ingredients_list'][idx]
+    ing['foodID'] = food['foodID']
+    ing['grams'] = _auto_grams(ing, food) or ing.get('grams')
+    _save_ingredients(recipe)
+    if not ing['grams']:
+        flash(f"Linked {ing['item']} → {food['name']}. Enter its grams below.", 'warning')
+    else:
+        flash(f"Linked {ing['item']} → {food['name']} ({ing['grams']} g).", 'success')
+    return redirect(url_for('recipe.nutrition', username=username, recipe_id=recipe_id))
+
+
+@recipe_bp.route('/nutrition/update/post/<recipe_id>', methods=['POST'])
+@login_required
+@permission_required_read(PERM_RECIPE)
+@permission_required_write(PERM_RECIPE)
+def nutrition_update(username: str, recipe_id: str):
+    recipe = RecipeModel.get_recipe(recipe_id, session['user_id'])
+    if not recipe:
+        abort(404)
+    unlink = set(request.form.getlist('unlink'))
+    for idx, ing in enumerate(recipe['ingredients_list']):
+        if str(idx) in unlink:
+            ing.pop('foodID', None)
+            ing.pop('grams', None)
+        elif f'grams_{idx}' in request.form:
+            ing['grams'] = _float_or_none(request.form[f'grams_{idx}'])
+    _save_ingredients(recipe)
+    flash('Nutrition links saved.', 'success')
+    return redirect(url_for('recipe.nutrition', username=username, recipe_id=recipe_id))
+
+
+# ---------------------------------------------------------------------------
 # POST — images
 # ---------------------------------------------------------------------------
 
@@ -329,21 +406,28 @@ def _form_to_recipe_data() -> dict:
     items = request.form.getlist('ingredient_item[]')
     notes_list = request.form.getlist('ingredient_note[]')
     is_subtitles = request.form.getlist('ingredient_is_subtitle[]')
-    # Pad is_subtitles to match items length for forms that predate this field
-    while len(is_subtitles) < len(items):
-        is_subtitles.append('')
+    food_ids = request.form.getlist('ingredient_food[]')
+    grams_list = request.form.getlist('ingredient_grams[]')
+    # Pad optional lists to match items length for forms that predate these fields
+    for lst in (is_subtitles, food_ids, grams_list):
+        lst.extend([''] * (len(items) - len(lst)))
     ingredients = []
-    for a, u, i, n, sub in zip(amounts, units, items, notes_list, is_subtitles):
+    for a, u, i, n, sub, food_id, grams in zip(amounts, units, items, notes_list, is_subtitles, food_ids, grams_list):
         if sub:
             if i.strip():
                 ingredients.append({'subtitle': i.strip()})
         elif i.strip():
-            ingredients.append({
+            ing = {
                 'amount': parse_amount_input(a),
                 'unit': standardize_unit(u.strip()),
                 'item': i.strip(),
                 'note': n.strip(),
-            })
+            }
+            if food_id:
+                # Weight amounts re-derive grams so editing "1 lb" → "2 lb" stays correct
+                ing['foodID'] = food_id
+                ing['grams'] = to_grams(ing['amount'], ing['unit']) or _float_or_none(grams)
+            ingredients.append(ing)
     directions = [d.strip() for d in request.form.getlist('direction[]') if d.strip()]
     return {
         'title': request.form.get('title', '').strip(),
@@ -356,6 +440,27 @@ def _form_to_recipe_data() -> dict:
         'directions': directions,
         'notes': request.form.get('notes', '').strip(),
     }
+
+
+def _auto_grams(ing: dict, food: dict) -> float | None:
+    if ing.get('amount'):
+        return to_grams(ing['amount'], ing.get('unit'), food.get('serving_g'))
+    # Imported recipes often keep "1 1/2 lbs flank steak" all in `item`; trust the parse for weights only
+    from app.services.recipe_utils import parse_amount_input, parse_ingredient_text  # noqa: PLC0415
+    p = parse_ingredient_text(ing.get('item', ''))
+    return to_grams(parse_amount_input(p.get('amount', '')), p.get('unit'))
+
+
+def _save_ingredients(recipe: dict) -> None:
+    data = dict(recipe, ingredients=recipe['ingredients_list'], directions=recipe['directions_list'])
+    RecipeModel.update_recipe(recipe['recipeID'], session['user_id'], data)
+
+
+def _float_or_none(v) -> float | None:
+    try:
+        return float(v) if float(v) > 0 else None
+    except (TypeError, ValueError):
+        return None
 
 
 def _extract_recipe(url: str) -> dict:

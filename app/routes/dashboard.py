@@ -113,11 +113,14 @@ def _get_today_todos(user_id: str) -> list[dict]:
     return rows
 
 
-def _get_fitness_summary(user_id: str) -> dict:
+def _get_fitness_summary(user_id: str) -> dict | None:
+    today = user_today()
+    log = FitnessModel.get_todays_log(user_id, today)
+    if log and log['end_time']:
+        return None  # workout finished today → hide widget
     program = FitnessModel.get_active_program(user_id)
     if not program:
         return {'program': None, 'exercise_count': 0, 'exercises': []}
-    today = user_today()
     dow = (today.weekday() + 1) % 7
     exercises = FitnessModel.get_day_exercises(program['fitnessID'], dow)
     return {'program': program, 'exercise_count': len(exercises), 'exercises': exercises}

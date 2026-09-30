@@ -1,0 +1,37 @@
+/* Meal tracker — mobile first */
+.meal-day-nav { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.meal-day-nav h1 { font-size: 1.2rem; margin: 0; text-align: center; }
+.meal-totals { border-bottom: 2px solid var(--accent-meal); padding-bottom: .5rem; }
+
+.meal { border: 1px solid var(--color-border); padding: .75rem; margin: 1rem 0; }
+.meal-header h2 { font-size: 1.1rem; margin: 0; }
+.meal-items { list-style: none; padding: 0; }
+.meal-items li { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; padding: .25rem 0; border-bottom: 1px dotted var(--color-border); }
+.meal-items small, .food-result small { display: block; opacity: .75; }
+.meal-add form, .meal-form, .food-search { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem; margin: .5rem 0; }
+.meal-add-recipe label:first-child { flex: 1 1 100%; min-width: 0; }
+.meal-add select { width: 100%; }
+.meal-add input[type=number] { width: 5rem; }
+
+.food-results { list-style: none; padding: 0; }
+.food-result { padding: .5rem 0; border-bottom: 1px solid var(--color-border); }
+.food-result-actions, .food-result-actions form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem; }
+.food-result-actions input[type=number] { width: 5rem; }
+.food-brand { opacity: .75; }
+.food-badge { font-size: .75rem; border: 1px solid var(--accent-meal); padding: 0 .25rem; }
+
+.food-form { display: grid; gap: .5rem; max-width: 30rem; }
+.food-form label { display: grid; }
+.food-form fieldset { display: grid; gap: .5rem; }
+.food-form-contribute { display: flex !important; gap: .5rem; align-items: center; }
+
+.nutrition-table { width: 100%; border-collapse: collapse; }
+.nutrition-table td, .nutrition-table th { padding: .25rem; border-bottom: 1px solid var(--color-border); text-align: left; vertical-align: top; }
+.nutrition-table input[type=number] { width: 5rem; }
+
+@media (min-width: 48rem) {
+  .food-result { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+}
+.meal-item-edit summary { cursor: pointer; }
+.meal-item-edit form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem; margin: .25rem 0; }
+.meal-item-edit input[type=number] { width: 5rem; }

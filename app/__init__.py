@@ -236,6 +236,7 @@ def _register_blueprints(app: Flask) -> None:
         ('app.routes.study',       'study_bp',       '/<username>/study'),
         ('app.routes.quote',       'quote_bp',       '/<username>/quote'),
         ('app.routes.recipe',      'recipe_bp',      '/<username>/recipe'),
+        ('app.routes.meal',        'meal_bp',        '/<username>/meal'),
         ('app.routes.scripture',   'scripture_bp',   '/<username>/scripture'),
         ('app.routes.report',      'report_bp',      '/<username>/report'),
         ('app.routes.api',         'api_bp',         '/api/v1'),

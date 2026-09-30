@@ -1386,7 +1386,8 @@ INSERT INTO `user_permissionAccess` (access, name, resource, description, create
   (4096, 'Journal', 'journal', 'Daily questions & mood', '2025-12-27 00:00:00', '58ec8c11-e060-4367-93cf-91a6cc28db8c'),
   (8192, 'Study',   'study',   'Daily study collections', '2025-12-27 00:00:00', '58ec8c11-e060-4367-93cf-91a6cc28db8c'),
   (16384,'Quote',   'quote',   'Quote tracker',           '2025-12-27 00:00:00', '58ec8c11-e060-4367-93cf-91a6cc28db8c'),
-  (32768,'Recipe',  'recipe',  'Recipe tracker',          '2026-06-05 00:00:00', '58ec8c11-e060-4367-93cf-91a6cc28db8c');
+  (32768,'Recipe',  'recipe',  'Recipe tracker',          '2026-06-05 00:00:00', '58ec8c11-e060-4367-93cf-91a6cc28db8c'),
+  (131072,'Meal',   'meal',    'Meal / macro tracker',    '2026-10-01 00:00:00', '58ec8c11-e060-4367-93cf-91a6cc28db8c');
 /*!40000 ALTER TABLE `user_permissionAccess` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1639,6 +1640,80 @@ CREATE TABLE `recipe_image` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_image` (`imageID`),
   KEY `idx_image_recipe` (`recipeID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Table structure for table `food`
+-- direct INSERT/UPDATE (cache of Open Food Facts + custom foods)
+--
+
+DROP TABLE IF EXISTS `food`;
+CREATE TABLE `food` (
+  `id`        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `foodID`    VARCHAR(36)  NOT NULL,
+  `code`      VARCHAR(32)  DEFAULT NULL COMMENT 'Barcode; NULL for custom foods without one',
+  `userID`    VARCHAR(36)  DEFAULT NULL COMMENT 'Owner of a custom food; NULL for OFF cache rows',
+  `name`      VARCHAR(500) NOT NULL,
+  `brand`     VARCHAR(255) DEFAULT NULL,
+  `serving_g` DECIMAL(8,2) DEFAULT NULL,
+  `kcal`      DECIMAL(8,2) DEFAULT NULL COMMENT 'All nutrients per 100 g',
+  `protein`   DECIMAL(8,2) DEFAULT NULL,
+  `carbs`     DECIMAL(8,2) DEFAULT NULL,
+  `fat`       DECIMAL(8,2) DEFAULT NULL,
+  `fiber`     DECIMAL(8,2) DEFAULT NULL,
+  `sugar`     DECIMAL(8,2) DEFAULT NULL,
+  `sodium`    DECIMAL(8,3) DEFAULT NULL COMMENT 'grams, as OFF stores it',
+  `source`    ENUM('off','custom') NOT NULL,
+  `fetched`   DATETIME DEFAULT NULL,
+  `created`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_food` (`foodID`),
+  UNIQUE KEY `uq_food_code` (`code`),
+  KEY `idx_food_name` (`name`(100))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Table structure for table `meal`
+-- insert-only; soft-delete via name IS NULL
+--
+
+DROP TABLE IF EXISTS `meal`;
+CREATE TABLE `meal` (
+  `id`       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `mealID`   VARCHAR(36)  NOT NULL,
+  `userID`   VARCHAR(36)  NOT NULL,
+  `name`     VARCHAR(100) DEFAULT NULL COMMENT 'NULL = soft deleted',
+  `eaten_at` DATETIME     NOT NULL COMMENT 'user-local time',
+  `created`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_meal_user_time` (`userID`, `eaten_at`),
+  KEY `idx_meal_id` (`mealID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Table structure for table `meal_item`
+-- insert-only; soft-delete via label IS NULL; macros snapshot at log time
+--
+
+DROP TABLE IF EXISTS `meal_item`;
+CREATE TABLE `meal_item` (
+  `id`       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `itemID`   VARCHAR(36)  NOT NULL,
+  `mealID`   VARCHAR(36)  NOT NULL,
+  `userID`   VARCHAR(36)  NOT NULL,
+  `label`    VARCHAR(500) DEFAULT NULL COMMENT 'NULL = soft deleted',
+  `recipeID` VARCHAR(36)  DEFAULT NULL,
+  `foodID`   VARCHAR(36)  DEFAULT NULL,
+  `quantity` DECIMAL(8,2) NOT NULL DEFAULT 1,
+  `unit`     ENUM('serving','g') NOT NULL,
+  `kcal`     DECIMAL(8,2) DEFAULT NULL COMMENT 'Snapshot at log time',
+  `protein`  DECIMAL(8,2) DEFAULT NULL,
+  `carbs`    DECIMAL(8,2) DEFAULT NULL,
+  `fat`      DECIMAL(8,2) DEFAULT NULL,
+  `created`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_meal_item_meal` (`mealID`),
+  KEY `idx_meal_item_id` (`itemID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --

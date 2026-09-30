@@ -89,6 +89,7 @@ Dates in URLs: ISO `YYYY-MM-DD`. POST action names: `create`, `update`, `delete`
 | 13 | 8192 | `PERM_STUDY` | Study |
 | 14 | 16384 | `PERM_QUOTE` | Quotes |
 | 15 | 32768 | `PERM_RECIPE` | Recipe tracker |
+| 17 | 131072 | `PERM_MEAL` | Meal / macro tracker (Open Food Facts) |
 
 **Default on approval:** `read = write = 32766` (bits 1–14; admin bit 0 and Recipe bit 15 excluded)
 
@@ -109,9 +110,9 @@ WHERE t.thingID = %s
 # Delete: INSERT row with sentinel column = NULL
 ```
 
-Sentinel columns: `todo.title`, `habit.name`, `project.name`, `study_collection.name`, `study_source.title`, `recipe.title`
+Sentinel columns: `todo.title`, `habit.name`, `project.name`, `study_collection.name`, `study_source.title`, `recipe.title`, `meal.name`, `meal_item.label`
 
-**Exceptions** (direct UPDATE/DELETE): `user`, `svg`, `fitness_exercise`, `bookmark`, `bookmark_category`, `bookmark_category_item`, `study_subscription`, `study_completion`, `recipe_image`, `project_message` (append-only; only `resolution` is UPDATEd)
+**Exceptions** (direct UPDATE/DELETE): `user`, `svg`, `fitness_exercise`, `bookmark`, `bookmark_category`, `bookmark_category_item`, `study_subscription`, `study_completion`, `recipe_image`, `food` (OFF cache), `project_message` (append-only; only `resolution` is UPDATEd)
 
 **Project agent tables:** `project_task` (insert-only, sentinel `title` NULL) is the agent's plan checklist; `project_message` is the agent↔user thread; `project.status` / `project.parentID` added for agent workflow. See `SPECIFICATION.md` §5.7.7 and `app/models/project_model.py`.
 

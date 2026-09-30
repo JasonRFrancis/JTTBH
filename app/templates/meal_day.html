@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% from "_food_macros.html" import macro_line %}
+{% block title %}Meals · {{ day|format_day }}{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/meal.css') }}?v={{ datetime.now().timestamp()|int }}">{% endblock %}
+{% block content %}
+<article class="meal-day">
+  <header>
+    <nav class="meal-day-nav" aria-label="Day">
+      <a href="{{ url_for('meal.day', username=username, day=prev_day.isoformat()) }}">← {{ prev_day|format_day_short }}</a>
+      <h1>{{ day|format_date_long }}</h1>
+      <a href="{{ url_for('meal.day', username=username, day=next_day.isoformat()) }}">{{ next_day|format_day_short }} →</a>
+    </nav>
+    {% if day != today %}<p><a href="{{ url_for('meal.index', username=username) }}">Today</a></p>{% endif %}
+    <p class="meal-totals"><b>Day total:</b> {{ macro_line(totals) }}</p>
+  </header>
+
+  {% for meal in meals %}
+  <section class="meal">
+    <header class="meal-header">
+      <h2>{{ meal.eaten_at.strftime('%-I:%M %p') }} · {{ meal.name }}</h2>
+      <small>{{ macro_line(meal.totals) }}</small>
+    </header>
+    <ul class="meal-items">
+      {% for item in meal['items'] %}
+      <li>
+        <span>{% if item.recipeID %}<a href="{{ url_for('recipe.detail', username=username, recipe_id=item.recipeID) }}">{{ item.label }}</a>{% else %}{{ item.label }}{% endif %}
+          <small>{{ item.quantity|float }} {{ 'serving' if item.unit == 'serving' else 'g' }}{{ 's' if item.unit == 'serving' and item.quantity != 1 }} · {{ macro_line(item) }}</small></span>
+        {% if has_write_perm(131072) %}
+        <details class="meal-item-edit">
+          <summary aria-label="Edit {{ item.label }}">Edit</summary>
+          <form method="post" action="{{ url_for('meal.item_update', username=username, item_id=item.itemID) }}">
+            <label>{{ 'Servings' if item.unit == 'serving' else 'Grams' }} <input type="number" name="quantity" value="{{ item.quantity|float }}" min="0.1" step="any" inputmode="decimal" required></label>
+            <button type="submit">Save</button>
+          </form>
+          <form method="post" action="{{ url_for('meal.item_delete', username=username, item_id=item.itemID) }}">
+            <button type="submit" class="btn-danger-link">Remove</button>
+          </form>
+        </details>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% if has_write_perm(131072) %}
+    <div class="meal-add">
+      {% if recipes %}
+      <form method="post" action="{{ url_for('meal.item_create', username=username, meal_id=meal.mealID) }}" class="meal-add-recipe">
+        <label>Recipe
+          <select name="recipeID" required>
+            <option value="">Choose…</option>
+            {% for r in recipes %}<option value="{{ r.recipeID }}">{{ r.title }}</option>{% endfor %}
+          </select>
+        </label>
+        <label>Servings <input type="number" name="servings" value="1" min="0.1" step="any" inputmode="decimal"></label>
+        <button type="submit">Add recipe</button>
+      </form>
+      {% endif %}
+      <form method="get" action="{{ url_for('meal.food', username=username, meal_id=meal.mealID) }}" class="meal-add-food">
+        <label>Food or barcode <input type="search" name="q" placeholder="e.g. banana or 0074261182164"></label>
+        <button type="submit">Find food</button>
+      </form>
+      <details>
+        <summary>Edit meal</summary>
+        <form method="post" action="{{ url_for('meal.update', username=username, meal_id=meal.mealID) }}" class="meal-form">
+          <label>Name <input type="text" name="name" value="{{ meal.name }}" required list="meal-names"></label>
+          <label>Date <input type="date" name="day" value="{{ meal.eaten_at.date().isoformat() }}" required></label>
+          <label>Time <input type="time" name="time" value="{{ meal.eaten_at.strftime('%H:%M') }}" required></label>
+          <button type="submit">Save</button>
+        </form>
+        <form method="post" action="{{ url_for('meal.delete', username=username, meal_id=meal.mealID) }}" onsubmit="return confirm('Delete this meal?')">
+          <button type="submit" class="btn-danger-link">Delete meal</button>
+        </form>
+      </details>
+    </div>
+    {% endif %}
+  </section>
+  {% else %}
+  <p>No meals logged for this day.</p>
+  {% endfor %}
+
+  {% if has_write_perm(131072) %}
+  <section class="meal-new">
+    <h2>Add a meal</h2>
+    <form method="post" action="{{ url_for('meal.create', username=username) }}" class="meal-form">
+      <input type="hidden" name="day" value="{{ day.isoformat() }}">
+      <label>Name <input type="text" name="name" required list="meal-names" placeholder="Dinner"></label>
+      <label>Time <input type="time" name="time" value="{{ default_time }}" required></label>
+      <button type="submit" class="btn-primary">Add meal</button>
+    </form>
+    <p><a href="{{ url_for('meal.food_mine', username=username) }}">My foods</a></p>
+    <datalist id="meal-names">{% for n in meal_names %}<option value="{{ n }}">{% endfor %}</datalist>
+  </section>
+  {% endif %}
+</article>
+{% endblock %}

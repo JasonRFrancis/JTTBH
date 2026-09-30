@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_food_macros.html" import macro_line %}
+{% block title %}Nutrition · {{ recipe.title }}{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe.css') }}?v={{ datetime.now().timestamp()|int }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/meal.css') }}?v={{ datetime.now().timestamp()|int }}">{% endblock %}
+{% block content %}
+<article class="recipe-nutrition">
+  <header>
+    <nav class="breadcrumb"><a href="{{ url_for('recipe.detail', username=username, recipe_id=recipe.recipeID) }}">← {{ recipe.title }}</a></nav>
+    <h1>Nutrition</h1>
+    <p>Per serving ({{ n.servings|round(1) }} servings{% if not recipe.servings %}, set Servings on the recipe to change this{% endif %}): <b>{{ macro_line(n.per_serving) }}</b></p>
+    {% if n.unlinked %}<p class="message message--warning">Not linked yet, so not counted: {{ n.unlinked|join(', ') }}</p>{% endif %}
+  </header>
+
+  <form method="post" action="{{ url_for('recipe.nutrition_update', username=username, recipe_id=recipe.recipeID) }}">
+    <table class="nutrition-table">
+      <thead><tr><th>Ingredient</th><th>Food</th><th>Grams</th><th>Unlink</th></tr></thead>
+      <tbody>
+      {% for ing in recipe.ingredients_list %}
+        {% if ing.subtitle %}
+        <tr><th colspan="4">{{ ing.subtitle }}</th></tr>
+        {% else %}
+        {% set food = foods.get(ing.foodID) %}
+        <tr>
+          <td>{{ ing.amount|format_amount }} {{ ing.unit }} {{ ing.item }}</td>
+          <td>
+            {% if food %}{{ food.name }}{% if food.brand %} <small>{{ food.brand }}</small>{% endif %}<br>{% endif %}
+            {% if has_write_perm(32768) %}<a href="{{ url_for('recipe.link', username=username, recipe_id=recipe.recipeID, idx=loop.index0) }}">{% if food %}Change{% else %}Find food{% endif %}</a>{% endif %}
+          </td>
+          <td>{% if food %}<input type="number" name="grams_{{ loop.index0 }}" value="{{ ing.grams or '' }}" min="0" step="any" inputmode="decimal" aria-label="Grams of {{ ing.item }}">{% endif %}</td>
+          <td>{% if food %}<input type="checkbox" name="unlink" value="{{ loop.index0 }}" aria-label="Unlink {{ ing.item }}">{% endif %}</td>
+        </tr>
+        {% endif %}
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if has_write_perm(32768) %}<button type="submit" class="btn-primary">Save</button>{% endif %}
+  </form>
+</article>
+{% endblock %}

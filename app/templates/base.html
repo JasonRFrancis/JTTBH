@@ -33,6 +33,7 @@
     {% endif %}{% if has_perm(8192) %}<li><label for="menuCheckbox">{% if area == 'study' %}<b>Study</b>{% else %}<a href="{{ url_for('study.index', username=session.username) }}">Study</a>{% endif %}</label></li>
     {% endif %}{% if has_perm(16384) %}<li><label for="menuCheckbox">{% if area == 'quote' %}<b>Quotes</b>{% else %}<a href="{{ url_for('quote.index', username=session.username) }}">Quotes</a>{% endif %}</label></li>
     {% endif %}{% if has_perm(32768) %}<li><label for="menuCheckbox">{% if area == 'recipe' %}<b>Recipes</b>{% else %}<a href="{{ url_for('recipe.index', username=session.username) }}">Recipes</a>{% endif %}</label></li>
+    {% endif %}{% if has_perm(131072) %}<li><label for="menuCheckbox">{% if area == 'meal' %}<b>Meals</b>{% else %}<a href="{{ url_for('meal.index', username=session.username) }}">Meals</a>{% endif %}</label></li>
     {% endif %}{% if has_perm(65536) %}<li><label for="menuCheckbox">{% if area == 'scripture' %}<b>Scripture</b>{% else %}<a href="{{ url_for('scripture.index', username=session.username) }}">Scripture</a>{% endif %}</label></li>
     {% endif %}{% if session.get('user_id') %}<li><label for="menuCheckbox">{% if area == 'report' %}<b>Report a bug</b>{% else %}<a href="{{ url_for('report.index', username=session.username) }}">Report a bug</a>{% endif %}</label></li>
     {% endif %}
@@ -67,7 +68,8 @@
       STUDY:       8192,
       QUOTE:       16384,
       RECIPE:      32768,
-      SCRIPTURE:   65536
+      SCRIPTURE:   65536,
+      MEAL:        131072
     };
     {% if session.get('user_id') %}
     const SESSION = {

@@ -71,6 +71,7 @@
   --accent-media:       var(--oc-gray-8);
   --accent-quote:       var(--oc-indigo-8);
   --accent-recipe:      var(--oc-gray-8);
+  --accent-meal:        var(--oc-orange-8);
   --accent-scripture:   var(--oc-gray-8);
   --accent-report:      var(--oc-yellow-6);
 }
@@ -654,6 +655,13 @@ body.recipe {
   &> nav b { color: var(--accent-recipe); } 
   nav.date a.btn-nav:hover { background-color: var(--accent-recipe); }
 }
+body.meal {
+  login-element a:hover { color: #fff; background-color: var(--accent-meal); }
+  header.page-header { border-color: var(--accent-meal); }
+  a:hover { color: var(--accent-meal); } 
+  button:hover { background-color: var(--accent-meal); } 
+  &> nav b { color: var(--accent-meal); } 
+  nav.date a.btn-nav:hover { background-color: var(--accent-meal); }
 body.scripture {
   login-element a:hover { color: #fff; background-color: var(--accent-scripture); }  
   header.page-header { border-color: var(--accent-scripture); }

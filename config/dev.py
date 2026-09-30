@@ -60,6 +60,9 @@ class DevelopmentConfig:
     # ------------------------------------------------------------------ #
     TMDB_API_KEY       = os.environ.get('TMDB_API_KEY', '')
     IMPORT_API_KEY     = os.environ.get('IMPORT_API_KEY', '')
+    OFF_USER           = os.environ.get('OFF_USER', '')
+    OFF_PASSWORD       = os.environ.get('OFF_PASSWORD', '')
+    OFF_WRITE_URL      = os.environ.get('OFF_WRITE_URL', 'https://world.openfoodfacts.net')
 
     # ------------------------------------------------------------------ #
     # Agent / service accounts                                            #

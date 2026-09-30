@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{% if mode == 'contribute' %}Contribute {{ food.name }}{% elif mode == 'edit' %}Edit {{ food.name }}{% else %}Add food{% endif %}{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/meal.css') }}?v={{ datetime.now().timestamp()|int }}">{% endblock %}
+{% block content %}
+<article class="meal-food-form">
+  <header>
+    <nav class="breadcrumb">{% if meal_id %}<a href="{{ url_for('meal.food', username=username, meal_id=meal_id) }}">← Back to food search</a>{% elif mode == 'edit' %}<a href="{{ url_for('meal.food_mine', username=username) }}">← My foods</a>{% else %}<a href="{{ url_for('meal.index', username=username) }}">← Meals</a>{% endif %}</nav>
+    <h1>{% if mode == 'contribute' %}Send to Open Food Facts{% elif mode == 'edit' %}Edit {{ food.name }}{% else %}Add a food{% endif %}</h1>
+    <p>Copy the numbers from the package's nutrition label. Values are <b>per 100 g</b>; many US labels list per serving, so divide by the serving grams and multiply by 100.</p>
+  </header>
+  <form method="post" action="{% if mode == 'contribute' %}{{ url_for('meal.food_contribute_post', username=username, food_id=food.foodID) }}{% elif mode == 'edit' %}{{ url_for('meal.food_update', username=username, food_id=food.foodID) }}{% else %}{{ url_for('meal.food_create', username=username) }}{% endif %}" class="food-form">
+    <input type="hidden" name="meal_id" value="{{ meal_id }}">
+    <label>Name * <input type="text" name="name" value="{{ food.name or '' }}" required></label>
+    <label>Brand <input type="text" name="brand" value="{{ food.brand or '' }}"></label>
+    <label>Barcode{% if mode == 'contribute' %} *{% endif %} <input type="text" name="code" value="{{ food.code or '' }}" inputmode="numeric" pattern="\d{8,14}" {% if mode == 'contribute' %}required{% endif %}></label>
+    <label>Serving size (g) <input type="number" name="serving_g" value="{{ food.serving_g|float if food.serving_g else '' }}" min="0" step="any" inputmode="decimal"></label>
+    <fieldset>
+      <legend>Per 100 g</legend>
+      <label>Calories (kcal) <input type="number" name="kcal" value="{{ food.kcal if food.kcal is not none else '' }}" min="0" step="any" inputmode="decimal" required></label>
+      <label>Protein (g) <input type="number" name="protein" value="{{ food.protein if food.protein is not none else '' }}" min="0" step="any" inputmode="decimal" required></label>
+      <label>Carbs (g) <input type="number" name="carbs" value="{{ food.carbs if food.carbs is not none else '' }}" min="0" step="any" inputmode="decimal" required></label>
+      <label>Fat (g) <input type="number" name="fat" value="{{ food.fat if food.fat is not none else '' }}" min="0" step="any" inputmode="decimal" required></label>
+      <label>Fiber (g) <input type="number" name="fiber" value="{{ food.fiber if food.fiber is not none else '' }}" min="0" step="any" inputmode="decimal"></label>
+      <label>Sugar (g) <input type="number" name="sugar" value="{{ food.sugar if food.sugar is not none else '' }}" min="0" step="any" inputmode="decimal"></label>
+      <label>Sodium (mg) <input type="number" name="sodium" value="{{ '%g'|format(food.sodium * 1000) if food.sodium is not none else '' }}" min="0" step="any" inputmode="decimal"></label>
+    </fieldset>
+    {% if mode == 'contribute' %}
+    <button type="submit" class="btn-primary">Send to Open Food Facts</button>
+    {% elif mode == 'edit' %}
+    <button type="submit" class="btn-primary">Save changes</button>
+    {% if food.code %}<a href="{{ url_for('meal.food_contribute', username=username, food_id=food.foodID) }}">Send to Open Food Facts</a>{% endif %}
+    {% else %}
+    <label class="food-form-contribute"><input type="checkbox" name="contribute" value="1" checked> Also add to Open Food Facts (needs a barcode)</label>
+    <button type="submit" class="btn-primary">Save food</button>
+    {% endif %}
+  </form>
+</article>
+{% endblock %}

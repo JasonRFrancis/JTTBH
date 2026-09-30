@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "_food_macros.html" import food_results %}
+{% block title %}My foods{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/meal.css') }}?v={{ datetime.now().timestamp()|int }}">{% endblock %}
+{% block content %}
+<article class="meal-food-mine">
+  <header>
+    <nav class="breadcrumb"><a href="{{ url_for('meal.index', username=username) }}">← Meals</a></nav>
+    <h1>My foods</h1>
+    <p>One-off foods you added. Editing one doesn't change meals you've already logged.</p>
+  </header>
+  {% call(f) food_results(foods) %}
+    {% if has_write_perm(131072) %}<a href="{{ url_for('meal.food_edit', username=username, food_id=f.foodID) }}">Edit</a>{% endif %}
+  {% endcall %}
+  {% if has_write_perm(131072) %}<p><a href="{{ url_for('meal.food_new', username=username) }}">Add a food</a></p>{% endif %}
+</article>
+{% endblock %}

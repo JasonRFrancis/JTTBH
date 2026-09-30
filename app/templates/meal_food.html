@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_food_macros.html" import food_results %}
+{% block title %}Add food · {{ meal.name }}{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/meal.css') }}?v={{ datetime.now().timestamp()|int }}">{% endblock %}
+{% block content %}
+<article class="meal-food">
+  <header>
+    <nav class="breadcrumb"><a href="{{ url_for('meal.day', username=username, day=meal.eaten_at.date().isoformat()) }}">← {{ meal.name }}, {{ meal.eaten_at|format_day }}</a></nav>
+    <h1>Add food to {{ meal.name }}</h1>
+  </header>
+  <form method="get" class="food-search">
+    <label for="q">Search foods or enter a barcode</label>
+    <input type="search" id="q" name="q" value="{{ q }}" autofocus>
+    <button type="submit">Search</button>
+  </form>
+  {% if off_error %}<p class="message message--warning">Open Food Facts lookup failed ({{ off_error }}); showing saved foods only.</p>{% endif %}
+
+  {% if q %}
+    {% if is_barcode and not results and not off_error %}
+    <p class="message message--message">Barcode {{ q }} isn't in Open Food Facts yet.
+      <a href="{{ url_for('meal.food_new', username=username, code=q, meal_id=meal.mealID) }}">Add it</a> (you can send it to Open Food Facts too).</p>
+    {% else %}
+    {% call(f) food_results(results) %}
+      <div class="food-result-actions">
+        {% if has_write_perm(131072) %}
+        <form method="post" action="{{ url_for('meal.item_create', username=username, meal_id=meal.mealID) }}">
+          <input type="hidden" name="foodID" value="{{ f.foodID }}">
+          <label>Grams <input type="number" name="grams" value="{{ (f.serving_g or 100)|float }}" min="0.1" step="any" inputmode="decimal" required></label>
+          <button type="submit">Add</button>
+        </form>
+        {% if f.source == 'off' %}
+        <a href="{{ url_for('meal.food_contribute', username=username, food_id=f.foodID, meal_id=meal.mealID) }}">Fix on Open Food Facts</a>
+        {% elif f.userID == session.user_id %}
+        <a href="{{ url_for('meal.food_edit', username=username, food_id=f.foodID, meal_id=meal.mealID) }}">Edit</a>
+        {% endif %}
+        {% endif %}
+      </div>
+    {% endcall %}
+    {% endif %}
+  {% endif %}
+  <p>Can't find it? <a href="{{ url_for('meal.food_new', username=username, name='' if is_barcode else q, code=q if is_barcode else '', meal_id=meal.mealID) }}">Add a one-off food</a>.</p>
+</article>
+{% endblock %}

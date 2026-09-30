@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "_food_macros.html" import food_results %}
+{% block title %}Link {{ ing.item }}{% endblock %}
+{% block css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe.css') }}?v={{ datetime.now().timestamp()|int }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/meal.css') }}?v={{ datetime.now().timestamp()|int }}">{% endblock %}
+{% block content %}
+<article class="recipe-link">
+  <header>
+    <nav class="breadcrumb"><a href="{{ url_for('recipe.nutrition', username=username, recipe_id=recipe.recipeID) }}">← Nutrition</a></nav>
+    <h1>Link “{{ ing.item }}”</h1>
+    <p>{{ ing.amount|format_amount }} {{ ing.unit }} {{ ing.item }}{% if ing.note %} ({{ ing.note }}){% endif %}</p>
+  </header>
+  <form method="get" class="food-search">
+    <label for="q">Search foods or enter a barcode</label>
+    <input type="search" id="q" name="q" value="{{ q }}">
+    <button type="submit">Search</button>
+  </form>
+  {% if off_error %}<p class="message message--warning">Open Food Facts search failed ({{ off_error }}); showing saved foods only.</p>{% endif %}
+  {% if q %}
+  {% call(f) food_results(results) %}
+    <form method="post" action="{{ url_for('recipe.link_post', username=username, recipe_id=recipe.recipeID, idx=idx) }}">
+      <input type="hidden" name="foodID" value="{{ f.foodID }}">
+      <button type="submit">Use this</button>
+    </form>
+  {% endcall %}
+  {% endif %}
+  {% if has_perm(131072) %}<p>Can't find it? <a href="{{ url_for('meal.food_new', username=username, name=q) }}">Add a food</a>, then search again.</p>{% endif %}
+</article>
+{% endblock %}

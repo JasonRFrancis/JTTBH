@@ -1,0 +1,21 @@
+{# Food search results; the caller renders the action form for each food: {% call(f) food_results(results) %}…{% endcall %} #}
+{% macro macro_line(m) -%}
+{{ '%.0f'|format(m.kcal or 0) }} kcal · P {{ '%.1f'|format(m.protein or 0) }} · C {{ '%.1f'|format(m.carbs or 0) }} · F {{ '%.1f'|format(m.fat or 0) }}
+{%- endmacro %}
+
+{% macro food_results(results) %}
+<ul class="food-results">
+  {% for f in results %}
+  <li class="food-result">
+    <div class="food-result-info">
+      <b>{{ f.name }}</b>{% if f.brand %} <span class="food-brand">{{ f.brand }}</span>{% endif %}
+      {% if f.source == 'custom' %}<span class="food-badge">custom</span>{% endif %}
+      <small>per 100 g: {{ macro_line(f) }}{% if f.serving_g %} · serving {{ f.serving_g|float }} g{% endif %}{% if f.code %} · {{ f.code }}{% endif %}</small>
+    </div>
+    {{ caller(f) }}
+  </li>
+  {% else %}
+  <li>No foods found.</li>
+  {% endfor %}
+</ul>
+{% endmacro %}

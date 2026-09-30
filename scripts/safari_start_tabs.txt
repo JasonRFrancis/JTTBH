@@ -1,3 +1,4 @@
 # Tabs Safari opens after the nightly 1 AM reset (one URL per line; # = comment)
 https://jttbh.com/jason/dashboard/index
 https://jttbh.com/jason/bookmark/recent
+https://old.reddit.com/user/kokaubeam8/upvoted/
