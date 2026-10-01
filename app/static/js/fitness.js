@@ -58,7 +58,6 @@ function post(url, data) {
     return {
       setup:    d.setup    || '',
       weight:   d.weight   || '',
-      reps:     d.reps     || '',
       notes:    d.notes    || '',
       duration: d.duration || '',
       speed:    d.speed    || '',
@@ -162,18 +161,15 @@ function post(url, data) {
       li.querySelector('.set-num').textContent = setNum;
       li.querySelector('.inp-setup').value     = prefill.setup;
       li.querySelector('.inp-weight').value    = prefill.weight;
-      li.querySelector('.inp-reps').value      = prefill.reps;
       li.querySelector('.inp-notes').value     = prefill.notes;
       li.querySelector('.inp-weight').focus();
     } else if (type === 'hand_weight') {
       li.querySelector('.set-num').textContent = setNum;
       li.querySelector('.inp-weight').value    = prefill.weight;
-      li.querySelector('.inp-reps').value      = prefill.reps;
       li.querySelector('.inp-notes').value     = prefill.notes;
       li.querySelector('.inp-weight').focus();
     } else if (type === 'bodyweight') {
       li.querySelector('.set-num').textContent  = setNum;
-      li.querySelector('.inp-reps').value       = prefill.reps;
       li.querySelector('.inp-duration').value   = prefill.duration;
       li.querySelector('.inp-notes').value      = prefill.notes;
       li.querySelector('.inp-reps').focus();
@@ -242,7 +238,6 @@ function post(url, data) {
           logged = buildLoggedMachineRow(logSetID, setNum, data.weight, data.reps, data.setup, data.notes);
           if (prefillTpl) {
             prefillTpl.dataset.weight = data.weight;
-            prefillTpl.dataset.reps   = data.reps;
             prefillTpl.dataset.setup  = data.setup;
             prefillTpl.dataset.notes  = data.notes;
           }
@@ -250,13 +245,11 @@ function post(url, data) {
           logged = buildLoggedHandWeightRow(logSetID, setNum, data.weight, data.reps, data.notes);
           if (prefillTpl) {
             prefillTpl.dataset.weight = data.weight;
-            prefillTpl.dataset.reps   = data.reps;
             prefillTpl.dataset.notes  = data.notes;
           }
         } else if (type === 'bodyweight') {
           logged = buildLoggedBodyweightRow(logSetID, setNum, data.reps, data.duration, data.notes);
           if (prefillTpl) {
-            prefillTpl.dataset.reps     = data.reps;
             prefillTpl.dataset.duration = data.duration;
             prefillTpl.dataset.notes    = data.notes;
           }

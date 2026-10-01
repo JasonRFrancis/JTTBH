@@ -98,9 +98,10 @@ def index(username: str, date_str: str = None):
         for ex in exercises:
             ex_id = ex['exerciseID']
             ex['today_sets'] = today_sets_map.get(ex_id, [])
-            ex['prev_sets'] = FitnessModel.get_last_sets_for_exercise(
+            ex['prev_sessions'] = FitnessModel.get_recent_sessions_for_exercise(
                 user_id, ex_id, viewed_date
             )
+            ex['prev_sets'] = ex['prev_sessions'][0]['sets'] if ex['prev_sessions'] else []
 
         if exercises:
             location = exercises[0].get('location', 'gym')

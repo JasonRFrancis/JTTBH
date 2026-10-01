@@ -124,6 +124,32 @@
       </p>
       {% endif %}
 
+      {# Two most recent previous sessions ───────────────────────────────── #}
+      {% if ex.prev_sessions %}
+      <ul class="prev-sessions" aria-label="Recent sessions">
+        {% for sess in ex.prev_sessions %}
+        <li class="log-sets-summary">
+          <span class="prev-date">{{ sess.log_date|format_day }}</span>
+          {% if is_video %}
+            <span class="set-chip">Done</span>
+          {% else %}
+          {% for s in sess.sets %}
+            <span class="set-chip">
+            {%- if is_cardio -%}
+              {% if s.duration_minutes %}{{ s.duration_minutes }} min{% endif %}{% if s.speed %} · {{ s.speed }} mph{% endif %}
+            {%- elif is_bodyweight -%}
+              {{ s.actual_reps or '—' }} reps{% if s.duration_minutes %} · {{ s.duration_minutes }}s{% endif %}
+            {%- else -%}
+              {{ s.actual_weight|int if s.actual_weight else '—' }}×{{ s.actual_reps or '—' }}
+            {%- endif -%}
+            </span>
+          {% endfor %}
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
       {# Already-logged sets today ─────────────────────────────────────── #}
       <ul class="set-list" aria-label="Logged sets">
         {% for s in ex.today_sets %}
@@ -171,20 +197,17 @@
         <template class="prefill-data"
           data-setup="{{ prev.setup if prev and prev.setup else ex.notes or '' }}"
           data-weight="{{ prev.actual_weight|int if prev and prev.actual_weight else ex.recommended_weight|int if ex.recommended_weight else '' }}"
-          data-reps="{{ prev.actual_reps if prev and prev.actual_reps else ex.recommended_reps or '' }}"
           data-notes="{{ prev.notes if prev and prev.notes else '' }}">
         </template>
       {% elif is_hand_weight %}
         {% set prev = ex.prev_sets[0] if ex.prev_sets else None %}
         <template class="prefill-data"
           data-weight="{{ prev.actual_weight|int if prev and prev.actual_weight else ex.recommended_weight|int if ex.recommended_weight else '' }}"
-          data-reps="{{ prev.actual_reps if prev and prev.actual_reps else ex.recommended_reps or '' }}"
           data-notes="{{ prev.notes if prev and prev.notes else '' }}">
         </template>
       {% elif is_bodyweight %}
         {% set prev = ex.prev_sets[0] if ex.prev_sets else None %}
         <template class="prefill-data"
-          data-reps="{{ prev.actual_reps if prev and prev.actual_reps else ex.recommended_reps or '' }}"
           data-duration="{{ prev.duration_minutes if prev and prev.duration_minutes else '' }}"
           data-notes="{{ prev.notes if prev and prev.notes else '' }}">
         </template>
@@ -210,20 +233,17 @@
                value="{{ ps.setup if ps and ps.setup else ex.notes or '' }}">
         <input type="number" name="weight" step="5"   min="0" placeholder="lbs"
                value="{{ ps.actual_weight|int if ps and ps.actual_weight else ex.recommended_weight|int if ex.recommended_weight else '' }}">
-        <input type="number" name="reps"   step="1"   min="0" placeholder="reps"
-               value="{{ ps.actual_reps if ps and ps.actual_reps else ex.recommended_reps or '' }}">
+        <input type="number" name="reps"   step="1"   min="0" placeholder="reps">
         <input type="text"   name="notes"  placeholder="notes"
                value="{{ ps.notes if ps and ps.notes else '' }}">
         {% elif is_hand_weight %}
         <input type="number" name="weight" step="5"   min="0" placeholder="lbs"
                value="{{ ps.actual_weight|int if ps and ps.actual_weight else ex.recommended_weight|int if ex.recommended_weight else '' }}">
-        <input type="number" name="reps"   step="1"   min="0" placeholder="reps"
-               value="{{ ps.actual_reps if ps and ps.actual_reps else ex.recommended_reps or '' }}">
+        <input type="number" name="reps"   step="1"   min="0" placeholder="reps">
         <input type="text"   name="notes"  placeholder="notes"
                value="{{ ps.notes if ps and ps.notes else '' }}">
         {% elif is_bodyweight %}
-        <input type="number" name="reps"     step="1" min="0" placeholder="reps"
-               value="{{ ps.actual_reps if ps and ps.actual_reps else ex.recommended_reps or '' }}">
+        <input type="number" name="reps"     step="1" min="0" placeholder="reps">
         <input type="number" name="duration" step="1" min="0" placeholder="sec"
                value="{{ ps.duration_minutes if ps and ps.duration_minutes else '' }}">
         <input type="text"   name="notes"  placeholder="notes"

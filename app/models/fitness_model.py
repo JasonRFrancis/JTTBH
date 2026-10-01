@@ -501,32 +501,41 @@ class FitnessModel:
         """, (log_set_id, log_set_id))
 
     @staticmethod
-    def get_last_sets_for_exercise(user_id: str, exercise_id: str, before_date: date) -> list[dict]:
-        """All sets from the most recent session for this exercise, before today."""
-        return db_manager.execute_query("""
-            SELECT ls.set_number, ls.actual_weight, ls.actual_reps,
+    def get_recent_sessions_for_exercise(user_id: str, exercise_id: str, before_date: date,
+                                         limit: int = 2) -> list[dict]:
+        """Sets from the `limit` most recent sessions for this exercise, before today.
+
+        Returns [{'log_date': date, 'sets': [...]}, ...], newest session first.
+        """
+        rows = db_manager.execute_query("""
+            SELECT fl.log_date, ls.set_number, ls.actual_weight, ls.actual_reps,
                    ls.notes, ls.setup, ls.duration_minutes, ls.speed, ls.incline
             FROM fitness_logSet ls
             JOIN fitness_log fl ON fl.logID = ls.logID
+            JOIN (
+                SELECT DISTINCT fl2.log_date
+                FROM fitness_log fl2
+                JOIN fitness_logSet ls2 ON ls2.logID = fl2.logID
+                WHERE fl2.userID = %s
+                  AND ls2.exerciseID = %s
+                  AND fl2.log_date < %s
+                  AND ls2.id = (SELECT MAX(ls3.id) FROM fitness_logSet ls3
+                                WHERE ls3.logSetID = ls2.logSetID)
+                ORDER BY fl2.log_date DESC
+                LIMIT %s
+            ) recent ON recent.log_date = fl.log_date
             WHERE fl.userID = %s
               AND ls.exerciseID = %s
-              AND fl.log_date < %s
-              AND fl.log_date IS NOT NULL
-              AND ls.exerciseID IS NOT NULL
               AND ls.id = (SELECT MAX(ls2.id) FROM fitness_logSet ls2
                            WHERE ls2.logSetID = ls.logSetID)
-              AND fl.log_date = (
-                  SELECT MAX(fl2.log_date)
-                  FROM fitness_log fl2
-                  JOIN fitness_logSet ls2 ON ls2.logID = fl2.logID
-                  WHERE fl2.userID = %s
-                    AND ls2.exerciseID = %s
-                    AND fl2.log_date < %s
-                    AND fl2.log_date IS NOT NULL
-                    AND ls2.exerciseID IS NOT NULL
-              )
-            ORDER BY ls.set_number
-        """, (user_id, exercise_id, before_date, user_id, exercise_id, before_date))
+            ORDER BY fl.log_date DESC, ls.set_number
+        """, (user_id, exercise_id, before_date, limit, user_id, exercise_id))
+        sessions: list[dict] = []
+        for r in rows:
+            if not sessions or sessions[-1]['log_date'] != r['log_date']:
+                sessions.append({'log_date': r['log_date'], 'sets': []})
+            sessions[-1]['sets'].append(r)
+        return sessions
 
     # ------------------------------------------------------------------ #
     # Body weight                                                          #
