@@ -512,6 +512,7 @@ class FitnessModel:
                    ls.notes, ls.setup, ls.duration_minutes, ls.speed, ls.incline
             FROM fitness_logSet ls
             JOIN fitness_log fl ON fl.logID = ls.logID
+                 AND fl.id = (SELECT MAX(fl3.id) FROM fitness_log fl3 WHERE fl3.logID = fl.logID)
             JOIN (
                 SELECT DISTINCT fl2.log_date
                 FROM fitness_log fl2

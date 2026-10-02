@@ -230,6 +230,11 @@ function post(url, data) {
         if (res.status !== 'ok') { li.classList.remove('set-row--saving'); return; }
 
         var logSetID     = res.logSetID;
+        var finishForm   = document.querySelector('.finish-form[hidden]');
+        if (finishForm) {
+          finishForm.action = finishForm.action.replace('__LOG_ID__', res.logID);
+          finishForm.hidden = false;
+        }
         var setNum       = article.querySelectorAll('.set-row--logged').length + 1;
         var prefillTpl   = article.querySelector('template.prefill-data');
         var logged;

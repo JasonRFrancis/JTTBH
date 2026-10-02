@@ -127,7 +127,7 @@
       {# Two most recent previous sessions ───────────────────────────────── #}
       {% if ex.prev_sessions %}
       <ul class="prev-sessions" aria-label="Recent sessions">
-        {% for sess in ex.prev_sessions %}
+        {% for sess in ex.prev_sessions|reverse %}
         <li class="log-sets-summary">
           <span class="prev-date">{{ sess.log_date|format_day }}</span>
           {% if is_video %}
@@ -275,9 +275,10 @@
   </section>
 
   {# ── Finish workout button ───────────────────────────────────────────── #}
-  {% if todays_log and not todays_log.end_time %}
-  <form method="post"
-        action="{{ url_for('fitness.log_end', username=username, log_id=todays_log.logID) }}">
+  {% if not todays_log or not todays_log.end_time %}
+  {# No log yet: hidden until JS saves the first set and fills in the logID #}
+  <form method="post" class="finish-form"{% if not todays_log %} hidden{% endif %}
+        action="{{ url_for('fitness.log_end', username=username, log_id=todays_log.logID if todays_log else '__LOG_ID__') }}">
     <input type="hidden" name="log_date" value="{{ viewed_date.isoformat() }}">
     <button type="submit" class="btn-finish">Finish Workout</button>
   </form>
