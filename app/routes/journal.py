@@ -9,17 +9,27 @@ GET  /<username>/journal/index
 GET  /<username>/journal/index/<date_str>
 GET  /<username>/journal/questions
 GET  /<username>/journal/mood/settings
+GET  /<username>/journal/template
 
 POST /<username>/journal/answer/post/<question_id>
 POST /<username>/journal/mood/post
 POST /<username>/journal/question/create/post
 POST /<username>/journal/mood/category/create/post
 POST /<username>/journal/mood/value/create/post
+POST /<username>/journal/template/update/post
+POST /<username>/journal/entry/update/post
 
 Question selection by day of year
 ----------------------------------
 Questions are stored with a ``day`` column (1-366).  On each journal load the
 current day-of-year is computed and all questions for that day are fetched.
+
+Templates
+---------
+A user's template (``journal_template``, latest row wins) is plain-text markup
+parsed by ``parse_template``.  Each day's answers are saved as one JSON list in
+``journal_entry.body``; every item carries its own label/type/options, so a day
+that already has an entry keeps its questions when the template changes.
 
 Mood tracking
 -------------
@@ -28,6 +38,9 @@ Mood values are the selectable options per category (e.g. "High", "Low").
 Each journal entry records one value per category per day.
 """
 
+import json
+import math
+import re
 import uuid
 from datetime import date, datetime
 
@@ -103,6 +116,93 @@ def _get_answers_for_date(user_id: str, entry_date: date) -> dict:
     return {row['questionID']: row for row in rows}
 
 
+_TYPED_LINE = re.compile(r'^(.+?)\s*\[([^\]]+)\]$')
+_SIMPLE_TYPES = {'text', 'line', 'number', 'check'}
+
+
+def parse_template(text: str) -> list[dict]:
+    """
+    Parse template markup into a list of field dicts.
+
+    One field per non-blank line.  ``# Heading`` is a section heading.
+    A trailing ``[type]`` sets the input: ``line``, ``number``, ``check``, or
+    ``a|b|c`` for a choice.  No (or unknown) bracket → ``text`` (textarea).
+    """
+    fields = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith('#'):
+            fields.append({'type': 'heading', 'label': line.lstrip('#').strip()})
+            continue
+        field = {'type': 'text', 'label': line}
+        match = _TYPED_LINE.match(line)
+        if match:
+            label, kind = match.group(1), match.group(2).strip()
+            options = [o.strip() for o in kind.split('|') if o.strip()]
+            if '|' in kind and options:
+                field = {'type': 'choice', 'label': label, 'options': options}
+            elif kind in _SIMPLE_TYPES:
+                field = {'type': kind, 'label': label}
+        fields.append(field)
+    return fields
+
+
+def collect_values(fields: list[dict], form) -> list[dict]:
+    """Return a copy of ``fields`` with ``value`` filled from form keys ``f<index>``."""
+    result = []
+    for i, field in enumerate(fields):
+        item = {k: v for k, v in field.items() if k != 'value'}
+        if field['type'] != 'heading':
+            raw = form.get(f'f{i}', '').strip()
+            if field['type'] == 'check':
+                value = bool(raw)
+            elif field['type'] == 'number':
+                try:
+                    value = float(raw)
+                    value = int(value) if value.is_integer() else value
+                except ValueError:
+                    value = None
+                if isinstance(value, float) and not math.isfinite(value):
+                    value = None  # nan/inf aren't valid JSON
+            elif field['type'] == 'choice':
+                value = raw if raw in field['options'] else None
+            else:
+                value = raw
+            item['value'] = value
+        result.append(item)
+    return result
+
+
+def _get_template_body(user_id: str) -> str:
+    """Return the user's current template markup ('' if none)."""
+    row = db_manager.execute_one(
+        'SELECT body FROM journal_template WHERE userID = %s ORDER BY id DESC LIMIT 1',
+        (user_id,),
+    )
+    return row['body'] if row else ''
+
+
+def _get_entry_fields(user_id: str, entry_date: date) -> tuple[list[dict], bool]:
+    """
+    Return (fields, has_entry) for a day.
+
+    A saved entry renders from its own JSON; otherwise the current template is used.
+    """
+    row = db_manager.execute_one(
+        """
+        SELECT body FROM journal_entry
+        WHERE userID = %s AND answered = %s
+        ORDER BY id DESC LIMIT 1
+        """,
+        (user_id, entry_date),
+    )
+    if row:
+        return json.loads(row['body']), True
+    return parse_template(_get_template_body(user_id)), False
+
+
 def _get_categories(user_id: str) -> list[dict]:
     """Fetch mood categories for a user."""
     return db_manager.execute_query(
@@ -161,6 +261,7 @@ def _build_context(user_id: str, username: str, entry_date: date) -> dict:
     answers = _get_answers_for_date(user_id, entry_date)
     categories = _get_categories(user_id)
     current_moods = _get_current_moods(user_id, entry_date)
+    entry_fields, has_entry = _get_entry_fields(user_id, entry_date)
 
     # Build a per-category dict of value options.
     mood_values_by_category: dict[str, list] = {}
@@ -179,6 +280,8 @@ def _build_context(user_id: str, username: str, entry_date: date) -> dict:
         'categories': categories,
         'current_moods': current_moods,
         'mood_values_by_category': mood_values_by_category,
+        'entry_fields': entry_fields,
+        'has_entry': has_entry,
     }
 
 
@@ -247,6 +350,20 @@ def mood_settings(username: str):
         'journal_mood_settings.html',
         categories=categories,
         all_values=all_values,
+        username=username,
+    )
+
+
+@journal_bp.route('/template')
+@login_required
+@permission_required_read(PERM_JOURNAL)
+def template(username: str):
+    """Edit the journal template markup."""
+    body = _get_template_body(session['user_id'])
+    return render_template(
+        'journal_template.html',
+        body=body,
+        fields=parse_template(body),
         username=username,
     )
 
@@ -458,3 +575,60 @@ def mood_value_create(username: str):
 
     flash('Mood value added.', 'success')
     return redirect(url_for('journal.mood_settings', username=username))
+
+
+@journal_bp.route('/template/update/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_JOURNAL)
+@permission_required_write(PERM_JOURNAL)
+def template_update(username: str):
+    """
+    Save a new version of the template (insert-only; latest row is current).
+
+    Form fields
+    -----------
+    body : str   Template markup; empty clears the template.
+    """
+    user_id = session['user_id']
+    body = request.form.get('body', '').strip()
+    db_manager.execute_insert(
+        'INSERT INTO journal_template (userID, body, created, created_by) VALUES (%s, %s, %s, %s)',
+        (user_id, body, datetime.now(), user_id),
+    )
+    flash('Template saved. It applies to days without an entry yet.', 'success')
+    return redirect(url_for('journal.template', username=username))
+
+
+@journal_bp.route('/entry/update/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_JOURNAL)
+@permission_required_write(PERM_JOURNAL)
+def entry_update(username: str):
+    """
+    Save the day's template answers as one JSON body (insert-only).
+
+    The field list comes from the day's existing entry if there is one,
+    otherwise from the current template.
+
+    Form fields
+    -----------
+    answered : str   ISO date string; defaults to today.
+    f<index> : str   Value for field ``index``.
+    """
+    user_id = session['user_id']
+    answered = _parse_date(request.form.get('answered', '').strip()) or user_today()
+    fields, _ = _get_entry_fields(user_id, answered)
+    if not fields:
+        flash('No template to answer. Set one up first.', 'error')
+        return _redirect_to_index(username, answered)
+
+    db_manager.execute_insert(
+        """
+        INSERT INTO journal_entry (entryID, userID, answered, body, created, created_by)
+        VALUES (%s, %s, %s, %s, %s, %s)
+        """,
+        (str(uuid.uuid4()), user_id, answered,
+         json.dumps(collect_values(fields, request.form)), datetime.now(), user_id),
+    )
+    flash('Journal saved.', 'success')
+    return _redirect_to_index(username, answered)

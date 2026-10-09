@@ -1,0 +1,29 @@
+{# Template-driven journal fields; input names are f<index> to match journal.collect_values #}
+{% macro journal_fields(fields, disabled=false) %}
+{% for field in fields %}
+  {% set name = 'f' ~ loop.index0 %}
+  {% if field.type == 'heading' %}
+  <h3 class="journal-field-heading">{{ field.label }}</h3>
+  {% elif field.type == 'choice' %}
+  <fieldset class="journal-field">
+    <legend>{{ field.label }}</legend>
+    {% for option in field.options %}
+    <label class="mood-option"><input type="radio" name="{{ name }}" value="{{ option }}"{% if field.value == option %} checked{% endif %}{% if disabled %} disabled{% endif %}> {{ option }}</label>
+    {% endfor %}
+  </fieldset>
+  {% elif field.type == 'check' %}
+  <p class="journal-field"><label><input type="checkbox" name="{{ name }}" value="1"{% if field.value %} checked{% endif %}{% if disabled %} disabled{% endif %}> {{ field.label }}</label></p>
+  {% else %}
+  <p class="journal-field">
+    <label for="j{{ name }}">{{ field.label }}</label>
+    {% if field.type == 'line' %}
+    <input type="text" id="j{{ name }}" name="{{ name }}" value="{{ field.value or '' }}"{% if disabled %} disabled{% endif %}>
+    {% elif field.type == 'number' %}
+    <input type="number" step="any" inputmode="decimal" id="j{{ name }}" name="{{ name }}" value="{{ field.value if field.value is not none else '' }}"{% if disabled %} disabled{% endif %}>
+    {% else %}
+    <textarea id="j{{ name }}" name="{{ name }}" rows="3"{% if disabled %} disabled{% endif %}>{{ field.value or '' }}</textarea>
+    {% endif %}
+  </p>
+  {% endif %}
+{% endfor %}
+{% endmacro %}

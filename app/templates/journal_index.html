@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from '_journal_macros.html' import journal_fields %}
 
 {% block title %}Journal - jttbh{% endblock %}
 
@@ -25,6 +26,18 @@
       {% endif %}
     </nav>
   </header>
+
+  <!-- Template entry -->
+  {% if entry_fields %}
+  <section class="journal-entry">
+    <h2>Entry</h2>
+    <form method="post" action="{{ url_for('journal.entry_update', username=username) }}">
+      <input type="hidden" name="answered" value="{{ entry_date }}">
+      {{ journal_fields(entry_fields) }}
+      <button type="submit">Save</button>
+    </form>
+  </section>
+  {% endif %}
 
   <!-- Daily Questions -->
   {% if questions %}
@@ -95,6 +108,7 @@
   </section>
 
   <footer class="journal-footer">
+    <a href="{{ url_for('journal.template', username=username) }}">Edit Template</a>
     <a href="{{ url_for('journal.questions', username=username) }}">Manage Questions</a>
     <a href="{{ url_for('journal.mood_settings', username=username) }}">Mood Settings</a>
   </footer>

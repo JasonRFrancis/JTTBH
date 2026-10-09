@@ -301,3 +301,61 @@
   color: var(--color-text-secondary, #aaa);
   margin-left: 0.5rem;
 }
+
+/* ---------------------------------------------------------------------------
+   Template entry form + template editor
+*/
+
+.journal-entry {
+  margin-bottom: 2rem;
+}
+
+.journal-entry h2 {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+  border-bottom: 1px solid var(--color-border, #ddd);
+  padding-bottom: 0.5rem;
+}
+
+.journal-field-heading {
+  font-size: 1rem;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.journal-field {
+  margin: 0 0 1rem;
+}
+
+fieldset.journal-field {
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+}
+
+.journal-field > label:first-child {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 0.35rem;
+}
+
+.journal-field textarea,
+.journal-field input[type="text"],
+.journal-field input[type="number"],
+.journal-template-body {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 3px;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.journal-template-body {
+  font-family: ui-monospace, monospace;
+  margin: 0.35rem 0 0.5rem;
+}
+
+.journal-template-help pre {
+  overflow-x: auto;
+  font-size: 0.85rem;
+}

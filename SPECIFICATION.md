@@ -446,6 +446,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     2. Provides a prompt per day and allows the user to input a response
     3. Questions are provided in the `journal_question` table, indexed per day
     4. If the table has more than one question for the day, serve them all up with corresponding textarea boxes
+    5. Journal Template (shown above the daily questions; both coexist)
+      1. Each user edits one template at `GET /<username>/journal/template` in a textarea; `POST /<username>/journal/template/update/post` inserts a new `journal_template` row (insert-only; latest row per user is current; empty body = no template form)
+      2. Markup — one field per non-blank line: `# Heading` → section heading; trailing `[line]` text input, `[number]`, `[check]` checkbox, `[a|b|c]` radio choice; no bracket or an unknown bracket → textarea (whole line kept as the label)
+      3. Answers save via `POST /<username>/journal/entry/update/post` as one JSON list in `journal_entry.body` (insert-only; latest row per `(userID, answered)` is current). Each item is self-describing: `{"type","label","options"?,"value"}` — value is a string, number, bool, or null
+      4. A day with a saved entry always renders from its own JSON, so template edits only affect days without an entry yet
+      5. Parser/value logic: `parse_template` / `collect_values` in `app/routes/journal.py`; tests in `test/test_journal_template.py`
   7. Mood Tracker
     1. Part of the `journal` designation, stored in the `journal_mood`, `journal_moodCategory`, and `journal_moodValue` tables
     2. Allows the user to capture their current mood across several categories

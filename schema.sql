@@ -742,6 +742,27 @@ CREATE TABLE `journal_answer` (
 
 
 --
+-- Table structure for table `journal_entry`
+--
+
+DROP TABLE IF EXISTS `journal_entry`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `journal_entry` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `entryID` varchar(36) NOT NULL,
+  `userID` varchar(36) NOT NULL,
+  `answered` date NOT NULL,
+  `body` json NOT NULL,
+  `created` datetime DEFAULT CURRENT_TIMESTAMP,
+  `created_by` varchar(36) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_entry_user_date` (`userID`,`answered`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+--
 -- Table structure for table `journal_mood`
 --
 
@@ -830,6 +851,25 @@ CREATE TABLE `journal_question` (
   PRIMARY KEY (`id`),
   KEY `idx_id_desc` (`id` DESC)
 ) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+
+--
+-- Table structure for table `journal_template`
+--
+
+DROP TABLE IF EXISTS `journal_template`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `journal_template` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `userID` varchar(36) NOT NULL,
+  `body` text NOT NULL,
+  `created` datetime DEFAULT CURRENT_TIMESTAMP,
+  `created_by` varchar(36) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_template_user` (`userID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 

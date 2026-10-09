@@ -1,5 +1,20 @@
 # TODO
 
+## Journal templates — built 2026-10-06, not committed
+
+Template markup (one question per line, type in trailing `[brackets]`, `# ` = heading, blank lines ignored):
+`Question` → textarea · `[line]` text · `[number]` · `[check]` checkbox · `[a|b|c]` radio
+
+- [x] Migration `migrations/20261006_journal_template.sql` — applied to dev DB; **PROD still needs it**
+  - `journal_template` (id, userID, body TEXT, created) — insert-only, latest row = current template
+  - `journal_entry` (id, entryID, userID, answered DATE, body JSON, created) — insert-only, latest per (userID, answered)
+- [x] `parse_template(text) -> list[{type, label, options}]` (pure fn) + test/test_journal_template.py
+- [x] Entry JSON is self-describing: `[{"label","type","options","value"}, ...]` — past entries render from their own JSON, so template edits only affect days with no entry yet
+- [x] Routes: `GET /journal/template` (textarea + syntax help), `POST /journal/template/update/post`, `POST /journal/entry/update/post`
+- [x] journal_index.html: template form above existing day-of-year questions (both kept); footer link "Edit Template"
+- [x] SPECIFICATION.md + schema.sql updated; browser-verify on dev
+- [ ] Run migration on prod
+
 ## Meal / macro tracker (Open Food Facts) — built 2026-09-30, not committed
 
 - [x] Migration `migrations/20261001_meal.sql` (food, meal, meal_item, perm row) — applied to dev DB; **PROD still needs it**

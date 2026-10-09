@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% from '_journal_macros.html' import journal_fields %}
+
+{% block title %}Journal Template - jttbh{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/journal.css') }}?v={{ datetime.now().timestamp()|int }}">
+{% endblock %}
+
+{% set area = 'journal' %}
+
+{% block content %}
+<main class="journal journal-template">
+  <header>
+    <h1>Journal Template</h1>
+    <a href="{{ url_for('journal.index', username=username) }}">&larr; Back to Journal</a>
+  </header>
+
+  <section>
+    <form method="post" action="{{ url_for('journal.template_update', username=username) }}">
+      <label for="template-body">One question per line</label>
+      <textarea id="template-body" name="body" rows="14" class="journal-template-body">{{ body }}</textarea>
+      <button type="submit">Save Template</button>
+    </form>
+    <details class="journal-template-help">
+      <summary>Syntax</summary>
+      <pre># Morning                  section heading
+What am I grateful for?    long answer (textarea)
+One word for today [line]  short text
+Hours slept [number]       number
+Exercised? [check]         checkbox
+Energy [low|ok|high]       pick one</pre>
+      <p>Changes apply to days that don't have an entry yet. Saved days keep their questions.</p>
+    </details>
+  </section>
+
+  {% if fields %}
+  <section class="journal-entry">
+    <h2>Preview</h2>
+    {{ journal_fields(fields, disabled=true) }}
+  </section>
+  {% endif %}
+</main>
+{% endblock %}
