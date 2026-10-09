@@ -107,6 +107,15 @@ def _to_decimal(s: str) -> str:
         return s
 
 
+_RANGE_RE = re.compile(r'^(.+?)\s*(?:-|–|—|\bto\b)\s*(.+)$')
+
+
+def _split_range(s: str) -> tuple[str, str, str]:
+    """'1-2' -> ('1', '-', '2'); a single amount -> (s, '', '')."""
+    m = _RANGE_RE.match(s)
+    return (m.group(1), '-', m.group(2)) if m else (s, '', '')
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -119,9 +128,15 @@ def parse_amount_input(value: str) -> str:
     value = (value or '').strip()
     if not value:
         return ''
+    # Ranges ('1-2', '2½–3', '1 to 2') are stored as 'low-high' decimals
+    lo, sep, hi = _split_range(value)
+    if sep:
+        return f'{parse_amount_input(lo)}-{parse_amount_input(hi)}'
     # Expand unicode fractions
+    # Space before the glyph so '2½' becomes '2 1/2', not '21/2' (= 10.5)
     for uc, asc in _UNICODE_TO_ASCII.items():
-        value = value.replace(uc, asc)
+        value = value.replace(uc, f' {asc}')
+    value = value.strip()
     parts = value.split()
     try:
         f = Fraction(parts[0]) + Fraction(parts[1]) if len(parts) == 2 else Fraction(parts[0])
@@ -141,6 +156,9 @@ def format_amount(value) -> str:
     s = str(value).strip()
     if not s:
         return ''
+    lo, sep, hi = _split_range(s)
+    if sep:
+        return f'{format_amount(lo)}–{format_amount(hi)}'
     try:
         f = Fraction(s).limit_denominator(16)
     except (ValueError, ZeroDivisionError):

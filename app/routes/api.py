@@ -11,13 +11,14 @@ GET  /api/v1/ping
 GET  /api/v1/<username>/todos?date=YYYY-MM-DD
 POST /api/v1/<username>/todos
 POST /api/v1/<username>/todos/<todo_id>/complete
-GET  /api/v1/<username>/bookmarks?read_later=1&tag=recipe&limit=50&offset=0
+GET  /api/v1/<username>/bookmarks?read_later=1&tag=recipe&include_read=1&limit=50&offset=0
 POST /api/v1/<username>/bookmarks
 POST /api/v1/<username>/bookmarks/<bookmark_id>/archive
 DELETE /api/v1/<username>/bookmarks/<bookmark_id>
 GET  /api/v1/<username>/recipes
 GET  /api/v1/<username>/fitness
 POST /api/v1/<username>/recipes
+PUT  /api/v1/<username>/recipes/<recipe_id>
 GET  /api/v1/<username>/projects
 GET  /api/v1/<username>/projects/<project_id>
 POST /api/v1/<username>/projects/<project_id>/status
@@ -211,8 +212,10 @@ def get_bookmarks(username):
     if not user_id:
         return _err('User not found', 404)
 
-    conditions = ['b.userID = %s', 'b.`read` = 0']
+    conditions = ['b.userID = %s']
     params = [user_id]
+    if request.args.get('include_read') != '1':
+        conditions.append('b.`read` = 0')
 
     if request.args.get('read_later') == '1':
         conditions.append('b.read_later = 1')
@@ -367,14 +370,9 @@ def get_recipes(username):
     if not user_id:
         return _err('User not found', 404)
 
-    rows = db_manager.execute_query(
-        '''SELECT recipeID, title, source, type, servings, prep_time, cook_time,
-                  ingredients, directions, notes, created
-           FROM recipe
-           WHERE userID = %s AND title IS NOT NULL
-           ORDER BY created DESC''',
-        (user_id,),
-    )
+    # Current version of each recipe only (the table is insert-only), archived
+    # ones included so a client can tell "archived" from "never seen".
+    rows = RecipeModel.get_all_recipes(user_id)
     for r in rows:
         if isinstance(r.get('created'), datetime):
             r['created'] = r['created'].isoformat()
@@ -427,6 +425,55 @@ def create_recipe(username):
         ),
     )
     return _ok({'recipe_id': recipe_id}), 201
+
+
+_RECIPE_TEXT_FIELDS = ('title', 'source', 'type', 'servings', 'prep_time', 'cook_time', 'notes')
+
+
+@api_bp.route('/<username>/recipes/<recipe_id>', methods=['PUT'])
+@api_key_required
+def update_recipe(username, recipe_id):
+    """Partial update: fields omitted from the body keep their current value.
+
+    The recipe table is insert-only, so this writes a new version row with the
+    same recipeID; favorite / want_to_try / position carry over unchanged.
+    """
+    err = _require_write(PERM_RECIPE)
+    if err:
+        return err
+
+    user_id = _get_user_id(username)
+    if not user_id:
+        return _err('User not found', 404)
+
+    current = RecipeModel.get_recipe(recipe_id, user_id)
+    if not current:
+        return _err('Recipe not found', 404)
+
+    body = request.get_json(silent=True) or {}
+    for field in ('ingredients', 'directions'):
+        if field in body and not isinstance(body[field], list):
+            return _err(f'{field} must be a list')
+    if 'title' in body and not (body['title'] or '').strip():
+        return _err('title cannot be blank')
+
+    data = {
+        **{f: current.get(f) for f in _RECIPE_TEXT_FIELDS},
+        'ingredients': current['ingredients_list'],
+        'directions': current['directions_list'],
+        'position': current.get('position'),
+        'favorite': current.get('favorite'),
+        'want_to_try': current.get('want_to_try'),
+        'archived': current.get('archived'),
+    }
+    for f in _RECIPE_TEXT_FIELDS + ('ingredients', 'directions'):
+        if f in body:
+            data[f] = body[f].strip() if isinstance(body[f], str) else body[f]
+    if 'archived' in body:
+        data['archived'] = 1 if body['archived'] else 0
+
+    RecipeModel.update_recipe(recipe_id, user_id, data)
+    return _ok({'recipe_id': recipe_id, 'updated': True})
 
 
 # ---------------------------------------------------------------------------

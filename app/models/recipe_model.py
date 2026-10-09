@@ -30,6 +30,14 @@ class RecipeModel:
         )
 
     @staticmethod
+    def get_all_recipes(user_id: str) -> list[dict]:
+        """Current version of every recipe, archived included (newest first)."""
+        return db_manager.execute_query(
+            _CURRENT_RECIPE_SQL + " ORDER BY r.created DESC",
+            (user_id,),
+        )
+
+    @staticmethod
     def get_archived_recipes(user_id: str) -> list[dict]:
         return db_manager.execute_query(
             _CURRENT_RECIPE_SQL + " AND r.archived = 1 ORDER BY r.type, r.title",
