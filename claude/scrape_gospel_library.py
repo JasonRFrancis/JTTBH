@@ -303,11 +303,11 @@ def parse_gc_page(soup):
         m = NUMERIC_PAT.match(h)
         if m:
             seen.add(h)
-            prefix = int(m.group(1))
+            # Prefix is session digit + talk number: '12' = 1.2, '210' = 2.10
+            session_num, talk_num = int(m.group(1)[0]), int(m.group(1)[1:])
             title, author = extract_link_text(a)
-            session_num = prefix // 10
             numeric_items.append((
-                prefix, h,
+                session_num * 100 + talk_num, h,
                 title or h.split('/')[-1], author,
                 SESSION_NAMES.get(session_num, f'Session {session_num}'),
             ))
@@ -639,9 +639,10 @@ def main():
                 scrape_scriptures()
             if not args.scripture_only:
                 scrape_gc(args.start_year, args.end_year)
-            scrape_hymns()
-            scrape_handbook()
-            scrape_all_cfm()
+            if not (args.gc_only or args.scripture_only):
+                scrape_hymns()
+                scrape_handbook()
+                scrape_all_cfm()
 
     print("\nDone.")
 
