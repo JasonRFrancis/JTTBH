@@ -114,7 +114,7 @@
         {% endfor %}
       </ol>
       {% else %}
-      <p class="widget-empty">No exercises scheduled for today.</p>
+      <p class="widget-empty">{% if fitness.injury %}Injury mode: {{ fitness.injury.value }}.{% else %}No exercises scheduled for today.{% endif %}</p>
       {% endif %}
       {% else %}
       <p class="widget-empty">No active program. <a href="{{ url_for('fitness.settings', username=username) }}">Set one up</a>.</p>

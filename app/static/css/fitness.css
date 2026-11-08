@@ -363,6 +363,17 @@
 
 .no-program, .rest-day { color: var(--color-text-muted); }
 
+/* ── Injury mode / per-day overrides ─────────────────────────────────── */
+
+.injury-banner { border-left: 4px solid var(--color-warning, #d97706); padding: 0.5rem 1rem; margin-bottom: 1rem; }
+.day-skip-form { display: inline; }
+.btn-skip { font-size: 0.75rem; padding: 0.125rem 0.5rem; }
+.day-skipped ul { list-style: none; padding: 0; color: var(--color-text-muted); }
+.day-skipped li, .day-skipped form, .day-add form { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.day-add form { margin-bottom: 0.5rem; }
+.day-add select { max-width: 100%; }
+.injury-start { margin: 1rem 0; }
+
 .empty-state { color: var(--color-text-muted); font-style: italic; font-size: 0.875rem; }
 
 /* Saving indicator */

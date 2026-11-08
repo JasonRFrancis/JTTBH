@@ -121,9 +121,9 @@ def _get_fitness_summary(user_id: str) -> dict | None:
     program = FitnessModel.get_active_program(user_id)
     if not program:
         return {'program': None, 'exercise_count': 0, 'exercises': []}
-    dow = (today.weekday() + 1) % 7
-    exercises = FitnessModel.get_day_exercises(program['fitnessID'], dow)
-    return {'program': program, 'exercise_count': len(exercises), 'exercises': exercises}
+    exercises, _, injury = FitnessModel.get_day_plan(user_id, program['fitnessID'], today)
+    return {'program': program, 'exercise_count': len(exercises), 'exercises': exercises,
+            'injury': injury}
 
 
 def _get_study_summary(user_id: str) -> dict:

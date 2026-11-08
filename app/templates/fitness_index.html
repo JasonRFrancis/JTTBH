@@ -58,10 +58,21 @@
     </p>
   </section>
 
+  {% else %}
+  {% if injury %}
+  <section class="injury-banner" aria-labelledby="injury-heading">
+    <h2 id="injury-heading">Injury mode</h2>
+    <p>{{ injury.value }} · since {{ injury.created|format_day }}. Your scheduled program is paused; add anything you can still do below.</p>
+    <form method="post" action="{{ url_for('fitness.injury_delete', username=username) }}">
+      <button type="submit">I'm recovered — resume program</button>
+    </form>
+  </section>
+  {% endif %}
+
   {# ── Rest day ────────────────────────────────────────────────────────── #}
-  {% elif not exercises %}
+  {% if not exercises %}
   <section class="rest-day">
-    <p>No exercises scheduled for {{ day_name }}. Enjoy the rest day.</p>
+    <p>{% if injury %}Nothing planned for {{ day_name }}.{% else %}No exercises scheduled for {{ day_name }}. Enjoy the rest day.{% endif %}</p>
   </section>
 
   {# ── Exercises ───────────────────────────────────────────────────────── #}
@@ -91,6 +102,13 @@
           {% if ex.video_url %}
           <a href="{{ ex.video_url }}" target="_blank" rel="noopener" class="video-link" aria-label="Watch {{ ex.exercise_name }} video">▶</a>
           {% endif %}
+          {% if ex.added %}<span class="badge">added</span>{% endif %}
+          <form method="post" class="day-skip-form" action="{{ url_for('fitness.day_update', username=username) }}">
+            <input type="hidden" name="log_date" value="{{ viewed_date.isoformat() }}">
+            <input type="hidden" name="exercise_id" value="{{ ex.exerciseID }}">
+            <input type="hidden" name="action" value="{{ 'clear' if ex.added else 'skip' }}">
+            <button type="submit" class="btn-skip" aria-label="Remove {{ ex.exercise_name }} from this day">{{ 'Remove' if ex.added else 'Skip' }}</button>
+          </form>
         </div>
       </header>
 
@@ -289,6 +307,68 @@
       {{ ((todays_log.end_time - todays_log.start_time).seconds // 60) }} min
     {% endif %}
   </p>
+  {% endif %}
+  {% endif %}
+
+  {# ── Skipped today ───────────────────────────────────────────────────── #}
+  {% if skipped %}
+  <section class="day-skipped" aria-labelledby="skipped-heading">
+    <h2 id="skipped-heading">Skipped</h2>
+    <ul>
+      {% for ex in skipped %}
+      <li>
+        {{ ex.exercise_name }}
+        <form method="post" action="{{ url_for('fitness.day_update', username=username) }}">
+          <input type="hidden" name="log_date" value="{{ viewed_date.isoformat() }}">
+          <input type="hidden" name="exercise_id" value="{{ ex.exerciseID }}">
+          <input type="hidden" name="action" value="clear">
+          <button type="submit">Restore</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {# ── Add to this day ─────────────────────────────────────────────────── #}
+  <section class="day-add" aria-labelledby="day-add-heading">
+    <h2 id="day-add-heading">Add for {{ viewed_date|format_day }}</h2>
+    <form method="post" action="{{ url_for('fitness.day_update', username=username) }}">
+      <input type="hidden" name="log_date" value="{{ viewed_date.isoformat() }}">
+      <input type="hidden" name="action" value="add">
+      <label for="day-add-exercise">Exercise</label>
+      <select id="day-add-exercise" name="exercise_id" required>
+        <option value="">Choose…</option>
+        {% for c in catalog %}
+        <option value="{{ c.exerciseID }}">{{ c.name }}{% if c.muscle_group %} ({{ c.muscle_group }}){% endif %}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Add</button>
+    </form>
+    <form method="post" action="{{ url_for('fitness.day_update', username=username) }}">
+      <input type="hidden" name="log_date" value="{{ viewed_date.isoformat() }}">
+      <input type="hidden" name="action" value="add">
+      <label for="day-add-from">Whole workout from</label>
+      <select id="day-add-from" name="from_day" required>
+        <option value="">Choose…</option>
+        {% for d, rows in schedule.items() if rows %}
+        <option value="{{ d }}">{{ day_names[d] }} ({{ rows|length }})</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Add all</button>
+    </form>
+  </section>
+
+  {# ── Start injury mode ───────────────────────────────────────────────── #}
+  {% if not injury %}
+  <details class="injury-start">
+    <summary>Injured?</summary>
+    <form method="post" action="{{ url_for('fitness.injury_update', username=username) }}">
+      <label for="injury-note">What's injured</label>
+      <input type="text" id="injury-note" name="note" maxlength="500" placeholder="e.g. Torn rotator cuff">
+      <button type="submit">Pause program</button>
+    </form>
+  </details>
   {% endif %}
   {% endif %}
 

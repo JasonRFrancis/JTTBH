@@ -281,6 +281,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
        7. Entry rows pre-fill from the previous session's logged values (falling back to recommended values)
        8. Machine adjustment note is pre-filled from the previous session's logged note (falling back to the program's notes)
        9. "Finish Workout" button sets `end_time` via `POST /log/end/post/<log_id>`
+       10. Per-day overrides (`fitness_dayOverride`, insert-only; latest row per userID+date+exerciseID wins; `action` NULL = cleared) via `POST /day/update/post` (`action` = skip | add | clear): "Skip" hides a scheduled exercise for that date only (listed under "Skipped" with Restore); "Add" adds one catalog exercise or every exercise from another program day (`from_day`); added exercises borrow their program prescription if present
+       11. Injury mode: `user_preference` key `fitness_injury` (value = note, `created` = since). While set, the scheduled program is hidden on the index page and dashboard widget; per-day adds still show. `POST /injury/update/post` starts it, `POST /injury/delete/post` resumes the program
     5. Log Page (`GET /log`)
        1. Shows workout history grouped by session date
        2. Each session shows exercises with their logged sets (weight × reps for strength; duration/speed/incline for cardio; "Done" for done-type)

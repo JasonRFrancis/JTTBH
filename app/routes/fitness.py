@@ -21,6 +21,10 @@ POST /<u>/fitness/log/set/delete/post/<log_set_id> → JSON
 POST /<u>/fitness/log/end/post/<log_id>
 
 POST /<u>/fitness/weight/post  → JSON
+
+POST /<u>/fitness/injury/update/post   — start injury mode (hides the program)
+POST /<u>/fitness/injury/delete/post   — resume the program
+POST /<u>/fitness/day/update/post      — skip / add / clear an exercise for one date
 """
 
 import csv
@@ -82,11 +86,17 @@ def index(username: str, date_str: str = None):
 
     program = FitnessModel.get_active_program(user_id)
     exercises = []
+    skipped = []
+    injury = FitnessModel.get_injury(user_id)
+    catalog = []
+    schedule = {}
     todays_log = None
     location = None
 
     if program:
-        exercises = FitnessModel.get_day_exercises(program['fitnessID'], day_of_week)
+        exercises, skipped, injury = FitnessModel.get_day_plan(user_id, program['fitnessID'], viewed_date)
+        catalog = FitnessModel.get_exercise_catalog()
+        schedule = FitnessModel.get_program_schedule(program['fitnessID'])
         todays_log = FitnessModel.get_todays_log(user_id, viewed_date)
 
         # Attach previous-session sets and today's sets to each exercise
@@ -130,6 +140,11 @@ def index(username: str, date_str: str = None):
         location=location,
         day_of_week=day_of_week,
         weight_days=weight_days,
+        skipped=skipped,
+        injury=injury,
+        catalog=catalog,
+        schedule=schedule,
+        day_names=DAY_NAMES,
     )
 
 
@@ -769,3 +784,76 @@ def weight_post(username: str):
 
     flash(f'{weight} lbs recorded.', 'success')
     return redirect(url_for('fitness.index', username=username, date_str=log_date.isoformat()))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POST — injury mode + per-day overrides
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _back_to_day(username: str, day: date):
+    if day == user_today():
+        return redirect(url_for('fitness.index', username=username))
+    return redirect(url_for('fitness.index', username=username, date_str=day.isoformat()))
+
+
+@fitness_bp.route('/injury/update/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def injury_update(username: str):
+    note = request.form.get('note', '').strip()[:500] or 'Injured'
+    FitnessModel.set_injury(session['user_id'], note)
+    flash('Injury mode on — scheduled program paused.', 'success')
+    return redirect(url_for('fitness.index', username=username))
+
+
+@fitness_bp.route('/injury/delete/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def injury_delete(username: str):
+    FitnessModel.set_injury(session['user_id'], None)
+    flash('Welcome back — program resumed.', 'success')
+    return redirect(url_for('fitness.index', username=username))
+
+
+@fitness_bp.route('/day/update/post', methods=['POST'])
+@login_required
+@permission_required_read(PERM_FITNESS)
+@permission_required_write(PERM_FITNESS)
+def day_update(username: str):
+    """Skip, add, or clear exercises for a single date (action = skip | add | clear).
+
+    For add, either exercise_id or from_day (0–6: every exercise on that program day).
+    """
+    user_id = session['user_id']
+    f = request.form
+    try:
+        day = date.fromisoformat(f.get('log_date', ''))
+    except ValueError:
+        day = user_today()
+    action = f.get('action', '')
+    if action not in ('skip', 'add', 'clear'):
+        flash('Invalid action.', 'error')
+        return _back_to_day(username, day)
+
+    exercise_ids = [f.get('exercise_id', '').strip()]
+    from_day = f.get('from_day', '').strip()
+    if action == 'add' and from_day:
+        program = FitnessModel.get_active_program(user_id)
+        if not program or not from_day.isdigit() or int(from_day) not in _DOW_ORDER:
+            flash('Invalid day.', 'error')
+            return _back_to_day(username, day)
+        exercise_ids = [e['exerciseID'] for e in
+                        FitnessModel.get_day_exercises(program['fitnessID'], int(from_day))]
+    exercise_ids = [e for e in exercise_ids if e]
+    if not exercise_ids:
+        flash('Pick an exercise or a day.', 'error')
+        return _back_to_day(username, day)
+
+    for eid in exercise_ids:
+        FitnessModel.set_day_override(user_id, day, eid, None if action == 'clear' else action)
+    flash({'skip': 'Skipped for today.', 'clear': 'Restored.',
+           'add': f'Added {len(exercise_ids)} exercise{"s" if len(exercise_ids) != 1 else ""}.'}[action],
+          'success')
+    return _back_to_day(username, day)

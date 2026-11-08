@@ -385,6 +385,75 @@ class FitnessModel:
         """, ())
 
     # ------------------------------------------------------------------ #
+    # Injury mode + per-day overrides                                      #
+    # ------------------------------------------------------------------ #
+
+    @staticmethod
+    def get_injury(user_id: str) -> dict | None:
+        """{'value': note, 'created': since} while injury mode is on, else None."""
+        return db_manager.execute_one(
+            "SELECT value, created FROM user_preference "
+            "WHERE userID = %s AND preference = 'fitness_injury' ORDER BY id DESC LIMIT 1",
+            (user_id,))
+
+    @staticmethod
+    def set_injury(user_id: str, note: str | None) -> None:
+        """note=None resumes the program; otherwise (re)starts injury mode."""
+        db_manager.execute_update(
+            "DELETE FROM user_preference WHERE userID = %s AND preference = 'fitness_injury'",
+            (user_id,))
+        if note is not None:
+            db_manager.execute_insert(
+                "INSERT INTO user_preference (userID, preference, value, created, created_by) "
+                "VALUES (%s, 'fitness_injury', %s, NOW(), %s)",
+                (user_id, note, user_id))
+
+    @staticmethod
+    def set_day_override(user_id: str, day: date, exercise_id: str, action: str | None) -> None:
+        """action: 'skip', 'add', or None to clear."""
+        db_manager.execute_insert("""
+            INSERT INTO fitness_dayOverride (userID, override_date, exerciseID, action, created)
+            VALUES (%s, %s, %s, %s, NOW())
+        """, (user_id, day, exercise_id, action))
+
+    @staticmethod
+    def get_day_plan(user_id: str, fitness_id: str, day: date) -> tuple[list[dict], list[dict], dict | None]:
+        """Exercises for `day` = program day (unless injured) − skips + adds.
+
+        Returns (exercises, skipped, injury).
+        """
+        injury = FitnessModel.get_injury(user_id)
+        overrides = db_manager.execute_query("""
+            SELECT o.exerciseID, o.action, fe.name AS exercise_name, fe.type AS exercise_type,
+                   fe.muscle_group, fe.equipment_type, fe.video_url, fe.description
+            FROM fitness_dayOverride o
+            JOIN fitness_exercise fe ON fe.exerciseID = o.exerciseID
+            WHERE o.userID = %s AND o.override_date = %s
+              AND o.id = (SELECT MAX(o2.id) FROM fitness_dayOverride o2
+                          WHERE o2.userID = o.userID AND o2.override_date = o.override_date
+                            AND o2.exerciseID = o.exerciseID)
+              AND o.action IS NOT NULL
+            ORDER BY o.id
+        """, (user_id, day))
+        skips = {o['exerciseID'] for o in overrides if o['action'] == 'skip'}
+
+        scheduled = [] if injury else FitnessModel.get_day_exercises(fitness_id, (day.weekday() + 1) % 7)
+        exercises = [e for e in scheduled if e['exerciseID'] not in skips]
+        skipped = [e for e in scheduled if e['exerciseID'] in skips]
+
+        # Added exercises borrow their prescription from the program if it has them on any day.
+        prescriptions = {}
+        for rows in FitnessModel.get_program_schedule(fitness_id).values():
+            for r in rows:
+                prescriptions.setdefault(r['exerciseID'], r)
+        present = {e['exerciseID'] for e in exercises}
+        for o in overrides:
+            if o['action'] == 'add' and o['exerciseID'] not in present:
+                exercises.append({**prescriptions.get(o['exerciseID'], {}), **o, 'added': True})
+                present.add(o['exerciseID'])
+        return exercises, skipped, injury
+
+    # ------------------------------------------------------------------ #
     # Workout logs                                                         #
     # ------------------------------------------------------------------ #
 
