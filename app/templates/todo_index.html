@@ -39,7 +39,7 @@
 </header>
 
 {# =====================================================================
-   Weekly view — 5 day columns
+   Columns — yesterday, current day, tomorrow, Someday Soon, custom list 1
    ===================================================================== #}
 <section class="todo-weekly" aria-label="Weekly view">
   {% for day in daily_lists %}
@@ -62,6 +62,38 @@
                               new_item_label='New todo for ' ~ day.date_str) }}
   </todo-day>
   {% endfor %}
+
+  <todo-day data-list="someday_soon">
+    <header class="todo-day__header">
+      <h3 class="todo-day__heading">
+        <todo-date>Planning</todo-date>
+        <todo-label>{{ someday_soon.display_name }}</todo-label>
+      </h3>
+    </header>
+    {{ todo_macros.todo_list(someday_soon.todos, daily_default_length, username,
+                              action=url_for('todo.create', username=username),
+                              hidden={'list_type': 'planning', 'list_name': 'someday_soon'},
+                              list_type='planning', data_name='someday_soon',
+                              new_item_label='New Someday Soon item') }}
+  </todo-day>
+
+  <todo-day data-list="custom">
+    <header class="todo-day__header">
+      <h3 class="todo-day__heading">
+        <todo-date>My List</todo-date>
+        <todo-label>{{ column_list.name if column_list else 'My List' }}</todo-label>
+      </h3>
+    </header>
+    {% if column_list %}
+    {{ todo_macros.todo_list(column_list.todos, daily_default_length, username,
+                              action=url_for('todo.create', username=username),
+                              hidden={'list_type': 'custom', 'list_name': column_list.name},
+                              list_type='custom', data_name=column_list.name | urlencode,
+                              new_item_label='New ' ~ column_list.name ~ ' item') }}
+    {% else %}
+    <p><a href="{{ url_for('user.settings', username=username) }}">Name a list in Settings</a> to show it here.</p>
+    {% endif %}
+  </todo-day>
 </section>
 
 {# =====================================================================

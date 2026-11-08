@@ -221,13 +221,18 @@ function initNewTodoForms(scope) {
     const input = form.querySelector('input[name="title"]');
     if (!input) return;
 
-    const handleSubmit = () => {
+    const handleSubmit = (keepTyping) => {
       const title = input.value.trim();
       if (!title) return;
 
       const listEl = form.closest('todo-list');
 
       submitForm(form, () => {
+        // Enter: after the reload, put the cursor in this list's next blank slot
+        if (keepTyping && listEl) {
+          const idx = [...document.querySelectorAll('todo-list')].indexOf(listEl);
+          try { sessionStorage.setItem('todoRefocusList', String(idx)); } catch (_) {}
+        }
         // Clear the input and let auto-grow add a new slot if needed
         input.value = '';
         // After AJAX success, reload the list section to show new item
@@ -239,14 +244,31 @@ function initNewTodoForms(scope) {
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        handleSubmit();
+        handleSubmit(true);
       }
     });
 
     input.addEventListener('blur', () => {
-      if (input.value.trim()) handleSubmit();
+      if (input.value.trim()) handleSubmit(false);
     });
   });
+}
+
+
+/**
+ * After an Enter-triggered reload, focus the first blank slot of the list the
+ * user was typing in.
+ */
+function restoreNewTodoFocus() {
+  let idx = null;
+  try {
+    idx = sessionStorage.getItem('todoRefocusList');
+    sessionStorage.removeItem('todoRefocusList');
+  } catch (_) { return; }
+  if (idx === null) return;
+  const listEl = document.querySelectorAll('todo-list')[Number(idx)];
+  const input = listEl && listEl.querySelector('todo-item.todo-item--blank input[name="title"]');
+  if (input) input.focus();
 }
 
 
@@ -578,6 +600,7 @@ function init() {
     renderMarkdown,
     initInlineEditing,
     initNewTodoForms,
+    restoreNewTodoFocus,
     initAutoGrow,
     initDragDrop,
     initDatePicker,

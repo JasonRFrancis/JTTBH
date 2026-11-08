@@ -91,8 +91,9 @@ def _build_index_context(user_id: str, username: str, current_date: date) -> dic
     """
     Build the full template context for the index view.
 
-    Performs the push-forward check, fetches all 5 daily columns,
-    all 4 planning lists, and any enabled custom lists from preferences.
+    Moves undone past todos to today, then fetches the 5 columns
+    (yesterday, current day, tomorrow, Someday Soon, custom list 1),
+    the remaining planning lists, and the remaining custom lists.
 
     Parameters
     ----------
@@ -110,15 +111,11 @@ def _build_index_context(user_id: str, username: str, current_date: date) -> dic
     """
     today = user_today()
 
-    # --- Push-forward: run once per day on first page load ----------------
-    push_count = 0
-    if current_date == today:
-        if not TodoModel.push_forward_check(user_id, today):
-            push_count = TodoModel.push_forward(user_id, today)
+    # --- Undone past todos move to today on every load ---------------------
+    push_count = TodoModel.migrate_to_today(user_id, today)
 
-    # --- Build 5-day window -----------------------------------------------
-    # current_date sits at index 1 (second column); yesterday is index 0.
-    offsets = [-1, 0, 1, 2, 3]
+    # --- Day columns: yesterday, current, tomorrow ---------------------------
+    offsets = [-1, 0, 1]
     daily_lists = []
     for offset in offsets:
         day = current_date + timedelta(days=offset)
@@ -132,8 +129,16 @@ def _build_index_context(user_id: str, username: str, current_date: date) -> dic
         })
 
     # --- Planning lists ---------------------------------------------------
+    # Someday Soon is its own column; the other planning lists stay below.
+    someday_soon = {
+        'name':         'someday_soon',
+        'display_name': PLANNING_LISTS['someday_soon'],
+        'todos':        TodoModel.get_planning_todos(user_id, 'someday_soon'),
+    }
     planning_lists = []
     for key, display_name in PLANNING_LISTS.items():
+        if key == 'someday_soon':
+            continue
         todos = TodoModel.get_planning_todos(user_id, key)
         planning_lists.append({
             'name':         key,
@@ -150,6 +155,8 @@ def _build_index_context(user_id: str, username: str, current_date: date) -> dic
             'name':        list_name,
             'todos':       todos,
         })
+    # The first named custom list (Settings → list 1) is the fifth column.
+    column_list = custom_lists.pop(0) if custom_lists else None
 
     # --- Shared lists (owner + pinned member lists) -----------------------
     try:
@@ -172,6 +179,8 @@ def _build_index_context(user_id: str, username: str, current_date: date) -> dic
         'today':                today,
         'daily_lists':          daily_lists,
         'planning_lists':       planning_lists,
+        'someday_soon':         someday_soon,
+        'column_list':          column_list,
         'custom_lists':         custom_lists,
         'daily_default_length': DAILY_BLANK_SLOTS,
         'custom_default_length': CUSTOM_BLANK_SLOTS,
@@ -219,9 +228,9 @@ def index_date(username: str, date_str: str):
     """
     Main todo list view for a specific date.
 
-    Shows a 5-column weekly view centred on *date_str*, plus planning and
-    custom lists below.  On the first load of each day for the current date,
-    incomplete items from yesterday are pushed forward automatically.
+    Shows yesterday / *date_str* / tomorrow, Someday Soon, and custom list 1
+    as columns, plus the other lists below.  Every load moves undone daily
+    todos from before today onto today.
 
     URL Parameters
     --------------
@@ -235,7 +244,7 @@ def index_date(username: str, date_str: str):
 
     if context['push_count'] > 0:
         flash(
-            f"{context['push_count']} incomplete item(s) from yesterday moved to Someday Soon.",
+            f"{context['push_count']} unfinished item(s) from earlier days moved to today.",
             'message',
         )
 

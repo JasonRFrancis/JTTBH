@@ -18,8 +18,7 @@ Public API
     TodoModel.delete(todo_id, user_id)              -> None
     TodoModel.toggle_complete(todo_id, user_id)     -> None
     TodoModel.move(...)                             -> None
-    TodoModel.push_forward_check(user_id, today)    -> bool
-    TodoModel.push_forward(user_id, today)          -> int
+    TodoModel.migrate_to_today(user_id, today)      -> int
     TodoModel.get_todo_by_id(todo_id, user_id)      -> dict | None
     TodoModel.search(user_id, query)                -> list[dict]
     TodoModel.reorder(user_id, todo_ids, positions) -> None
@@ -27,7 +26,7 @@ Public API
 """
 
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 from app.services.database import db_manager
 
@@ -509,124 +508,35 @@ class TodoModel:
             ))
 
     # ------------------------------------------------------------------
-    # Push-forward logic
+    # Carry-over
     # ------------------------------------------------------------------
 
     @staticmethod
-    def push_forward_check(user_id: str, today: date) -> bool:
+    def migrate_to_today(user_id: str, today: date) -> int:
         """
-        Return True if the daily push-forward has already run for *today*.
+        Move every incomplete daily todo dated before *today* onto *today*.
 
-        Checks whether any ``todo_pushedForward`` record linked to this
-        user's todos was created on *today*.  A True result means the
-        push-forward should be skipped to avoid duplicates.
-
-        Parameters
-        ----------
-        user_id : str
-            The userID UUID.
-        today : date
-            The current calendar date.
-
-        Returns
-        -------
-        bool
-        """
-        sql = """
-            SELECT COUNT(*) AS cnt
-            FROM todo_pushedForward pf
-            JOIN todo t ON t.todoID = pf.todoID
-            WHERE t.userID = %s
-              AND DATE(pf.created) = %s
-        """
-        result = db_manager.execute_one(sql, (user_id, today))
-        return (result['cnt'] > 0) if result else False
-
-    @staticmethod
-    def push_forward(user_id: str, today: date) -> int:
-        """
-        Move all incomplete daily todo items from yesterday to Someday Soon.
-
-        For each incomplete item from yesterday that has not already been
-        pushed today:
-
-        1. Insert a new ``todo`` row with the same todoID, moved into the
-           ``someday_soon`` planning list (``due=NULL``).
-        2. Insert a ``todo_pushedForward`` row to record the move.
-
-        The check in step 1 (``todo_pushedForward`` lookup) makes the
-        operation safe to call multiple times concurrently — each call
-        may insert duplicate push records, but the todo state will be
-        correct because the highest-id row wins.
-
-        Parameters
-        ----------
-        user_id : str
-            The userID UUID.
-        today : date
-            The current calendar date (push target).
+        Safe to call on every page load: once moved, items are no longer
+        before today, so a second call finds nothing.
 
         Returns
         -------
         int
             Count of items moved.
         """
-        yesterday = today - timedelta(days=1)
-
-        # Fetch all incomplete daily items from yesterday
         sql = """
-            SELECT t.todoID, t.title, t.content, t.list_type, t.list_name,
-                   t.position, t.added
+            SELECT t.todoID
             FROM todo t
             WHERE t.userID = %s
-              AND t.due = %s
               AND t.list_type = 'daily'
+              AND t.due < %s
               AND t.id = (
                   SELECT MAX(t2.id) FROM todo t2 WHERE t2.todoID = t.todoID
               )
               AND t.title IS NOT NULL
               AND t.completed IS NULL
         """
-        todos = db_manager.execute_query(sql, (user_id, yesterday))
-
-        count = 0
-        for todo in todos:
-            # Skip if already pushed today
-            check_sql = """
-                SELECT id FROM todo_pushedForward
-                WHERE todoID = %s AND DATE(created) = %s
-            """
-            already = db_manager.execute_one(check_sql, (todo['todoID'], today))
-            if already:
-                continue
-
-            # Every previous-day carry-over goes straight to Someday Soon
-            target_due = None
-            target_type = 'planning'
-            target_name = 'someday_soon'
-
-            # Insert new todo record
-            insert_sql = """
-                INSERT INTO todo (todoID, userID, title, content, due, list_type,
-                                  list_name, position, added, created, created_by)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s)
-            """
-            db_manager.execute_insert(insert_sql, (
-                todo['todoID'], user_id,
-                todo['title'], todo['content'],
-                target_due, target_type, target_name,
-                todo['position'],
-                todo['added'] or yesterday,
-                user_id,
-            ))
-
-            # Record the push in todo_pushedForward
-            pf_sql = """
-                INSERT INTO todo_pushedForward (todoID, created, created_by)
-                VALUES (%s, NOW(), %s)
-            """
-            db_manager.execute_insert(pf_sql, (todo['todoID'], user_id))
-
-            count += 1
-
-        return count
+        rows = db_manager.execute_query(sql, (user_id, today))
+        for row in rows:
+            TodoModel.move(row['todoID'], user_id, new_due=today)
+        return len(rows)

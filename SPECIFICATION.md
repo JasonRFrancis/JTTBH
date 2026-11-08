@@ -197,20 +197,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     9. `habit_entry.completed` holds three states: `1` (complete), `0` (explicitly not completed), and NULL / no row (unresolved). Only the dashboard's previous-day grid distinguishes `0` from NULL; streaks, heat map, `grid_stats`, and the habit-page grids all test `completed == 1`, so `0` and NULL behave identically there. The habit-page toggle (`toggle_entry`) still only writes `1` ↔ NULL.
   4. Todo List
     1. Designated under the `todo` area using the `todo` database tables; patterned after teuxdeux.com
-    2. Weekly view (top of page): Five lists covering the dates from yesterday until three days in the future. The current date (or the date designated in the URL) is in the second position
+    2. Columns (top of page), left to right: yesterday, the current date (or the date in the URL), tomorrow, "Someday Soon", and the first named custom list (Settings → list 1; a link to Settings is shown if none is named)
     3. Custom lists (bottom of page): Two groups:
-      1. Planning: Four lists based on future periods: "Next Week", "This Month", "Next Month", and "Someday Soon"
-      2. My Lists: Up to four lists that can be named in the site's preferences. Unnamed lists are not shown
+      1. Planning: "Next Week", "This Month", "Next Month" ("Someday Soon" is a top column)
+      2. My Lists: the remaining named lists (up to four can be named in the site's preferences; the first is a top column). Unnamed lists are not shown
     4. Each list element contains a text input, a checkbox, and options to delete or add details (contained in the `content` column in the table)
     5. List items can be reordered and moved to different lists
-    6. The weekly list begins with 11 blank list items; custom lists begin with 5. Lists grow automatically as elements are filled in
+    6. The top columns begin with 11 blank list items; bottom lists begin with 5. Lists grow automatically as elements are filled in. Pressing Enter in a blank item saves it and puts the cursor in the next blank item of the same list
     7. List item `title` and `content` text can be formatted using a basic flavor of Markdown
     8. Completed items: Persist on the list
-    9. Daily rollover: The first time each day that the todo page is loaded, all incomplete items from the previous day are moved to the current day
-      1. This only applies to the current-day list and the list from the previous day
-      2. When a todo item is moved, a record is created in the `todo_pushedForward` table. That table should be checked on page load to determine whether the item should be moved
-      3. If a todo item is to be moved, a new record is inserted into the `todo` table with the current day as the `due` date. The `created` and `created_by` fields should be updated. `added` represents the original due date for the item and is not updated
-      4. This process is resilient to concurrency collisions; if a second request initiates a move, it will only result in duplicate (redundant) records in the table
+    9. Rollover: every load of the todo index moves all incomplete daily items dated before today onto today (`TodoModel.migrate_to_today`)
+      1. A move inserts a new `todo` row with today as `due`; `added` (the original due date) is not updated
+      2. Idempotent: moved items are no longer before today, so repeat or concurrent loads at worst insert redundant rows
+      3. `todo_pushedForward` is no longer written (historical rows remain)
     10. The current day can be adjusted using buttons that move forward or backward in time. A date picker allows the user to select the current day
     11. The user is provided a search option to search among todo items
     12. The dashboard version of the todo list contains the current day's items
